@@ -31,7 +31,9 @@ src/
 ├── Repository/          # Queries Doctrine (inclut les queries spécialisées)
 ├── Service/             # Exécution : persist, API calls, uploads, PDF... (voir section 5)
 ├── Api/                 # APIs externes authentifiées (Hubspot, Discord...)
-├── Command/             # Commandes console
+├── Message/             # DTOs pour Messenger (voir section 15)
+├── MessageHandler/      # Handlers async pour les messages (voir section 15)
+├── Command/             # Commandes console (avec #[AsCronTask] pour le scheduler)
 ├── Form/                # Symfony Form types
 ├── EventListener/       # Listeners Doctrine/HTTP
 ├── Factory/             # Création d'entités avec init complexe
@@ -603,5 +605,113 @@ public function testCalculateScores(): void
 | Création d'entité complexe | `Factory/MonFactory.php` |
 | Route HTTP | `Controller/MonController.php` |
 | Formulaire Twig | `Form/MonFormType.php` |
-| Job planifié | `Command/MonCommand.php` |
+| Job planifié | `Command/MonCommand.php` + `#[AsCronTask]` |
+| Appel externe async | `Message/MonMessage.php` + `MessageHandler/MonHandler.php` |
 | Sécurité route API | `#[IsGranted('ROLE_USER')]` sur méthode/classe |
+
+---
+
+## 15. Messenger — Appels externes async
+
+Les appels vers des services externes (Hubspot, Discord, Slack, emails) sont dispatchés en async via Symfony Messenger. Le controller dispatch un message DTO, le worker le consomme en arrière-plan.
+
+### Transport
+
+Doctrine (PostgreSQL, table `messenger_messages`). Les messages `SendEmailMessage`, `ChatMessage`, `SmsMessage` restent en **sync** car leurs templates reçoivent des entités Doctrine qui ne se sérialisent pas.
+
+### Message — le DTO
+
+`final readonly class` avec uniquement des **scalaires** (int, string, bool). Pas d'entité, pas d'objet complexe — le message doit être sérialisable.
+
+```php
+namespace App\Message;
+
+final readonly class SyncProfileToHubspot
+{
+    public function __construct(
+        public int $userId,
+    ) {}
+}
+```
+
+### Handler — l'exécution
+
+`#[AsMessageHandler]` + `final readonly class`. Le handler recharge l'entité depuis la DB par son ID, **vérifie qu'elle existe encore** (elle a pu être supprimée entre le dispatch et le traitement), puis appelle les services existants.
+
+```php
+namespace App\MessageHandler;
+
+use App\Message\SyncProfileToHubspot;
+use App\Repository\UserRepository;
+use App\Service\HubspotSyncHandler;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+
+#[AsMessageHandler]
+final readonly class SyncProfileToHubspotHandler
+{
+    public function __construct(
+        private UserRepository $userRepository,
+        private HubspotSyncHandler $hubspotSyncHandler,
+    ) {}
+
+    public function __invoke(SyncProfileToHubspot $message): void
+    {
+        $user = $this->userRepository->find($message->userId);
+        if (!$user) {
+            return;
+        }
+
+        $this->hubspotSyncHandler->handleProfileUpdate($user);
+    }
+}
+```
+
+### Dispatch depuis le controller
+
+Toujours **après** le persist + flush, pour que l'entité soit en DB quand le handler la recharge.
+
+```php
+$entityManager->flush();
+$bus->dispatch(new SyncProfileToHubspot($user->getId()));
+```
+
+### Cas particulier : entité supprimée
+
+Si l'entité sera supprimée juste après le dispatch, passer les données nécessaires en scalaires (ex: email) plutôt que l'ID.
+
+### Retry et failed
+
+3 retries avec backoff exponentiel (1s, 2s, 4s). Après 3 échecs → transport `failed`. Les erreurs CRITICAL remontent dans Sentry.
+
+### Routing (`config/packages/messenger.yaml`)
+
+```yaml
+routing:
+    Symfony\Component\Mailer\Messenger\SendEmailMessage: sync
+    Symfony\Component\Notifier\Message\ChatMessage: sync
+    'App\Message\*': async
+```
+
+---
+
+## 16. Scheduler — Crons observables
+
+Les crons sont déclarés directement sur les commandes avec `#[AsCronTask]`. Pas de scripts shell, pas de `cron.json` (sauf `cleanup-chrome.sh`).
+
+```php
+#[AsCronTask('0 3 * * *', timezone: 'Europe/Paris')]
+#[AsCommand(name: 'app:analytics', description: 'Daily analytics')]
+class AnalyticsCommand
+{
+    public function __invoke(SymfonyStyle $io): int
+    {
+        ini_set('memory_limit', '4096M');
+        // ...
+        return Command::SUCCESS;
+    }
+}
+```
+
+Le scheduler est consommé par le même worker que Messenger (`scheduler_default` transport). Les erreurs remontent dans Sentry/logs Symfony.
+
+Pour les commandes gourmandes en mémoire, utiliser `ini_set('memory_limit', ...)` dans la commande plutôt qu'un flag PHP CLI.
