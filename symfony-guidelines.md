@@ -582,7 +582,91 @@ public function testCalculateScores(): void
 
 ---
 
-## 14. Quand créer quoi ?
+## 14. Quality Assurance — Analyse statique & formatage
+
+L'analyse statique remplace les inspections IDE (PHPStorm, plugin Symfony). Ces outils sont regroupés dans la **skill `/quality`** (Claude Code), à lancer avant de committer ou pour vérifier la qualité en cours de dev.
+
+### PHPStan — analyse statique
+
+PHPStan (v2.x) avec l'extension `phpstan-symfony`. Level 6 minimum (force les typehints), viser `max` progressivement.
+
+```bash
+composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine
+```
+
+```neon
+# phpstan.neon
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+```
+
+Ce que `phpstan-symfony` apporte (vs PHPStan seul) :
+- Types corrects pour `ContainerInterface::get()`, `AbstractController::getParameter()`
+- Analyse des commandes Console (types d'arguments/options)
+- Inférence de types pour Messenger `HandleTrait`
+
+```bash
+vendor/bin/phpstan analyse
+```
+
+### PHP-CS-Fixer — formatage
+
+Applique automatiquement les conventions de formatage (PER Coding Style / Symfony ruleset).
+
+```bash
+composer require --dev friendsofphp/php-cs-fixer
+```
+
+```bash
+# Vérification (en hook) :
+vendor/bin/php-cs-fixer fix --dry-run --diff
+
+# Application :
+vendor/bin/php-cs-fixer fix
+```
+
+### Validations Symfony
+
+```bash
+# Mappings Doctrine (remplace la validation temps réel de PHPStorm)
+php bin/console doctrine:schema:validate --skip-sync
+
+# Compilation du container DI
+php -d memory_limit=256M bin/console lint:container
+```
+
+### Psalm — taint analysis (optionnel, en CI)
+
+Psalm détecte les vulnérabilités de sécurité (SQL injection, XSS, command injection) par analyse statique du flux de données — une capacité que PHPStan n'a pas. Recommandé en CI pour les projets qui gèrent de l'input utilisateur.
+
+```bash
+composer require --dev vimeo/psalm
+vendor/bin/psalm --taint-analysis
+```
+
+### Récapitulatif
+
+| Outil | Rôle | Quand |
+|-------|------|-------|
+| PHPStan level 6+ | Types, logique, inspections Symfony/Doctrine | `/quality` |
+| PHP-CS-Fixer | Formatage (dry-run, ne corrige pas seul) | `/quality` |
+| `doctrine:schema:validate` | Mappings Doctrine | `/quality` |
+| `lint:container` | Compilation DI | `/quality` |
+| Psalm taint analysis | Sécurité (SQLi, XSS) | CI |
+
+> Tous ces checks (sauf Psalm) sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet (Symfony, Next.js, ou les deux). Pour les outils de qualité frontend (ESLint, TypeScript), voir `docs/reactony.md` section Quality Assurance.
+
+---
+
+## 15. Quand créer quoi ?
 
 | Besoin | Où le mettre |
 |--------|-------------|
@@ -611,7 +695,7 @@ public function testCalculateScores(): void
 
 ---
 
-## 15. Messenger — Appels externes async
+## 16. Messenger — Appels externes async
 
 Les appels vers des services externes (Hubspot, Discord, Slack, emails) sont dispatchés en async via Symfony Messenger. Le controller dispatch un message DTO, le worker le consomme en arrière-plan.
 
@@ -694,7 +778,7 @@ routing:
 
 ---
 
-## 16. Scheduler — Crons observables
+## 17. Scheduler — Crons observables
 
 Les crons sont déclarés directement sur les commandes avec `#[AsCronTask]`. Pas de scripts shell, pas de `cron.json` (sauf `cleanup-chrome.sh`).
 

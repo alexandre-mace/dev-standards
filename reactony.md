@@ -79,6 +79,8 @@ Pour les cas complexes (URLs S3 calculées, données croisées multi-entités), 
 
 ### Symfony : `#[MapRequestPayload]` sur l'entité
 
+> Conventions détaillées des DTOs, `#[MapRequestPayload]`, `#[MapUploadedFile]`, et `ObjectMapper` : voir `symfony-guidelines.md` section 4.
+
 Quand le payload correspond 1:1 à l'entité, on utilise directement l'entité. Les `#[Groups]` ne sont nécessaires que si l'entité a des champs qu'on ne veut pas exposer (relations, flags internes).
 
 ```php
@@ -155,9 +157,9 @@ const mutation = useMutation({
 
 ### Modification lourde (update partiel, beaucoup de champs)
 
-Quand le payload met à jour beaucoup de champs sur une entité existante (ex. profil User avec 14 champs), `#[MapRequestPayload]` ne suffit pas car il crée une **nouvelle instance**.
+> Pattern DTO allowlist + `ObjectMapper` détaillé dans `symfony-guidelines.md` section 4.
 
-Pattern : **DTO allowlist** + `ObjectMapper` (composant `symfony/object-mapper`).
+Quand le payload met à jour beaucoup de champs sur une entité existante (ex. profil User avec 14 champs), `#[MapRequestPayload]` ne suffit pas car il crée une **nouvelle instance**.
 
 Le DTO sert de **liste blanche de champs acceptés** — sans lui, un mapping direct permettrait d'envoyer `{ "roles": ["ROLE_ADMIN"] }`. L'ObjectMapper ne mappe que les propriétés **initialisées** du DTO (les champs absents du JSON restent non initialisés → ignorés).
 
@@ -206,6 +208,8 @@ public function save(
 > - Payload ≠ entité (champs calculés, agrégats, pas d'entité correspondante) → DTO dans `src/Dto/`
 
 ### Upload de fichiers — `#[MapUploadedFile]`
+
+> Conventions backend upload détaillées dans `symfony-guidelines.md` section 4.
 
 Pour les endpoints recevant un fichier (FormData), utiliser `#[MapUploadedFile]` au lieu de `$request->files->get()`. La validation du fichier est gérée par les contraintes Assert :
 
@@ -310,10 +314,7 @@ Ajouter des Groups **seulement si nécessaire** — quand l'entité a des champs
 
 ### Quand créer un DTO ?
 
-- **Filtres GET** : oui, un DTO pour `#[MapQueryString]` (les filtres ne sont pas une entité)
-- **Écriture POST, entité dédiée** : non, utiliser l'entité directement
-- **Écriture POST, sous-ensemble d'une grosse entité** : oui, DTO allowlist (ex. `SaveProfilePayload` pour User)
-- **Écriture POST, pas d'entité** : oui, DTO (ex. `BugReportPayload`, `ChatbotQuestionPayload`)
+> Arbre de décision complet dans `symfony-guidelines.md` section 4.
 
 Les formulaires d'auth (login, inscription, mot de passe) restent en **Twig/Symfony Form** — pas concernés.
 
@@ -729,7 +730,36 @@ Le [React Compiler](https://react.dev/learn/react-compiler) auto-memoize les com
 
 ---
 
-## 8. Résumé
+## 8. Quality Assurance — Frontend
+
+### ESLint
+
+Lint du code TypeScript/React. Vérifie les imports, les hooks rules, les patterns React.
+
+```bash
+pnpm lint
+```
+
+### TypeScript strict
+
+`tsc --noEmit` vérifie le typage sans produire de fichiers. Attrape les erreurs de types que ESLint ne voit pas.
+
+```bash
+pnpm tsc --noEmit
+```
+
+### Récapitulatif
+
+| Outil | Rôle | Quand |
+|-------|------|-------|
+| ESLint | Lint JS/TS/React | `/quality` |
+| `tsc --noEmit` | Vérification des types | `/quality` |
+
+> Tous ces checks sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet. Pour les outils de qualité backend (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), voir `docs/symfony-guidelines.md` section 14.
+
+---
+
+## 9. Résumé
 
 | Quoi | Comment |
 |------|---------|
