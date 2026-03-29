@@ -663,7 +663,7 @@ composer require --dev friendsofphp/php-cs-fixer
 ```
 
 ```bash
-# Vérification (en hook) :
+# Vérification (/quality) :
 vendor/bin/php-cs-fixer fix --dry-run --diff
 
 # Application :
