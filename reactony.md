@@ -734,11 +734,28 @@ Le [React Compiler](https://react.dev/learn/react-compiler) auto-memoize les com
 
 ### ESLint
 
-Lint du code TypeScript/React. Vérifie les imports, les hooks rules, les patterns React.
+Lint du code TypeScript/React. Vérifie les hooks rules, les patterns React, les types.
 
 ```bash
-pnpm lint
+pnpm lint          # vérifie
+pnpm lint:fix      # auto-corrige
 ```
+
+Config flat (`eslint.config.js`) avec :
+- `@eslint/js` + `typescript-eslint` — règles TS
+- `eslint-plugin-react-hooks` — hooks rules (exhaustive-deps, rules-of-hooks)
+- `eslint-config-prettier` — désactive les règles qui entrent en conflit avec Prettier
+
+### Prettier
+
+Formatage du code (indentation, quotes, trailing commas, tri des classes Tailwind).
+
+```bash
+pnpm format        # formate
+pnpm format:check  # vérifie sans modifier
+```
+
+Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatique des classes.
 
 ### TypeScript strict
 
@@ -752,7 +769,8 @@ pnpm tsc --noEmit
 
 | Outil | Rôle | Quand |
 |-------|------|-------|
-| ESLint | Lint JS/TS/React | `/quality` |
+| ESLint | Lint JS/TS/React, hooks rules | `/quality` |
+| Prettier | Formatage, tri classes Tailwind | `/quality` |
 | `tsc --noEmit` | Vérification des types | `/quality` |
 
 > Tous ces checks sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet. Pour les outils de qualité backend (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), voir `docs/symfony-guidelines.md` section 14.

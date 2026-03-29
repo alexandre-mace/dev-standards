@@ -617,6 +617,42 @@ Ce que `phpstan-symfony` apporte (vs PHPStan seul) :
 vendor/bin/phpstan analyse
 ```
 
+#### AbstractAppController — typer `getUser()`
+
+`AbstractController::getUser()` retourne `UserInterface|null` — PHPStan ne sait pas que c'est ton entité `User`. Créer un base controller qui type le retour :
+
+```php
+abstract class AbstractAppController extends AbstractController
+{
+    protected function getUser(): User
+    {
+        $user = parent::getUser();
+        if (!$user instanceof User) {
+            throw new AccessDeniedException();
+        }
+        return $user;
+    }
+}
+```
+
+Tous les controllers héritent de `AbstractAppController` au lieu de `AbstractController`.
+
+#### Types PHP natifs plutôt que PHPDoc
+
+Quand PHP peut exprimer le type nativement, utiliser le type PHP, pas un `@param`/`@return` PHPDoc. Les PHPDoc sont réservés aux types que PHP ne supporte pas (`array<string, mixed>`, `Collection<int, User>`, `list<string>`).
+
+PHP-CS-Fixer convertit automatiquement avec les règles `phpdoc_to_param_type`, `phpdoc_to_return_type`, `phpdoc_to_property_type`.
+
+#### Collections Doctrine — generics
+
+Annoter les propriétés `Collection` avec le type générique pour que PHPStan comprenne les boucles :
+
+```php
+/** @var Collection<int, UserAction> */
+#[ORM\OneToMany(targetEntity: UserAction::class, mappedBy: 'user')]
+private Collection $userActions;
+```
+
 ### PHP-CS-Fixer — formatage
 
 Applique automatiquement les conventions de formatage (PER Coding Style / Symfony ruleset).
