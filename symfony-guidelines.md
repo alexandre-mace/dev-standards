@@ -588,10 +588,10 @@ L'analyse statique remplace les inspections IDE (PHPStorm, plugin Symfony). Ces 
 
 ### PHPStan — analyse statique
 
-PHPStan (v2.x) avec l'extension `phpstan-symfony`. Level 6 minimum (force les typehints), viser `max` progressivement.
+PHPStan (v2.x) avec les extensions `phpstan-symfony`, `phpstan-doctrine`, et `phpstan-deprecation-rules`. Level 8 (null-safety strict) est le standard recommandé pour les projets Symfony/Doctrine.
 
 ```bash
-composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine
+composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules
 ```
 
 ```neon
@@ -599,9 +599,10 @@ composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-d
 includes:
     - vendor/phpstan/phpstan-symfony/extension.neon
     - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
-    level: 6
+    level: 8
     paths:
         - src
     symfony:
@@ -688,14 +689,23 @@ composer require --dev vimeo/psalm
 vendor/bin/psalm --taint-analysis
 ```
 
+### Composer audit — vulnérabilités
+
+Vérifie les vulnérabilités connues dans les dépendances PHP.
+
+```bash
+composer audit
+```
+
 ### Récapitulatif
 
 | Outil | Rôle | Quand |
 |-------|------|-------|
-| PHPStan level 6+ | Types, logique, inspections Symfony/Doctrine | `/quality` |
-| PHP-CS-Fixer | Formatage (dry-run, ne corrige pas seul) | `/quality` |
+| PHPStan level 8 | Types, null-safety, logique, dépréciations, inspections Symfony/Doctrine | `/quality` |
+| PHP-CS-Fixer | Formatage + conversion PHPDoc → types natifs | `/quality` |
 | `doctrine:schema:validate` | Mappings Doctrine | `/quality` |
 | `lint:container` | Compilation DI | `/quality` |
+| `composer audit` | Vulnérabilités dépendances | `/quality` |
 | Psalm taint analysis | Sécurité (SQLi, XSS) | CI |
 
 > Tous ces checks (sauf Psalm) sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet (Symfony, Next.js, ou les deux). Pour les outils de qualité frontend (ESLint, TypeScript), voir `docs/reactony.md` section Quality Assurance.
