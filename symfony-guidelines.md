@@ -459,6 +459,49 @@ public function estimate(array $data): array
 
 Cas observé (corrigé) : `FarmEstimationService` wrappait `RetryableHttpClient` dans un `while` maison avec un post-loop check qui throwait sur `$retryCount === MAX_RETRIES` — donc la 3ᵉ tentative réussie à 200 throwait quand même. Résultat : 6 × 500 en prod.
 
+### Rate Limiter sur endpoints publics
+
+Les endpoints qui acceptent du trafic non authentifié ou bon marché à fire massivement doivent être rate-limitées au niveau controller, via `symfony/rate-limiter`. Cas d'école : login, geodata/autocomplete, upload fichier, reset password, tout POST public.
+
+```yaml
+# config/packages/rate_limiter.yaml
+framework:
+    rate_limiter:
+        anonymous_api:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 minute'
+        upload:
+            policy: 'token_bucket'
+            limit: 10
+            rate: { interval: '1 minute', amount: 10 }
+```
+
+```php
+public function geodata(
+    Request $request,
+    #[MapQueryString] GeodataQuery $query,
+    #[Autowire('@limiter.anonymous_api')] RateLimiterFactory $limiter,
+): JsonResponse {
+    $limiter->create($request->getClientIp() ?? 'anon')->consume()->ensureAccepted();
+    // ...
+}
+```
+
+Sur une `TooManyRequestsHttpException`, le framework renvoie automatiquement un 429 avec les headers `Retry-After` et `X-RateLimit-*`. Côté front, `handleSdkError` doit catcher 429 comme une erreur non-422 (retry user-side OK).
+
+Endpoints à rate-limiter par défaut dans un projet Symfony+React :
+- `POST /api/profile/save` et autres mutations auth'd (limite large, 60/min/user)
+- `POST /api/*/upload` (limite serrée, 10/min)
+- `GET /api/*/geodata` / autocompletes externes (limite large car appelé vite côté front debounced)
+- Endpoints qui tapent une API payante (OpenAI, Hubspot forms, etc.)
+
+### Webhook component — pattern cible pour les webhooks entrants
+
+Quand un projet accumule 3+ webhooks entrants différents (Webflow, Hubspot, Stripe, Mailjet…), migrer depuis les controllers bespoke vers le `symfony/webhook` component. Bénéfices : abstraction uniforme (`AbstractRequestParser` + `RemoteEvent` + `#[AsRemoteEventConsumer]`), retry async via `remote_event` transport, signature-check standardisée.
+
+Pas de parser built-in pour Webflow/Hubspot/Stripe — on écrit le sien. Tant qu'on n'a que 1-2 webhooks, la controller bespoke reste acceptable, mais la convention cible en Symfony 8 est le component. Ne pas ajouter un 3ème webhook custom sans évaluer la migration.
+
 ---
 
 ## Logging & Sentry

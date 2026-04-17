@@ -367,6 +367,45 @@ Symfony renvoie automatiquement :
 
 > **Gotcha enum nullable** : React-hook-form défaulte les selects enum à `""` quand non rempli. Côté back, `Enum::from('')` throw un `ValueError` → 500. Soit le controller coerce `'' → null` avant denormalize (cf. `symfony-guidelines.md` section 4), soit le front omet la clé. On fait les deux par sécurité.
 
+### Le choix de lib formulaire (2026)
+
+`react-hook-form` + `zod` + `@hookform/resolvers` est le stack confirmé pour ce projet. La question revient souvent ; voici la décision pour ne pas y repasser :
+
+- **Pas de migration vers TanStack Form.** Coût non trivial (réécrire `handleSdkError`, reporter tous les `setError`), gain marginal vu qu'openapi-ts + Zod couvrent déjà la type-safety bout-en-bout. RHF reste le choix.
+- **Pas de migration vers React 19 Actions** (`useActionState`) pour les forms avec validation serveur structurée. Le mapping `violations[].propertyPath` → erreurs par champ n'est pas natif dans Actions, et Actions veut posséder le `pending/error` state que TanStack Query possède déjà. Double-ownership awkward.
+- **Oui à `useOptimistic`** pour les mutations UI-instant (toggle favori, add to list, reorder). Compose proprement avec RHF + TanStack Query sans conflit.
+- **Oui à `useFormStatus`** pour supprimer le prop-drilling de `isSubmitting` sur les boutons submit imbriqués profondément.
+
+```tsx
+// useFormStatus — le bouton se reading lui-même son état depuis le <form> parent
+import { useFormStatus } from 'react-dom';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Button type="submit" disabled={pending}>Enregistrer</Button>;
+}
+```
+
+```tsx
+// useOptimistic — UI instant pendant qu'une mutation TanStack Query est en vol
+const [optimisticFavs, addOptimisticFav] = useOptimistic(
+  favorites,
+  (state, newId: number) => [...state, newId],
+);
+
+const mutation = useMutation({
+  mutationFn: (id: number) => postFavorite({ body: { id } }),
+  onError: () => toast.error('Échec'),
+});
+
+const toggle = (id: number) => {
+  addOptimisticFav(id);
+  mutation.mutate(id);
+};
+```
+
+À utiliser pour les mutations "réversibles / non critiques". Pas pour une création d'entité qui peut échouer visiblement côté backend.
+
 ```tsx
 const mutation = useMutation({
   mutationFn: async (values: FormValues) => {
