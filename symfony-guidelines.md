@@ -356,6 +356,33 @@ public function save(
 }
 ```
 
+### Coercion chaînes vides → `null` pour les enums nullables
+
+Les formulaires React (react-hook-form) défaultent les champs non initialisés à `""`. Le `BackedEnumNormalizer` de Symfony appelle `Enum::from('')` qui throw `ValueError`, résultant en un 500 côté user. Pour tout champ enum-backed nullable exposé à un form React, coerce l'empty string en `null` avant la dénormalisation :
+
+```php
+public function save(Request $request, DenormalizerInterface $denormalizer): Response
+{
+    $data = $request->getPayload()->all();
+
+    // React-hook-form envoie "" quand un select enum n'est pas rempli.
+    // MemberType::from('') throw ValueError → 500 sans le coerce.
+    foreach (['type', 'ppHorizonInstallation'] as $enumField) {
+        if (isset($data[$enumField]) && '' === $data[$enumField]) {
+            $data[$enumField] = null;
+        }
+    }
+
+    $denormalizer->denormalize($data, User::class, 'array', [
+        AbstractNormalizer::OBJECT_TO_POPULATE => $this->getUser(),
+        AbstractNormalizer::GROUPS => ['user:write'],
+    ]);
+    // ...
+}
+```
+
+Alternative côté front : omettre la clé quand elle est vide. Le backend reste défensif.
+
 ### Upload de fichiers — `#[MapUploadedFile]`
 
 Pour les endpoints recevant un fichier, utiliser `#[MapUploadedFile]` au lieu de `$request->files->get()` :
@@ -408,6 +435,69 @@ class StepCompletionHandler
 ## 6. Api/
 
 APIs externes avec authentification. URLs et credentials dans `.env`, injectés via `services.yaml`.
+
+### Retry configuré au niveau DI, pas dans le service
+
+`config/packages/http_client.yaml` configure déjà des clients scopés (`webflow.client`, `discord.client`, etc.) avec `retry_failed` : 3 tentatives, backoff exponentiel 1s→10s sur les codes `[0, 429, 500, 502, 503, 504]`.
+
+**Ne pas ré-implémenter** de boucle retry par-dessus — ni avec `RetryableHttpClient` dans le service, ni avec un `while` maison. Les services injectent le client scopé directement et laissent la couche DI gérer les retries :
+
+```php
+// OK — le client scopé gère le retry
+public function __construct(private HttpClientInterface $httpClient) {}
+
+public function estimate(array $data): array
+{
+    $response = $this->httpClient->request('POST', $url, ['json' => $data]);
+    if (200 !== $response->getStatusCode()) {
+        $this->logger->error('Upstream non-200', ['status' => $response->getStatusCode()]);
+        throw new \RuntimeException('...');
+    }
+    return $response->toArray(false);
+}
+```
+
+Cas observé (corrigé) : `FarmEstimationService` wrappait `RetryableHttpClient` dans un `while` maison avec un post-loop check qui throwait sur `$retryCount === MAX_RETRIES` — donc la 3ᵉ tentative réussie à 200 throwait quand même. Résultat : 6 × 500 en prod.
+
+---
+
+## Logging & Sentry
+
+Le handler Sentry Monolog est configuré à niveau `ERROR` (cf. `config/packages/sentry.yaml`). Les niveaux inférieurs ne remontent **pas** à Sentry.
+
+| Niveau | Destination | À utiliser pour |
+|---|---|---|
+| `$logger->notice()` | Logs Clever uniquement | Info debug, traces |
+| `$logger->warning()` | Logs Clever uniquement | Anomalie non bloquante (upstream flaky, retry) |
+| `$logger->error()` | Logs Clever + **Sentry** | Tout ce qui mérite qu'un humain regarde |
+| `$logger->critical()` | Logs Clever + **Sentry** | Erreur bloquante / data corruption |
+
+Règle : si on attend d'un humain qu'il réagisse, c'est `error`. Sinon c'est `warning` ou `notice`.
+
+### Exceptions ignorées globalement
+
+`ignore_exceptions` dans `sentry.yaml` filtre les exceptions qui ne sont pas des bugs applicatifs :
+
+- `Symfony\Component\HttpKernel\Exception\NotFoundHttpException` — 404 = "resource not found", pas un bug. Ça reste dans les access logs Clever si audit nécessaire.
+- `Symfony\Component\ErrorHandler\Error\FatalError` + `FatalErrorException` — remontés par PHP, déjà capturés par les autres handlers.
+
+Pour ajouter une classe à ignorer, éviter les catégories trop larges (ex. ignorer toutes les `HttpException` masquerait de vrais bugs). Préférer la classe précise.
+
+### Catch upstream + log + swallow
+
+Pattern pour les APIs externes non critiques (Webflow, Hubspot, Airtable) : catch, log `error`, ne pas relancer. Le cron suivant ré-essaiera naturellement.
+
+```php
+try {
+    $this->hubspotApi->updateContact($email, $data);
+} catch (\Exception $e) {
+    $this->logger->error('HubSpot updateContact failed', [
+        'email' => $email,
+        'error' => $e->getMessage(),
+    ]);
+    // swallow — ne pas bloquer le flow user, Sentry a capturé via le handler monolog
+}
+```
 
 ---
 

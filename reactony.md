@@ -267,6 +267,30 @@ const mutation = useMutation({
 });
 ```
 
+#### ⚠️ Convention : guard client-side sur la taille
+
+Toujours valider `file.size` **avant** l'appel réseau et afficher un toast explicite. Raison : PHP drop silencieusement les uploads qui dépassent `upload_max_filesize` / `post_max_size` (SAPI) **avant** que Symfony n'exécute la contrainte `Assert\File(maxSize: …)`. Dans ce cas, `RequestPayloadValueResolver` voit un payload `null` et throw `HttpException(422)` **avec message vide** — le front reçoit un 422 sans `violations` et le toast reste muet. On l'a vécu avec LAGRANGE-27 (iPhones uploadant des photos > 5 MB).
+
+Pattern standard, limite front = limite back :
+
+```tsx
+const AVATAR_MAX_SIZE_MB = 5; // keep in sync with Assert\File(maxSize) backend
+
+setInput={(file) => {
+  const f = file as File | null;
+  if (!f) return;
+  if (f.size > AVATAR_MAX_SIZE_MB * 1024 * 1024) {
+    toast.error(
+      `Photo trop grosse (${(f.size / 1024 / 1024).toFixed(1)} Mo). Maximum ${AVATAR_MAX_SIZE_MB} Mo.`
+    );
+    return;
+  }
+  uploadMutation.mutate(f);
+}}
+```
+
+Le backend garde sa contrainte `Assert\File(maxSize)` comme dernier rempart (bypass volontaire du front). Les deux limites doivent rester alignées.
+
 ### Suppression (DELETE)
 
 ```php
@@ -338,6 +362,10 @@ Symfony renvoie automatiquement :
 - **422** → retourne `Record<string, string>` (erreurs par champ, parsées depuis `violations`)
 - **Autre erreur (403, 500...)** → `throw new Error(...)` (catchée par `onError`)
 - **Pas d'erreur** → retourne `null`
+
+> **Gotcha `MapUploadedFile`** : quand PHP drop l'upload au niveau SAPI (`upload_max_filesize` dépassé), le resolver throw un `HttpException(422)` **avec body vide**, pas de `violations`. Le toast est muet. Solution : guard `file.size` côté front (cf. convention plus haut). Voir aussi `symfony-guidelines.md` section 6 pour le backend.
+
+> **Gotcha enum nullable** : React-hook-form défaulte les selects enum à `""` quand non rempli. Côté back, `Enum::from('')` throw un `ValueError` → 500. Soit le controller coerce `'' → null` avant denormalize (cf. `symfony-guidelines.md` section 4), soit le front omet la clé. On fait les deux par sécurité.
 
 ```tsx
 const mutation = useMutation({
