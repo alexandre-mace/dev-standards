@@ -793,7 +793,18 @@ Le `queryClient` partagé (`assets/lib/queryClient.ts`) a des defaults sensibles
 
 ### Performance — React Compiler
 
-Le [React Compiler](https://react.dev/learn/react-compiler) auto-memoize les composants et valeurs, éliminant le besoin de `useMemo`, `useCallback`, et `React.memo` dans la plupart des cas. Fonctionne avec React 17+ via le plugin Babel/Vite.
+Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet** via `babel-plugin-react-compiler` dans `vite.config.js` + `eslint-plugin-react-compiler` en warn.
+
+**Conséquence sur le code à écrire** :
+- Ne pas ajouter `useMemo` / `useCallback` / `React.memo` "par précaution". Le compiler les pose automatiquement là où c'est nécessaire.
+- Les laisser **uniquement** quand :
+  - un profilage (React DevTools Profiler) montre un re-render coûteux spécifique
+  - l'ESLint warning `react-compiler/react-compiler` remonte un bail sur le composant (donc le compiler ne le mémoize pas, rare cas où un `useMemo` explicite a du sens)
+- Les `useMemo`/`useCallback` existants dans le code pré-compiler ne sont pas à enlever activement — ils deviennent no-op (le compiler en met par-dessus). Nettoyage opportuniste quand on touche le fichier.
+
+**Composants bailés (compiler skip)** : le plugin ESLint signale en warn les composants qui violent les Rules of React (side effects dans render, writes à `window.*`, refs mutées depuis un callback externe, `// eslint-disable-next-line react-hooks/exhaustive-deps`). Ces composants fonctionnent correctement mais ne bénéficient pas de l'auto-memoization. Pas bloquant ; fixer au cas par cas si le profilage l'exige.
+
+**Règle d'or** : écris le code React le plus simple possible. Le compiler optimise.
 
 ---
 
