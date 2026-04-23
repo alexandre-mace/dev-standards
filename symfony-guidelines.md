@@ -103,6 +103,34 @@ private AdvertStatus $status = AdvertStatus::Pending;
 
 **Nommage** : singulier (`AdvertStatus`, `MemberType`).
 
+#### Enums exposés dans le back office (EasyAdmin v5)
+
+Deux règles pour ne pas fighter le framework :
+
+1. **Laisser EA gérer le round-trip.** Dès que la colonne Doctrine a `#[ORM\Column(enumType: MyEnum::class)]`, `ChoiceField::new('monChamp')` détecte les cases tout seul. Ne pas ajouter `setChoices()` ni `choice_value()` — ça casse l'edit form (cf. LAGRANGE-3Q / LAGRANGE-4V, où un `choice_value` polymorphe avait dû être ajouté pour rattraper un `setChoices()` redondant).
+
+2. **Implémenter `Symfony\Contracts\Translation\TranslatableInterface` sur l'enum** pour que EA appelle `trans()` et affiche un libellé humain au lieu du raw value. On réutilise `label()` :
+
+   ```php
+   use Symfony\Contracts\Translation\TranslatableInterface;
+   use Symfony\Contracts\Translation\TranslatorInterface;
+
+   enum AdvertStatus: string implements TranslatableInterface
+   {
+       case Published = 'published';
+       // ...
+
+       public function label(): string { /* ... */ }
+
+       public function trans(TranslatorInterface $translator, ?string $locale = null): string
+       {
+           return $this->label();
+       }
+   }
+   ```
+
+   Pas besoin de fichiers de traduction : `trans()` renvoie directement la string.
+
 ### Données de référence
 
 Pour les grands jeux de données (départements, régions) qui ne sont pas des enums :
@@ -702,7 +730,21 @@ Pour un simple `new Entity()` avec quelques setters, pas besoin de Factory.
 
 ## 13. Testing
 
-Tester les méthodes Domain critiques (règles métier, calculators, scores). Le reste se teste en fonctionnel si nécessaire.
+Trois couches, par ordre de coût croissant :
+
+1. **Unit — `tests/Unit/`.** Domain pur (calculators, enums avec logique, value objects). Pas de DB, pas de container Symfony. C'est ce qui coûte le moins et rattrape les bugs de règle métier.
+2. **Integration — `tests/Integration/`.** Service + DB réelle (SQLite en mémoire ou fichier). Utile pour les services qui orchestrent Doctrine, les repositories à requêtes non-triviales, les event listeners Doctrine.
+3. **Functional — `tests/Functional/`.** Contract HTTP : `WebTestCase` + `KernelBrowser`, on tape sur les routes comme un client, on asserte le code de réponse + l'état DB. C'est le filet pour les refactors frontend qui parlent à l'API (tunnel, webhooks) — si un refactor casse le contrat, la suite passe rouge avant le merge.
+
+### Quand ne pas tester
+
+- getters/setters, mappers 1-pour-1, wrappers Doctrine passthrough
+- configuration pure (classes qui ne font que exposer des env vars)
+- code mort ou déprécié qui va disparaître
+
+Écrire un test parce qu'on a un fichier à toucher, pas parce qu'il existe. Si un service orchestre 6 autres services avec beaucoup de plomberie, c'est souvent le signe qu'il faut le découper — pas qu'il faut écrire un test qui mocke tout.
+
+### Exemple unit — Domain calculator
 
 ```php
 public function testCalculateScores(): void
@@ -712,6 +754,104 @@ public function testCalculateScores(): void
     $this->assertSame(50, $scores[0]['score']);
 }
 ```
+
+### Exemple integration — service + DB transactionnelle
+
+Une classe de base qui wrappe chaque test dans une transaction et rollback au teardown. Pas besoin de `dama/doctrine-test-bundle` si on veut garder la main.
+
+```php
+abstract class DatabaseTransactionTestCase extends KernelTestCase
+{
+    protected EntityManagerInterface $entityManager;
+    protected Connection $connection;
+    private static bool $schemaCreated = false;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->entityManager = self::bootKernel()->getContainer()->get('doctrine')->getManager();
+        $this->connection = $this->entityManager->getConnection();
+
+        if (!self::$schemaCreated) {
+            (new SchemaTool($this->entityManager))->createSchema(
+                $this->entityManager->getMetadataFactory()->getAllMetadata(),
+            );
+            self::$schemaCreated = true;
+        }
+        $this->connection->beginTransaction();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->connection->isTransactionActive()) {
+            $this->connection->rollBack();
+        }
+        parent::tearDown();
+    }
+}
+```
+
+### Exemple functional — contract test d'un endpoint
+
+```php
+final class ValidateSharesTest extends WebTestCase
+{
+    public function testValidPayloadCreatesInvestmentInIdentityStatus(): void
+    {
+        $client = self::createClient();
+        // … boot schema, seed fixtures, login user …
+
+        $client->request('POST', '/tunnel/validate/shares',
+            server: ['CONTENT_TYPE' => 'application/json'],
+            content: json_encode(['shares' => 5, 'fonciere' => 'F2', 'taxDeduction' => true]),
+        );
+
+        self::assertSame(200, $client->getResponse()->getStatusCode());
+        $investment = $repo->findOneBy(['relatedUser' => $user]);
+        self::assertSame(InvestmentStatus::STATUS_IDENTITY, $investment?->getStatus());
+    }
+}
+```
+
+### Safeguard obligatoire : `tests/bootstrap.php` refuse les DB distantes
+
+Un test qui pointe par mégarde sur la DB de préprod ou de prod efface tout. Paranoïa utile : au boot, si l'URL sent le distant, `exit 1` avant même que PHPUnit démarre.
+
+```php
+$databaseUrl = (string) ($_SERVER['DATABASE_URL'] ?? $_ENV['DATABASE_URL'] ?? '');
+foreach (['clever-cloud', 'production', '.rds.amazonaws.com', /* patterns spécifiques */] as $needle) {
+    if (str_contains(strtolower($databaseUrl), $needle)) {
+        fwrite(\STDERR, "Refusing to run tests: DATABASE_URL looks remote ($needle)\n");
+        exit(1);
+    }
+}
+```
+
+### Mocker les API externes via `MockHttpClient`
+
+Un run de tests ne doit jamais toucher une API externe (HubSpot, Slack, webhooks tiers). Pattern : remplacer le `HttpClientInterface` injecté dans chaque API wrapper par un `MockHttpClient` qui renvoie un `200 {}` pour tout.
+
+À déclarer dans `config/services_test.yaml` (loaded **après** `config/services.yaml` par MicroKernelTrait — donc `config/packages/test/services.yaml` ne suffit **pas**, ce piège a coûté 3 essais) :
+
+```yaml
+services:
+    test.mock_http_client:
+        class: App\Test\TestMockHttpClient  # wrappe MockHttpClient avec une factory qui renvoie '{}'
+
+    App\Api\HubspotApi:
+        autowire: false
+        arguments:
+            $httpClient: '@test.mock_http_client'
+            # + tous les autres args de __construct, parce que autowire: false
+```
+
+Pour les clients qui ne passent pas par `HttpClientInterface` (ex. Google SDK), mocker au niveau du service dans le `setUp()` du test concerné.
+
+### Safety-net-first avant un gros refactor
+
+Avant de refactorer un composant gros et fragile (> 500 lignes, beaucoup de branches, zéro test), écrire d'abord les tests qui pinent son comportement visible **actuel** : happy path, cas d'erreur, guards métier. Refactorer **ensuite**, en s'assurant que la suite reste verte. Si tu refactores d'abord, tu n'as aucun moyen de savoir que tu n'as rien cassé.
+
+C'est particulièrement vrai pour les composants côté tunnel d'investissement / paiement : une régression silencieuse coûte du CA.
 
 ---
 

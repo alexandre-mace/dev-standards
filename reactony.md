@@ -855,7 +855,133 @@ pnpm tsc --noEmit
 
 ---
 
-## 9. Résumé
+## 9. Tests
+
+Jest + `@testing-library/react` + `@testing-library/user-event`. jsdom comme environnement.
+
+```bash
+pnpm test               # run complet
+pnpm test -- --watch    # mode watch
+```
+
+### Quoi tester — par ordre de ROI
+
+1. **Fonctions pures** (calculs rendement, helpers métier, formatters). Pas de mock, pas de DOM. Les bugs ici dérivent les chiffres affichés au client — ça se voit et ça fait perdre du CA.
+2. **Composants complexes avant un refactor** (wizards multi-step, tunnels, composants > 500 lignes). Écrire les tests qui pinent le comportement visible **actuel** avant de changer les entrailles.
+3. **Le reste — skip.** Un composant de présentation qui passe 3 props à 3 shadcn children, pas de test. Si tu ajoutes une feature à un composant simple, un test ne rattrape quasi-rien que TypeScript + ESLint ne voient déjà.
+
+### Safety-net-first avant un gros refactor
+
+Le tunnel d'investissement a des composants de 500-700 lignes sans tests historiques. Les migrer (ex. `useState` → RHF + Zod) sans filet = rouler à l'aveugle, casse silencieusement le tunnel = CA perdu.
+
+Process :
+1. **Écrire les tests RTL** qui exercent les flows visibles (happy path + guards + erreurs serveur). Assertions sur le contrat utilisateur (ce qui s'affiche, ce qui est submit), pas sur les internals.
+2. **Vérifier qu'ils passent verts sur le code actuel.**
+3. **Refactorer.** La suite doit rester verte. Si un test casse, c'est un vrai changement de comportement — soit c'est intentionnel (mettre à jour le test), soit c'est une régression (corriger le code).
+
+### Gotchas Jest + React 19 + shadcn
+
+Ces pièges coûtent chacun 30 min à 1 h à diagnostiquer la première fois.
+
+**`lucide-react` est ESM-only.** Jest ne transpile pas `node_modules` par défaut. Plutôt que de fighter avec `transformIgnorePatterns`, mocker globalement via `jest.config.js` :
+
+```js
+moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/assets/$1',
+    '^lucide-react$': '<rootDir>/assets/__mocks__/lucide-react.tsx',
+},
+```
+
+Le mock renvoie un `<span>` pour chaque icône via un `Proxy` — chaque nom d'icône devient un composant no-op valide.
+
+**Radix (shadcn Select, Dialog, Popover) est fragile dans jsdom.** Les portals + pointer events + focus trap se comportent mal sans un vrai layout engine. Pour les tests qui ont juste besoin de vérifier le contrat `onValueChange`, **mocker localement** shadcn Select en `<select>` natif :
+
+```tsx
+jest.mock('@/components/ui/select', () => {
+    const React = jest.requireActual('react');
+    const Ctx = React.createContext({});
+    return {
+        Select: ({value, onValueChange, children}) => (
+            <Ctx.Provider value={{value, onValueChange}}>{children}</Ctx.Provider>
+        ),
+        SelectTrigger: () => {
+            const {value, onValueChange} = React.useContext(Ctx);
+            return <select role="combobox" value={value ?? ''}
+                           onChange={(e) => onValueChange?.(e.target.value)} />;
+        },
+        SelectValue: () => null,
+        SelectContent: ({children}) => <div style={{display: 'none'}}>{children}</div>,
+        SelectItem: ({value, children, disabled}) => /* injecte une <option> dans le select via useLayoutEffect */,
+    };
+});
+```
+
+Même logique pour Dialog / Popover si un test en a besoin — mais le plus souvent, ces composants sont hors du chemin critique et les tests peuvent les ignorer.
+
+**React 19 + jsdom : ne pas remplacer `navigator`.** `react-dom` accède à `navigator.userAgent`. Si le `test-setup.ts` fait `Object.defineProperty(window, 'navigator', {value: {language: 'fr-FR'}})`, l'objet entier est remplacé et `userAgent` devient `undefined` → crash cryptique au premier `render()`. Solution : ne définir QUE la propriété qu'on veut override :
+
+```ts
+Object.defineProperty(window.navigator, 'language', {
+    value: 'fr-FR',
+    configurable: true,
+});
+```
+
+**`window.location.reload()` est non-writable en jsdom.** Si le composant appelle `window.location.reload()` sur succès, ni `jest.spyOn` ni `Object.defineProperty` ne fonctionnent. Patcher via le prototype :
+
+```ts
+beforeAll(() => {
+    const proto = Object.getPrototypeOf(window.location);
+    proto.reload = jest.fn();
+    proto.assign = jest.fn();
+});
+```
+
+**shadcn `<Label>` n'est pas wired via `htmlFor`.** `getByLabelText(/Nom/)` ne résout pas. Soit ajouter `htmlFor` dans les composants concernés (mieux, mais invasif), soit utiliser un helper :
+
+```ts
+function inputByLabel(labelText: RegExp): HTMLInputElement {
+    for (const label of screen.getAllByText(labelText)) {
+        const input = label.closest('div')?.querySelector('input, textarea');
+        if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
+            return input as HTMLInputElement;
+        }
+    }
+    throw new Error(`No input found for label ${labelText}`);
+}
+```
+
+**Le SDK généré par hey-api est ESM avec `import.meta`.** Pour les composants qui l'importent, mocker `@/lib/api` dans le test plutôt que d'essayer de le transpiler :
+
+```ts
+jest.mock('@/lib/api', () => ({
+    postSomeEndpoint: jest.fn(),
+}));
+const {postSomeEndpoint} = jest.requireMock('@/lib/api');
+```
+
+### Tests de mutations — wrapper `QueryClient`
+
+Chaque composant qui utilise `useMutation` / `useQuery` doit être rendu dans un `QueryClientProvider`. Dans un test, créer un client jetable avec retry désactivé (sinon les erreurs explosent le timeout) :
+
+```tsx
+function renderWithQueryClient(ui: ReactElement) {
+    const qc = new QueryClient({
+        defaultOptions: {mutations: {retry: false}, queries: {retry: false}},
+    });
+    return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+```
+
+### Ce qu'il n'est PAS utile de tester côté front
+
+- Un composant qui ne fait qu'appeler un SDK et afficher le résultat : le contract test backend (functional PHPUnit) couvre déjà le contrat API, TypeScript couvre le typage, ESLint la structure.
+- Les snapshot tests de rendu complet : ils cassent au moindre changement de classe Tailwind, zéro signal utile.
+- Les composants de UI kit (shadcn passthrough).
+
+---
+
+## 10. Résumé
 
 | Quoi | Comment |
 |------|---------|
