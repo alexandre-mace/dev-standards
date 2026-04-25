@@ -853,6 +853,12 @@ pnpm tsc --noEmit
 
 > Tous ces checks sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet. Pour les outils de qualité backend (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), voir `docs/symfony-guidelines.md` section 14.
 
+### Pre-commit — husky + lint-staged
+
+Le garde-fou universel côté front : ESLint + Prettier tournent automatiquement sur les fichiers `*.{ts,tsx}` stagés avant chaque commit. `tsc --noEmit` et la détection de drift sur `openapi.yaml` / `assets/lib/api/` tournent en plus au niveau projet. Setup mutualisé avec le backend (PHP-CS-Fixer, PHPStan, `lint:container`, `schema:validate`) dans une seule config. Détails et timings dans `docs/symfony-guidelines.md` section Quality Assurance.
+
+En session de dev assistée par IA, lancer `/quality` avant de déclarer une tâche terminée quand du code a été modifié — le pre-commit reste le filet final, pas le premier recours.
+
 ---
 
 ## 9. Tests
@@ -981,7 +987,51 @@ function renderWithQueryClient(ui: ReactElement) {
 
 ---
 
-## 10. Résumé
+## 10. Anti-patterns interdits
+
+Règles noires côté front. Si tu les vois dans le code existant, c'est à refactorer — pas à copier.
+
+**Data fetching / mutations**
+- `useEffect(() => { fetch('/api/...') })` + `useState` — utiliser `useQuery` avec les `queryOptions` auto-générés par hey-api
+- `fetch()` direct — utiliser les fonctions SDK générées (`postX`, `getY`, etc.)
+- Mutation sans `handleSdkError` — les 422 sont perdues silencieusement côté UX
+- `new QueryClient()` dans un composant — importer le `queryClient` partagé
+- Composant monté depuis Twig qui utilise `useQuery` / `useMutation` sans `<QueryClientProvider>` wrapper
+
+**Formulaires**
+- `useState` pour l'état d'un form multi-champs avec validation — utiliser RHF + Zod
+- Zod schéma écrit à la main pour un payload API — importer depuis `zod.gen`
+- Catch 422 bespoke — utiliser `handleSdkError` + `form.setError` par champ
+- Form auth (login, inscription, mot de passe) en React — garder en Twig + Symfony Form
+- Form React qui manipule directement l'entité plutôt qu'un payload dérivé — passer par un DTO backend quand le form modifie un sous-ensemble de champs
+
+**Upload**
+- Upload fichier sans guard `file.size` côté front — PHP SAPI drop silencieux au-delà de `upload_max_filesize`, le resolver `MapUploadedFile` renvoie un 422 vide et le toast reste muet. Limite front = limite back (`Assert\File(maxSize)`)
+- Upload via `FormData` fait main — le SDK gère le multipart automatiquement via `formDataBodySerializer`
+
+**Typage**
+- `any` — seule exception tolérée : `form.setError(field as any, ...)` (workaround documenté RHF pour le typage de `Object.entries()`)
+- Props typées inline sans `interface` — déclarer une `interface Props` dans le même fichier
+- `as any` sur un payload envoyé au SDK — structurer l'état du form pour matcher le type généré, ou caster vers le type généré
+
+**React 19 / React Compiler**
+- `useMemo` / `useCallback` / `React.memo` sans profilage concret — le React Compiler les pose automatiquement, les ajouter à la main est bruit (et ils deviennent no-op)
+- `forwardRef` — React 19 accepte `ref` comme prop directe
+- `useEffect` pour dériver un état d'un autre état — calculer pendant le render
+
+**Styling / UI kit**
+- `<button>` brut — utiliser `<Button>` shadcn avec variants
+- `className={...ternary...}` dans un template literal — utiliser `cn()` de shadcn pour les classes conditionnelles
+- `alert()` ou `window.confirm()` — utiliser `toast` de sonner et les composants `Dialog` / `AlertDialog` de shadcn
+- Icône `lucide-react` montée à la main dans un bouton avec loading — utiliser le loading state fourni par le composant shadcn
+
+**Imports / structure**
+- Imports relatifs `../../components/...` — utiliser l'alias `@/`
+- Barrel file `index.ts` qui réexporte N composants sans rapport — uniquement pour des sets de variants cohérents
+
+---
+
+## 11. Résumé
 
 | Quoi | Comment |
 |------|---------|

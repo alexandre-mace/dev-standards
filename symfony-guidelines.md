@@ -14,6 +14,70 @@
 
 ---
 
+## Feature playbook — one-shot
+
+Séquence standard pour implémenter une feature full-stack. L'IA qui la suit dans l'ordre évite les questions aller-retour et livre une feature cohérente du premier coup.
+
+### 1. Modéliser le contrat backend
+
+- **Lecture** : identifier l'entité + `#[Groups]` de read (ou créer un Formatter si URLs calculées, agrégats, ou données croisées)
+- **Filtre GET** : DTO dans `Dto/` avec `#[MapQueryString]`
+- **Écriture** :
+  - Payload = entité 1:1 → `#[MapRequestPayload]` sur l'entité + `#[Assert\...]` sur les champs
+  - Sous-ensemble d'une grosse entité → DTO allowlist (`#[Map(target: Entity::class)]`) + `ObjectMapper`
+  - Pas d'entité → DTO simple
+- **Upload fichier** : `#[MapUploadedFile(constraints: [new Assert\File(maxSize: 'XM')])]`, identifiant en param de route
+
+### 2. Route controller
+
+- `#[Route(path: '/api/...', methods: [...], format: 'json')]` — `format: 'json'` **obligatoire**
+- `#[IsGranted('ROLE_USER')]` sur méthode ou classe — obligatoire sur `/api/`
+- CRUD simple → EntityManager direct dans le controller. Logique métier → extraire Domain + Service.
+- Appel externe non critique → catch + `logger->error()` + swallow (le flow user ne doit pas casser pour un upstream flaky)
+
+### 3. Génération des types
+
+- `make types` (ou équivalent projet) → types TS + Zod + SDK + queryOptions dans `assets/lib/api/`
+- CI : `make types && git diff --exit-code assets/lib/api/` détecte le drift
+
+### 4. Composant React
+
+- **Multi-champs avec validation** : shadcn `Form` + RHF + `zodResolver(zSchema depuis zod.gen)` + `useMutation` + `handleSdkError` + `form.setError` par champ
+- **Action simple / toggle / inline edit** : `useMutation` + SDK + `handleSdkError` + toast
+- **Lecture dynamique** : `useQuery({ ...getXOptions({...}) })`
+- **Mount point Twig** : wrapper la racine avec `<QueryClientProvider>` + `<Toaster>` (factoriser dans un `<AppProviders>` réutilisable)
+- **Upload** : guard `file.size` côté front, limite alignée avec `Assert\File(maxSize)` backend
+
+### 5. Invalidation du cache
+
+- Toute mutation qui modifie des données lues ailleurs → `queryClient.invalidateQueries({ ...getXOptions(...) })` dans `onSuccess`
+
+### 6. Tests
+
+- **Functional obligatoire** pour toute nouvelle route API non triviale (contrat HTTP + état DB)
+- Domain pur → unit sans mock
+- Composant React complexe (wizard / tunnel / > 500 lignes) → RTL ; composant simple → skip
+- Refactor d'un composant fragile → **safety-net-first** : écrire les tests qui pinent le comportement actuel **avant** de toucher
+
+### 7. Quality gate
+
+`/quality` (ou équivalent) doit passer vert avant merge : PHPStan level 8, PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`.
+
+### Definition of Done
+
+Une feature n'est "faite" que si **tous** ces points sont verts :
+
+- [ ] `/quality` passe
+- [ ] `make types` ne produit pas de drift dans `assets/lib/api/`
+- [ ] `doctrine:schema:validate --skip-sync` OK
+- [ ] `lint:container` OK
+- [ ] Functional test écrit pour toute nouvelle route API non triviale
+- [ ] Feature testée en navigateur — golden path + au moins un edge case
+- [ ] `#[IsGranted]` et `format: 'json'` présents sur les nouvelles routes `/api/`
+- [ ] Aucun anti-pattern de la section dédiée (notamment : `useEffect+fetch`, `$request->get()`, `new RetryableHttpClient`, `any` hors RHF `setError`)
+
+---
+
 ## PHP 8.4
 
 Le projet requiert PHP ≥ 8.4. Utiliser les features modernes : nullable explicite (`?Type $param = null`, l'implicite est déprécié), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
@@ -983,6 +1047,83 @@ composer audit
 
 > Tous ces checks (sauf Psalm) sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet (Symfony, Next.js, ou les deux). Pour les outils de qualité frontend (ESLint, TypeScript), voir `docs/reactony.md` section Quality Assurance.
 
+### Pre-commit — husky + lint-staged
+
+Le garde-fou universel : **aucun commit ne passe s'il ne respecte pas les règles**, qu'il vienne d'un humain ou d'un agent.
+
+```bash
+pnpm add -D husky lint-staged
+pnpm husky init
+```
+
+`.husky/pre-commit` :
+
+```sh
+pnpm lint-staged
+```
+
+`package.json` :
+
+```json
+"lint-staged": {
+    "*.php": [
+        "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --path-mode=intersection --"
+    ],
+    "*.{ts,tsx}": [
+        "eslint --fix",
+        "prettier --write"
+    ]
+}
+```
+
+lint-staged ne tourne que sur les fichiers **stagés**, donc c'est rapide même sur un gros projet. Les `fix` / `--write` re-stagent les fichiers auto-corrigés.
+
+> **Gotcha PHP-CS-Fixer** : avec plusieurs chemins en argument (cas lint-staged), il faut `--config=<path>` explicite et `--path-mode=intersection` pour que le finder de la config restreigne correctement aux fichiers passés. Le `--` sépare les options des chemins.
+
+### Checks project-wide dans le pre-commit
+
+lint-staged tourne au niveau fichier. Mais les checks qui ont besoin du projet entier (analyse statique, validation DI, drift des types générés) sont **assez rapides pour pre-commit** sur un projet Symfony moyen — pas d'excuse pour les reléguer en CI uniquement. Mesurer le coût réel avant de décider.
+
+Exemple `.husky/pre-commit` :
+
+```sh
+#!/usr/bin/env sh
+set -e
+
+pnpm exec lint-staged
+
+pnpm tsc --noEmit
+vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+php -d memory_limit=256M bin/console lint:container -q
+php -d memory_limit=512M bin/console doctrine:schema:validate --skip-sync -q
+
+# Detect drift between generated types and current entities/DTOs
+make types > /dev/null
+if ! git diff --quiet -- openapi.yaml assets/lib/api/; then
+    echo "✖ Generated types drifted. Re-stage with: git add openapi.yaml assets/lib/api/"
+    exit 1
+fi
+```
+
+Ordres de grandeur observés (projet Symfony + React de taille moyenne) :
+
+| Check | Temps typique |
+|---|---|
+| `lint:container` | ~0.5s |
+| `schema:validate --skip-sync` | ~0.3s |
+| `make types` + drift | ~2s |
+| `tsc --noEmit` | ~8s |
+| PHPStan level 8 (full) | ~8s |
+| **Total pre-commit** | **~15–20s** |
+
+Pas tolérable pour un projet où tu commits 10 fois par heure, mais pour un rythme feature normal (2–5 commits / feature), c'est le prix de la garantie "zéro régression silencieuse au commit". Si le projet grossit et que ça dépasse ~30s, dégrader vers "PHPStan + tsc en CI uniquement, le reste en pre-commit".
+
+**Seuls les tests (unit + functional) ne vont PAS en pre-commit** — ils peuvent monter à plusieurs minutes. Eux restent en CI.
+
+### Quand lancer `/quality` en session
+
+Lors d'une session de dev assistée par IA, lancer `/quality` **avant de déclarer une tâche terminée** si du code a été modifié. Ça rattrape les erreurs pendant la session (feedback immédiat) et évite qu'elles apparaissent seulement au pre-commit (feedback différé, coûteux à debugger). Le pre-commit reste le filet final — pas le premier recours.
+
 ---
 
 ## 15. Quand créer quoi ?
@@ -1118,3 +1259,59 @@ class AnalyticsCommand
 Le scheduler est consommé par le même worker que Messenger (`scheduler_default` transport). Les erreurs remontent dans Sentry/logs Symfony.
 
 Pour les commandes gourmandes en mémoire, utiliser `ini_set('memory_limit', ...)` dans la commande plutôt qu'un flag PHP CLI.
+
+---
+
+## 18. Anti-patterns interdits
+
+Règles noires, valables partout. Si tu les vois dans le code existant, c'est à refactorer — pas à copier.
+
+**Controller / Route**
+- Route `/api/` sans `format: 'json'` — les 422 partent en HTML, le front ne peut pas les parser
+- Route `/api/` sans `#[IsGranted]` sur la méthode ou la classe
+- `$request->get()` — supprimé en Symfony 8. Utiliser `$request->query`, `$request->request`, `$request->attributes`, ou les attributs de mapping
+- Controllers qui étendent `AbstractController` directement et typent `getUser()` comme `UserInterface` — créer un `AbstractAppController` qui retourne l'entité `User` typée et en hériter partout
+
+**Domain / Service**
+- Classe `Domain/` qui injecte un Repository, une API, ou `Filesystem` — Domain reçoit ses données en paramètre
+- Calculator qui accède à un repository — extraire le fetch dans `Service/`, Calculator reste pur
+- Service qui contient uniquement une règle métier pure — déplacer dans `Domain/`
+- Interface sur un service qui n'a qu'une implémentation — pas d'abstraction préventive
+- ValueObject, Aggregate, ou autre cérémonie DDD sans justification concrète
+
+**DTO / Payload**
+- DTO allowlist (`ObjectMapper`) avec `constructor`, `= null`, ou `readonly` sur les propriétés — casse le mapping partiel (les champs absents du JSON doivent rester **non initialisés**)
+- Filtre GET lu via `$request->query->get()` au lieu d'un DTO + `#[MapQueryString]`
+- Upload fichier via `$request->files->get()` — utiliser `#[MapUploadedFile]` avec les contraintes `Assert`
+
+**HttpClient / API externe**
+- `new RetryableHttpClient($client)` dans un service — retry se configure au niveau DI (`scoped_clients` + `retry_failed`)
+- Boucle `while ($attempts < $max)` autour d'un `$client->request()` — idem, c'est le job du DI
+- Endpoint public (login, autocomplete, upload, reset password) sans `RateLimiterFactory`
+
+**Command**
+- `extends Command` + `protected function execute()` — pattern invokable obligatoire : pas d'`extends`, `#[AsCommand]`, logique dans `__invoke()`, paramètres typés avec `#[Argument]` / `#[Option]`
+- `getDefaultName()` / `getDefaultDescription()` — supprimés en SF 8, utiliser les arguments nommés de `#[AsCommand]`
+- Cron déclaré dans un shell script ou `cron.json` — utiliser `#[AsCronTask]` sur la commande
+
+**Entity / Doctrine**
+- PHPDoc `@var` / `@param` / `@return` qui duplique un type PHP natif déjà présent — PHP-CS-Fixer supprime
+- Propriété `Collection` sans generic (`Collection<int, Entity>`) — PHPStan ne peut pas inférer le type en boucle
+- `DateTime` mutable — utiliser `DateTimeImmutable`
+- `#[ORM\Column(type: 'string')]` sur une propriété typée `string` — redondant depuis Doctrine ORM 3 (TypedFieldMapper). Type explicite uniquement quand PHP ne suffit pas (`text` vs `string`)
+
+**Logging / Sentry**
+- `logger->error()` pour une anomalie non bloquante (upstream flaky, retry réussi) — utiliser `warning` (Sentry ne remonte qu'à partir d'`ERROR`)
+- `ignore_exceptions` trop large (ex. `HttpException` entier) — ignorer la classe précise
+- Catch + re-throw d'une `RuntimeException` qui ne fait qu'envelopper l'originale sans ajouter d'info
+
+**Messenger**
+- Message qui contient une entité Doctrine, un `UploadedFile`, ou un callable — sérialisation fragile, garder des scalaires (ID + reload dans le handler)
+- Handler qui suppose que l'entité existe encore — recharger via repo et `if (!$entity) return`
+- Dispatch **avant** le `flush()` de l'entité concernée — le handler re-lira avant que la DB soit à jour
+
+**Tests**
+- Test qui pointe sur une DB prod/préprod — `tests/bootstrap.php` doit refuser via pattern matching sur `DATABASE_URL`
+- Test qui hit une API externe réelle — mocker au niveau DI via `MockHttpClient`
+- Refactor > 500 lignes sans test d'existants — écrire le safety-net **avant** de toucher
+- Test snapshot sur un rendu complet — casse au moindre changement de classe, zéro signal utile
