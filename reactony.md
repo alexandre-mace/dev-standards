@@ -863,87 +863,184 @@ En session de dev assistée par IA, lancer `/quality` avant de déclarer une tâ
 
 ## 9. Tests
 
-Jest + `@testing-library/react` + `@testing-library/user-event`. jsdom comme environnement.
+Stack standard, partagée par tous les projets Symfony+React. Pas de "léger" ou "lourd" — la même chose partout pour qu'un dev qui passe d'un projet à l'autre n'apprenne qu'une fois.
+
+| Couche | Outil | Rôle |
+|---|---|---|
+| Unit / composant | **Vitest 4** + `@testing-library/react` + `@testing-library/user-event` (jsdom) | Logique pure et composants isolés |
+| Mock SDK / API | **MSW 2** (Mock Service Worker) | Intercepte les requêtes réseau du SDK généré ; mocks réutilisables en Storybook et dev |
+| E2E / parcours | **Playwright** | Couvre les flows multi-pages (tunnel, paiement, signature) en vrai navigateur |
+| Accessibilité | **`@axe-core/playwright`** | Audit WCAG dans chaque spec E2E |
 
 ```bash
-pnpm test               # run complet
-pnpm test -- --watch    # mode watch
+pnpm test                # Vitest, run complet
+pnpm test --watch        # mode watch
+pnpm test:e2e            # Playwright
+pnpm test:e2e:ui         # Playwright en mode UI interactif
 ```
+
+> **Pourquoi Vitest et plus Jest** : projet sous Vite, donc Vitest partage la même config (alias `@/`, plugins, transformeurs TS/TSX). ESM natif → `lucide-react`, hey-api SDK et autres modules ESM marchent sans `transformIgnorePatterns`. Compatible React 19, 5–28× plus rapide que Jest selon la suite. L'API est quasi-identique : `vi` à la place de `jest`, `vi.mock()` hoisted comme `jest.mock()`, mêmes matchers via `@testing-library/jest-dom` (compatible Vitest).
 
 ### Quoi tester — par ordre de ROI
 
-1. **Fonctions pures** (calculs rendement, helpers métier, formatters). Pas de mock, pas de DOM. Les bugs ici dérivent les chiffres affichés au client — ça se voit et ça fait perdre du CA.
-2. **Composants complexes avant un refactor** (wizards multi-step, tunnels, composants > 500 lignes). Écrire les tests qui pinent le comportement visible **actuel** avant de changer les entrailles.
-3. **Le reste — skip.** Un composant de présentation qui passe 3 props à 3 shadcn children, pas de test. Si tu ajoutes une feature à un composant simple, un test ne rattrape quasi-rien que TypeScript + ESLint ne voient déjà.
+1. **Fonctions pures** (calculs rendement, helpers métier, formatters Zod, transforms). Pas de mock, pas de DOM. Les bugs ici dérivent les chiffres affichés au client — ça se voit et ça fait perdre du CA.
+2. **Composants de form** avec validation Zod / RHF (tunnel, paiement, beneficiary). Taper sur tous les champs invalides + le happy path + les erreurs serveur 422. Mocker le SDK via MSW.
+3. **Parcours E2E** des flows critiques : tunnel d'investissement complet, login, achat gift card, signature ZohoSign. **Un parcours = une spec Playwright.**
+4. **Composants complexes avant un refactor** (wizards multi-step, composants > 500 lignes). Écrire les tests qui pinent le comportement visible **actuel** avant de changer les entrailles.
+5. **Le reste — skip.** Un composant de présentation qui passe 3 props à 3 shadcn children, pas de test. TypeScript + ESLint suffisent.
+
+### Setup Vitest
+
+`vitest.config.ts` à la racine, partage la config Vite :
+
+```ts
+import {defineConfig, mergeConfig} from 'vitest/config';
+import viteConfig from './vite.config';
+
+export default mergeConfig(viteConfig, defineConfig({
+    test: {
+        environment: 'jsdom',
+        globals: true,                    // describe / it / expect dispo sans import
+        setupFiles: ['./assets/test-setup.ts'],
+        css: false,                       // pas besoin de parser le CSS
+    },
+}));
+```
+
+`assets/test-setup.ts` :
+
+```ts
+import '@testing-library/jest-dom/vitest';
+import {cleanup} from '@testing-library/react';
+import {afterEach, beforeAll, afterAll} from 'vitest';
+import {server} from './test-mocks/server';
+
+afterEach(() => cleanup());
+
+// MSW : intercepte toutes les requêtes du SDK pendant les tests
+beforeAll(() => server.listen({onUnhandledRequest: 'error'}));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+// Override propre de navigator.language sans casser userAgent
+Object.defineProperty(window.navigator, 'language', {value: 'fr-FR', configurable: true});
+
+// window.location.reload / assign sont non-writable en jsdom — patch via prototype
+beforeAll(() => {
+    const proto = Object.getPrototypeOf(window.location);
+    proto.reload = vi.fn();
+    proto.assign = vi.fn();
+});
+```
+
+### Setup MSW — mocker le SDK généré
+
+MSW intercepte au niveau réseau, donc les fonctions hey-api restent appelées normalement. Avantage majeur vs `vi.mock('@/lib/api')` : les mocks sont définis une fois et partagés entre tests, Storybook et dev.
+
+`assets/test-mocks/server.ts` :
+
+```ts
+import {setupServer} from 'msw/node';
+import {handlers} from './handlers';
+
+export const server = setupServer(...handlers);
+```
+
+`assets/test-mocks/handlers.ts` — handlers par défaut, à override par test si besoin :
+
+```ts
+import {http, HttpResponse} from 'msw';
+
+export const handlers = [
+    http.post('/api/tunnel/validate/shares', () =>
+        HttpResponse.json({status: 'identity'}),
+    ),
+    http.post('/api/beneficiary', async ({request}) => {
+        const body = await request.json();
+        return HttpResponse.json({id: 1, ...body}, {status: 201});
+    }),
+];
+```
+
+Override par test :
+
+```tsx
+import {server} from '@/test-mocks/server';
+import {http, HttpResponse} from 'msw';
+
+it('shows 422 violations', async () => {
+    server.use(http.post('/api/beneficiary', () =>
+        HttpResponse.json({violations: [{propertyPath: 'firstName', title: 'Required'}]}, {status: 422}),
+    ));
+    // … render et assert
+});
+```
+
+### Wrapper TanStack Query — `QueryClient` jetable
+
+Chaque composant qui utilise `useMutation` / `useQuery` doit être rendu dans un `QueryClientProvider`. Créer un helper :
+
+```tsx
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {render} from '@testing-library/react';
+
+export function renderWithQueryClient(ui: ReactElement) {
+    const qc = new QueryClient({
+        defaultOptions: {
+            mutations: {retry: false},
+            queries: {retry: false, gcTime: 0},
+        },
+    });
+    return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
+```
+
+`retry: false` + `gcTime: 0` → erreurs immédiates et pas de cache résiduel entre tests.
 
 ### Safety-net-first avant un gros refactor
 
-Le tunnel d'investissement a des composants de 500-700 lignes sans tests historiques. Les migrer (ex. `useState` → RHF + Zod) sans filet = rouler à l'aveugle, casse silencieusement le tunnel = CA perdu.
+Avant de migrer un composant gros et fragile (> 500 lignes, ex. `useState` → RHF + Zod), écrire d'abord les tests qui pinent son comportement visible **actuel** : happy path + guards + erreurs serveur. Refactorer ensuite, en s'assurant que la suite reste verte. Si un test casse, c'est un vrai changement de comportement — soit c'est intentionnel, soit c'est une régression.
 
-Process :
-1. **Écrire les tests RTL** qui exercent les flows visibles (happy path + guards + erreurs serveur). Assertions sur le contrat utilisateur (ce qui s'affiche, ce qui est submit), pas sur les internals.
-2. **Vérifier qu'ils passent verts sur le code actuel.**
-3. **Refactorer.** La suite doit rester verte. Si un test casse, c'est un vrai changement de comportement — soit c'est intentionnel (mettre à jour le test), soit c'est une régression (corriger le code).
+### Gotchas Vitest + React 19 + shadcn
 
-### Gotchas Jest + React 19 + shadcn
+Ces pièges coûtent chacun 30 min à 1 h à diagnostiquer la première fois. Vitest + ESM en élimine plusieurs (lucide, hey-api SDK), mais les autres restent.
 
-Ces pièges coûtent chacun 30 min à 1 h à diagnostiquer la première fois.
+**Radix (shadcn Select, Dialog, Popover) est fragile dans jsdom.** Les portals + pointer events + focus trap se comportent mal sans un vrai layout engine. Deux options :
 
-**`lucide-react` est ESM-only.** Jest ne transpile pas `node_modules` par défaut. Plutôt que de fighter avec `transformIgnorePatterns`, mocker globalement via `jest.config.js` :
+1. **Mocker localement** shadcn Select en `<select>` natif quand le test n'a besoin que du contrat `onValueChange` :
+    ```tsx
+    vi.mock('@/components/ui/select', () => {
+        const React = require('react');
+        const Ctx = React.createContext({});
+        return {
+            Select: ({value, onValueChange, children}: any) => (
+                <Ctx.Provider value={{value, onValueChange}}>{children}</Ctx.Provider>
+            ),
+            SelectTrigger: () => {
+                const {value, onValueChange} = React.useContext(Ctx);
+                return <select role="combobox" value={value ?? ''}
+                               onChange={(e) => onValueChange?.(e.target.value)} />;
+            },
+            SelectValue: () => null,
+            SelectContent: ({children}: any) => <div style={{display: 'none'}}>{children}</div>,
+            SelectItem: ({value, children}: any) => /* injecte une <option> */,
+        };
+    });
+    ```
 
-```js
-moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/assets/$1',
-    '^lucide-react$': '<rootDir>/assets/__mocks__/lucide-react.tsx',
-},
-```
-
-Le mock renvoie un `<span>` pour chaque icône via un `Proxy` — chaque nom d'icône devient un composant no-op valide.
-
-**Radix (shadcn Select, Dialog, Popover) est fragile dans jsdom.** Les portals + pointer events + focus trap se comportent mal sans un vrai layout engine. Pour les tests qui ont juste besoin de vérifier le contrat `onValueChange`, **mocker localement** shadcn Select en `<select>` natif :
-
-```tsx
-jest.mock('@/components/ui/select', () => {
-    const React = jest.requireActual('react');
-    const Ctx = React.createContext({});
-    return {
-        Select: ({value, onValueChange, children}) => (
-            <Ctx.Provider value={{value, onValueChange}}>{children}</Ctx.Provider>
-        ),
-        SelectTrigger: () => {
-            const {value, onValueChange} = React.useContext(Ctx);
-            return <select role="combobox" value={value ?? ''}
-                           onChange={(e) => onValueChange?.(e.target.value)} />;
+2. **Passer en Vitest Browser Mode** (provider Playwright) pour les specs qui interagissent vraiment avec Select / Dialog / Popover. Ajouter dans `vitest.config.ts` :
+    ```ts
+    test: {
+        browser: {
+            enabled: true,
+            provider: 'playwright',
+            instances: [{browser: 'chromium'}],
         },
-        SelectValue: () => null,
-        SelectContent: ({children}) => <div style={{display: 'none'}}>{children}</div>,
-        SelectItem: ({value, children, disabled}) => /* injecte une <option> dans le select via useLayoutEffect */,
-    };
-});
-```
+    },
+    ```
+    Plus rapide à écrire qu'un mock complexe, mais plus lent à exécuter (vrai navigateur). À utiliser au cas par cas.
 
-Même logique pour Dialog / Popover si un test en a besoin — mais le plus souvent, ces composants sont hors du chemin critique et les tests peuvent les ignorer.
-
-**React 19 + jsdom : ne pas remplacer `navigator`.** `react-dom` accède à `navigator.userAgent`. Si le `test-setup.ts` fait `Object.defineProperty(window, 'navigator', {value: {language: 'fr-FR'}})`, l'objet entier est remplacé et `userAgent` devient `undefined` → crash cryptique au premier `render()`. Solution : ne définir QUE la propriété qu'on veut override :
-
-```ts
-Object.defineProperty(window.navigator, 'language', {
-    value: 'fr-FR',
-    configurable: true,
-});
-```
-
-**`window.location.reload()` est non-writable en jsdom.** Si le composant appelle `window.location.reload()` sur succès, ni `jest.spyOn` ni `Object.defineProperty` ne fonctionnent. Patcher via le prototype :
-
-```ts
-beforeAll(() => {
-    const proto = Object.getPrototypeOf(window.location);
-    proto.reload = jest.fn();
-    proto.assign = jest.fn();
-});
-```
-
-**shadcn `<Label>` n'est pas wired via `htmlFor`.** `getByLabelText(/Nom/)` ne résout pas. Soit ajouter `htmlFor` dans les composants concernés (mieux, mais invasif), soit utiliser un helper :
+**shadcn `<Label>` n'est pas wired via `htmlFor`.** `getByLabelText(/Nom/)` ne résout pas. Helper :
 
 ```ts
 function inputByLabel(labelText: RegExp): HTMLInputElement {
@@ -957,33 +1054,32 @@ function inputByLabel(labelText: RegExp): HTMLInputElement {
 }
 ```
 
-**Le SDK généré par hey-api est ESM avec `import.meta`.** Pour les composants qui l'importent, mocker `@/lib/api` dans le test plutôt que d'essayer de le transpiler :
+**Toujours préférer MSW à `vi.mock('@/lib/api')`.** Le mock module marche, mais MSW intercepte au bon niveau (réseau) et reste cohérent quand on passe en E2E. Si un test fait vraiment juste `vi.mock` du SDK, c'est un signe que le test devrait être un test de fonction pure, pas un test de composant.
 
-```ts
-jest.mock('@/lib/api', () => ({
-    postSomeEndpoint: jest.fn(),
-}));
-const {postSomeEndpoint} = jest.requireMock('@/lib/api');
-```
+### E2E avec Playwright
 
-### Tests de mutations — wrapper `QueryClient`
+Détails complets dans `symfony-guidelines.md` §13 (Playwright partage l'infra DB du backend : commande `app:e2e:seed`, `storageState` pré-loggé, etc.). Côté React, à savoir :
 
-Chaque composant qui utilise `useMutation` / `useQuery` doit être rendu dans un `QueryClientProvider`. Dans un test, créer un client jetable avec retry désactivé (sinon les erreurs explosent le timeout) :
+1. **Une spec par parcours utilisateur**, pas une spec par page. Granularité = "ce qu'un utilisateur essaie de faire". Ex. `tunnel-invest.spec.ts`, pas `step-amount.spec.ts` + `step-identity.spec.ts`.
+2. **Locators sémantiques** : `page.getByRole('button', {name: /valider/i})` plutôt que `page.locator('.btn-submit')`. Résiste aux refactors Tailwind.
+3. **Forms shadcn** : `await page.getByLabel(/Nom/i).fill('Dupont')`. Si le `Label` n'est pas wired, fallback sur `getByPlaceholder` ou `getByRole('textbox', {name: ...})`.
+4. **a11y inline dans chaque spec** :
+    ```ts
+    import AxeBuilder from '@axe-core/playwright';
 
-```tsx
-function renderWithQueryClient(ui: ReactElement) {
-    const qc = new QueryClient({
-        defaultOptions: {mutations: {retry: false}, queries: {retry: false}},
+    test('tunnel step amount is accessible', async ({page}) => {
+        await page.goto('/tunnel');
+        const results = await new AxeBuilder({page}).analyze();
+        expect(results.violations).toEqual([]);
     });
-    return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
-}
-```
+    ```
 
 ### Ce qu'il n'est PAS utile de tester côté front
 
 - Un composant qui ne fait qu'appeler un SDK et afficher le résultat : le contract test backend (functional PHPUnit) couvre déjà le contrat API, TypeScript couvre le typage, ESLint la structure.
-- Les snapshot tests de rendu complet : ils cassent au moindre changement de classe Tailwind, zéro signal utile.
+- Les snapshot tests de rendu complet : ils cassent au moindre changement de classe Tailwind, zéro signal utile. Préférer `toHaveTextContent` + `toBeVisible`.
 - Les composants de UI kit (shadcn passthrough).
+- Tester le rendu d'un composant uniquement parce qu'on a un fichier à toucher. Ajouter un test parce que la *complexité* du composant le justifie, pas par réflexe.
 
 ---
 

@@ -54,10 +54,17 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
 
 ### 6. Tests
 
-- **Functional obligatoire** pour toute nouvelle route API non triviale (contrat HTTP + état DB)
-- Domain pur → unit sans mock
-- Composant React complexe (wizard / tunnel / > 500 lignes) → RTL ; composant simple → skip
-- Refactor d'un composant fragile → **safety-net-first** : écrire les tests qui pinent le comportement actuel **avant** de toucher
+- **Functional PHPUnit** obligatoire pour toute nouvelle route API non triviale (contrat HTTP + état DB)
+- **Domain pur** → unit PHPUnit sans mock + Foundry pour fabriquer les entités
+- **Money math** (calculators, fees, paliers) → property-based via Eris (5-10 services concernés)
+- **E2E Playwright** obligatoire pour tout nouveau parcours utilisateur (tunnel, paiement, signature)
+- **Composant React de form** (Zod + RHF) → Vitest + RTL + MSW pour les violations 422
+- **Composant React simple** (passthrough shadcn) → skip
+- **Refactor d'un composant fragile** → safety-net-first : tests qui pinent le comportement actuel **avant** de toucher
+- **Mutation testing Infection** sur `src/Domain/` en nightly — détecte les tests bidons
+- **Diff OpenAPI** en CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/`
+
+Détails et setup : section 13.
 
 ### 7. Quality gate
 
@@ -68,10 +75,12 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
 Une feature n'est "faite" que si **tous** ces points sont verts :
 
 - [ ] `/quality` passe
-- [ ] `make types` ne produit pas de drift dans `assets/lib/api/`
+- [ ] `make types` ne produit pas de drift dans `assets/lib/api/` (gate CI : `git diff --exit-code`)
 - [ ] `doctrine:schema:validate --skip-sync` OK
 - [ ] `lint:container` OK
 - [ ] Functional test écrit pour toute nouvelle route API non triviale
+- [ ] Property-based test (Eris) ajouté pour toute nouvelle logique de calcul money / fees / paliers
+- [ ] Spec Playwright ajoutée pour tout nouveau parcours utilisateur
 - [ ] Feature testée en navigateur — golden path + au moins un edge case
 - [ ] `#[IsGranted]` et `format: 'json'` présents sur les nouvelles routes `/api/`
 - [ ] Aucun anti-pattern de la section dédiée (notamment : `useEffect+fetch`, `$request->get()`, `new RetryableHttpClient`, `any` hors RHF `setError`)
@@ -794,11 +803,21 @@ Pour un simple `new Entity()` avec quelques setters, pas besoin de Factory.
 
 ## 13. Testing
 
-Trois couches, par ordre de coût croissant :
+Stack standard, partagée par tous les projets Symfony+React. Pas de "léger" pour les uns, "lourd" pour les autres — la même chose partout. Solo dev sur des plateformes critiques (argent, PII, audit gov), le filet doit être maximal et homogène.
 
-1. **Unit — `tests/Unit/`.** Domain pur (calculators, enums avec logique, value objects). Pas de DB, pas de container Symfony. C'est ce qui coûte le moins et rattrape les bugs de règle métier.
-2. **Integration — `tests/Integration/`.** Service + DB réelle (SQLite en mémoire ou fichier). Utile pour les services qui orchestrent Doctrine, les repositories à requêtes non-triviales, les event listeners Doctrine.
-3. **Functional — `tests/Functional/`.** Contract HTTP : `WebTestCase` + `KernelBrowser`, on tape sur les routes comme un client, on asserte le code de réponse + l'état DB. C'est le filet pour les refactors frontend qui parlent à l'API (tunnel, webhooks) — si un refactor casse le contrat, la suite passe rouge avant le merge.
+### La pyramide
+
+| Couche | Outil | Rôle | Vitesse |
+|---|---|---|---|
+| Unit | **PHPUnit** + Domain pur | calculators, enums, value objects, sans DB | très rapide |
+| Property-based | **Eris** sur Domain money math | `InvestmentAmountComputer`, `DiscountCodeApplier`, fees | rapide |
+| Integration | **PHPUnit** + DB transactionnelle (DAMA bundle) | services orchestrant Doctrine, repos, listeners | rapide |
+| Functional | **PHPUnit** `WebTestCase` + `KernelBrowser` | contrat HTTP des endpoints API | moyen |
+| E2E | **Playwright** + **`@axe-core/playwright`** | parcours utilisateur multi-pages, a11y | lent |
+| Mutation | **Infection** sur `src/Domain/` | détecte les tests qui passent mais testent rien | très lent (nightly) |
+| Contract drift | `make types && git diff --exit-code openapi.yaml assets/lib/api/` en CI | refuse un PR qui drift le contrat front/back | instantané |
+
+Couches 1-4 et 7 tournent sur **chaque PR**. Couches 5-6 tournent en **nightly** sur main, les régressions ouvrent une issue.
 
 ### Quand ne pas tester
 
@@ -806,7 +825,69 @@ Trois couches, par ordre de coût croissant :
 - configuration pure (classes qui ne font que exposer des env vars)
 - code mort ou déprécié qui va disparaître
 
-Écrire un test parce qu'on a un fichier à toucher, pas parce qu'il existe. Si un service orchestre 6 autres services avec beaucoup de plomberie, c'est souvent le signe qu'il faut le découper — pas qu'il faut écrire un test qui mocke tout.
+Écrire un test parce que la complexité du code le justifie, pas parce qu'on a un fichier à toucher. Si un service orchestre 6 autres services avec beaucoup de plomberie, c'est souvent le signe qu'il faut le découper — pas qu'il faut écrire un test qui mocke tout.
+
+### Foundry — factories de tests
+
+Standard Symfony moderne pour fabriquer des entités de test. Remplace les fixtures à la main et les `$entity = new Entity(); $entity->setX(...);` répétés dans les `setUp()`.
+
+```bash
+composer require --dev zenstruck/foundry
+```
+
+```php
+use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
+
+final class InvestmentFactory extends PersistentObjectFactory
+{
+    public static function class(): string { return Investment::class; }
+
+    protected function defaults(): array
+    {
+        return [
+            'relatedUser' => UserFactory::new(),
+            'amount' => self::faker()->numberBetween(100, 10_000),
+            'shares' => self::faker()->numberBetween(1, 100),
+            'fonciere' => Fonciere::LES_FEVES_1_TECH_ID,
+            'status' => InvestmentStatus::STATUS_IDENTITY,
+            'createdAt' => new \DateTime(),
+        ];
+    }
+}
+
+// Dans un test :
+$investment = InvestmentFactory::createOne(['amount' => 5000, 'status' => InvestmentStatus::STATUS_PAYMENT]);
+$batch = InvestmentFactory::createMany(10, ['fonciere' => Fonciere::LES_FEVES_2_TECH_ID]);
+```
+
+Une factory par entité critique. Les autres entités (passthrough) peuvent rester en `new Entity()` direct.
+
+### DAMA Doctrine Test Bundle — rollback transactionnel auto
+
+`dama/doctrine-test-bundle` wrappe **chaque test** dans une transaction et rollback au tearDown. Plus besoin d'écrire une `DatabaseTransactionTestCase` à la main, plus besoin de wipe entre tests, et la suite tourne 5× plus vite.
+
+```bash
+composer require --dev dama/doctrine-test-bundle
+```
+
+`config/bundles.php` :
+
+```php
+return [
+    // …
+    DAMA\DoctrineTestBundle\DAMADoctrineTestBundle::class => ['test' => true],
+];
+```
+
+`phpunit.xml.dist` :
+
+```xml
+<extensions>
+    <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension"/>
+</extensions>
+```
+
+Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort.
 
 ### Exemple unit — Domain calculator
 
@@ -819,38 +900,64 @@ public function testCalculateScores(): void
 }
 ```
 
-### Exemple integration — service + DB transactionnelle
+### Exemple property-based — math d'argent (Eris)
 
-Une classe de base qui wrappe chaque test dans une transaction et rollback au teardown. Pas besoin de `dama/doctrine-test-bundle` si on veut garder la main.
+Tester `InvestmentAmountComputer` à la main rate les edge cases (paliers, arrondis, cumuls). Eris balance des centaines d'entrées random et asserte des **invariants**.
+
+```bash
+composer require --dev giorgiosironi/eris
+```
 
 ```php
-abstract class DatabaseTransactionTestCase extends KernelTestCase
+use Eris\Generator;
+use Eris\TestTrait;
+
+final class InvestmentAmountComputerPropertyTest extends TestCase
 {
-    protected EntityManagerInterface $entityManager;
-    protected Connection $connection;
-    private static bool $schemaCreated = false;
+    use TestTrait;
 
-    protected function setUp(): void
+    public function testTotalAmountIsAlwaysAtLeastSharesPrice(): void
     {
-        parent::setUp();
-        $this->entityManager = self::bootKernel()->getContainer()->get('doctrine')->getManager();
-        $this->connection = $this->entityManager->getConnection();
+        $this->forAll(
+            Generator\choose(1, 1000),                  // shares
+            Generator\elements('LES_FEVES_1', 'LES_FEVES_2'),
+            Generator\bool(),                           // taxDeduction
+        )->then(function (int $shares, string $fonciere, bool $taxDeduction): void {
+            $computer = new InvestmentAmountComputer(/* deps */);
+            $result = $computer->compute($shares, $fonciere, $taxDeduction);
 
-        if (!self::$schemaCreated) {
-            (new SchemaTool($this->entityManager))->createSchema(
-                $this->entityManager->getMetadataFactory()->getAllMetadata(),
+            // Invariant : le montant total ne peut jamais être inférieur au prix nominal des parts
+            $this->assertGreaterThanOrEqual(
+                $shares * SharePrice::nominal($fonciere),
+                $result->totalAmount,
             );
-            self::$schemaCreated = true;
-        }
-        $this->connection->beginTransaction();
+        });
     }
+}
+```
 
-    protected function tearDown(): void
+Cible : les **5-10 services de calcul money** (pas tout le code). C'est l'outil le plus puissant pour rattraper les bugs financiers qu'aucun test à la main n'écrira.
+
+### Exemple integration — repository / listener avec DB
+
+Avec DAMA actif, plus de boilerplate. Hériter directement de `KernelTestCase` :
+
+```php
+final class InvestmentRepositoryTest extends KernelTestCase
+{
+    use Factories;     // trait Foundry
+    use ResetDatabase; // (uniquement si pas de DAMA — sinon DAMA gère)
+
+    public function testFindActiveByUserExcludesArchived(): void
     {
-        if ($this->connection->isTransactionActive()) {
-            $this->connection->rollBack();
-        }
-        parent::tearDown();
+        $user = UserFactory::createOne();
+        InvestmentFactory::createOne(['relatedUser' => $user, 'status' => InvestmentStatus::STATUS_VALIDATED]);
+        InvestmentFactory::createOne(['relatedUser' => $user, 'status' => InvestmentStatus::STATUS_ARCHIVED]);
+
+        $repo = self::getContainer()->get(InvestmentRepository::class);
+        $active = $repo->findActiveByUser($user);
+
+        $this->assertCount(1, $active);
     }
 }
 ```
@@ -860,22 +967,203 @@ abstract class DatabaseTransactionTestCase extends KernelTestCase
 ```php
 final class ValidateSharesTest extends WebTestCase
 {
+    use Factories;
+
     public function testValidPayloadCreatesInvestmentInIdentityStatus(): void
     {
+        $user = UserFactory::createOne();
         $client = self::createClient();
-        // … boot schema, seed fixtures, login user …
+        $client->loginUser($user->_real());
 
         $client->request('POST', '/tunnel/validate/shares',
             server: ['CONTENT_TYPE' => 'application/json'],
-            content: json_encode(['shares' => 5, 'fonciere' => 'F2', 'taxDeduction' => true]),
+            content: json_encode(['shares' => 5, 'fonciere' => 'LES_FEVES_2', 'taxDeduction' => true]),
         );
 
         self::assertSame(200, $client->getResponse()->getStatusCode());
-        $investment = $repo->findOneBy(['relatedUser' => $user]);
+        $investment = self::getContainer()->get(InvestmentRepository::class)
+            ->findOneBy(['relatedUser' => $user->_real()]);
         self::assertSame(InvestmentStatus::STATUS_IDENTITY, $investment?->getStatus());
     }
 }
 ```
+
+### E2E avec Playwright
+
+`tests/` couvre le contrat HTTP, mais **n'attrape pas** les régressions multi-pages (le tunnel investissement = 5 étapes, JS interactif, redirections). Playwright tape sur l'app dans Chromium réel.
+
+#### Setup
+
+```bash
+pnpm add -D @playwright/test @axe-core/playwright
+pnpm exec playwright install --with-deps chromium
+```
+
+`playwright.config.ts` à la racine :
+
+```ts
+import {defineConfig, devices} from '@playwright/test';
+
+export default defineConfig({
+    testDir: './e2e',
+    fullyParallel: false,                  // serial = DB déterministe
+    forbidOnly: !!process.env.CI,
+    retries: process.env.CI ? 2 : 0,
+    workers: 1,
+    reporter: process.env.CI ? 'github' : 'list',
+
+    use: {
+        baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'https://localhost:8000',
+        ignoreHTTPSErrors: true,
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+    },
+
+    projects: [
+        // Setup project : seed DB + login, sauve le storageState
+        {name: 'setup', testMatch: /auth\.setup\.ts/},
+        // Specs publiques (pas d'auth)
+        {
+            name: 'chromium-public',
+            testMatch: /(smoke|registration)\.spec\.ts/,
+            use: {...devices['Desktop Chrome']},
+        },
+        // Specs authentifiées : réutilisent le storageState
+        {
+            name: 'chromium-auth',
+            testIgnore: /(smoke|registration|auth\.setup)\.(spec|ts)/,
+            use: {
+                ...devices['Desktop Chrome'],
+                storageState: 'e2e/.auth/user.json',
+            },
+            dependencies: ['setup'],
+        },
+    ],
+});
+```
+
+#### Commande de seed dédiée
+
+`src/Command/E2eSeedCommand.php` — **idempotente** (wipe puis insère), prefixe les rows avec `__e2e__` pour isolation, ne dépend d'aucune API externe :
+
+```php
+#[AsCommand(name: 'app:e2e:seed', description: 'Seed la DB pour les tests Playwright')]
+final class E2eSeedCommand
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly UserPasswordHasherInterface $hasher,
+    ) {}
+
+    public function __invoke(SymfonyStyle $io): int
+    {
+        // 1. Wipe : tout ce qui commence par __e2e__
+        $this->em->createQuery('DELETE FROM App\Entity\User u WHERE u.email LIKE :p')
+            ->setParameter('p', '__e2e__%')->execute();
+
+        // 2. Re-seed
+        $user = new User();
+        $user->setEmail('__e2e__@e2e.test');
+        $user->setPassword($this->hasher->hashPassword($user, 'E2eTestPass1!'));
+        // … champs requis
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $io->success('Seeded.');
+        return Command::SUCCESS;
+    }
+}
+```
+
+#### Setup auth Playwright
+
+`e2e/auth.setup.ts` :
+
+```ts
+import {test as setup, expect} from '@playwright/test';
+import {execSync} from 'node:child_process';
+
+const STORAGE_STATE = 'e2e/.auth/user.json';
+
+setup('seed DB and authenticate', async ({page}) => {
+    execSync('php bin/console app:e2e:seed --no-interaction', {stdio: 'inherit'});
+
+    await page.goto('/connexion');
+    await page.fill('input[name="_username"]', '__e2e__@e2e.test');
+    await page.fill('input[name="_password"]', 'E2eTestPass1!');
+    await Promise.all([
+        page.waitForURL((url) => !/\/connexion$/.test(url.pathname)),
+        page.click('button[type="submit"]'),
+    ]);
+
+    await expect(page.locator('input[name="_username"]')).toHaveCount(0);
+    await page.context().storageState({path: STORAGE_STATE});
+});
+```
+
+#### Spec E2E + a11y
+
+```ts
+import {test, expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('investment tunnel — happy path', async ({page}) => {
+    await page.goto('/tunnel');
+    await page.getByRole('spinbutton', {name: /parts/i}).fill('5');
+    await page.getByRole('button', {name: /continuer/i}).click();
+    await expect(page).toHaveURL(/\/tunnel\/identity/);
+
+    // a11y inline — les violations cassent le test
+    const a11y = await new AxeBuilder({page}).analyze();
+    expect(a11y.violations).toEqual([]);
+});
+```
+
+#### Bypass des intégrations externes en E2E
+
+Mêmes contraintes qu'en `tests/` : **jamais d'appel à HubSpot, ZohoSign, Pennylane, etc.** depuis un E2E. Soit :
+- Variables d'environnement `*_API_KEY=` vides → les services tombent dans leurs branches no-op
+- Override des services dans `config/packages/test/services.yaml` chargé par l'env de dev quand `APP_ENV=e2e`
+- Un wrapper `MockHttpClient` injecté à la place
+
+### Mutation testing — Infection
+
+Couvre la zone "tests qui passent mais ne testent rien". L'outil mute le code (change `>` en `>=`, supprime un `if`, etc.) et vérifie qu'au moins un test casse pour chaque mutation. Si aucun test ne casse → **tu as un test bidon**.
+
+```bash
+composer require --dev infection/infection
+```
+
+`infection.json5` :
+
+```json5
+{
+    source: { directories: ['src/Domain'] },     // Domain seul — controllers et services apportent du bruit
+    timeout: 30,
+    mutators: { '@default': true },
+    minMsi: 70,
+    minCoveredMsi: 80,
+}
+```
+
+Lancement :
+
+```bash
+vendor/bin/infection --threads=4 --show-mutations
+```
+
+Tourne en **nightly** (lent), pas sur chaque PR. Au début : pas de gate strict — observer le score sur 2 semaines, fixer un seuil défendable, **ensuite** gater dans CI.
+
+### Contract drift — diff OpenAPI en CI
+
+Le SDK frontend est généré depuis `openapi.yaml` (Nelmio) via `make types`. Si le runtime backend drift du dump checked-in, le front casse silencieusement. Gate gratuit en CI :
+
+```bash
+make types
+git diff --exit-code openapi.yaml assets/lib/api/
+```
+
+Si la commande échoue, le PR a oublié de regénérer le SDK ou a introduit un breaking change non assumé. Aucune dépendance Python/Node supplémentaire.
 
 ### Safeguard obligatoire : `tests/bootstrap.php` refuse les DB distantes
 
@@ -916,6 +1204,35 @@ Pour les clients qui ne passent pas par `HttpClientInterface` (ex. Google SDK), 
 Avant de refactorer un composant gros et fragile (> 500 lignes, beaucoup de branches, zéro test), écrire d'abord les tests qui pinent son comportement visible **actuel** : happy path, cas d'erreur, guards métier. Refactorer **ensuite**, en s'assurant que la suite reste verte. Si tu refactores d'abord, tu n'as aucun moyen de savoir que tu n'as rien cassé.
 
 C'est particulièrement vrai pour les composants côté tunnel d'investissement / paiement : une régression silencieuse coûte du CA.
+
+### CI — orchestrer la pyramide
+
+Sur **chaque PR** (GitHub Actions) :
+
+```yaml
+jobs:
+  quality:
+    # PHPStan, CS-Fixer, lint:container, doctrine:schema:validate, ESLint, tsc
+  contract-drift:
+    # make types && git diff --exit-code openapi.yaml assets/lib/api/
+  phpunit:
+    # vendor/bin/phpunit (Unit + Integration + Functional + Property-based via Eris)
+  vitest:
+    # pnpm test
+  playwright:
+    # pnpm test:e2e (avec sharding si > 20 specs)
+```
+
+**Nightly** sur `main` :
+
+```yaml
+jobs:
+  infection:
+    # vendor/bin/infection --threads=4
+    # Si MSI < seuil : ouvre une issue automatique
+```
+
+Pour Playwright sur grosses suites : sharder la matrice (`shardIndex: [1,2,3,4]`, `shardTotal: 4`) puis `merge-reports` job qui agrège les blob reports.
 
 ---
 
