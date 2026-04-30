@@ -129,13 +129,46 @@ Domain/ ne dépend de rien d'autre. Service/ peut appeler Domain/. Le Controller
 
 ## 2. Domain/ — Les règles
 
-Chaque sous-dossier de `Domain/` est un **contexte métier**. Domain/ ne dépend jamais de Controller, Service, ou Api — uniquement d'Entity et d'autres Domain.
+Chaque sous-dossier de `Domain/` est un **contexte métier**.
 
-**Domain/ reçoit ses données, Service/ va les chercher.** Une classe Domain/ ne fait jamais de requête, ne lit jamais un fichier, n'appelle jamais une API. Elle reçoit tout en paramètre, elle décide/calcule/valide, et elle retourne un résultat.
+### Pureté = sens des dépendances, pas absence d'attributs
 
-**Domain/ répond aux questions :** "est-ce que cette étape est complétable ?", "quel score a cet utilisateur ?", "quel manager pour ce département ?"
+La règle qui compte : **Service → Domain ✓**, **Domain → Service ✗**. Service va chercher les données et appelle une méthode pure de Domain ; Domain ne demande jamais à un Service d'aller chercher quelque chose.
+
+Concrètement, un constructor de Domain **n'injecte pas** : Repository, `EntityManagerInterface`, `HttpClientInterface`, `LoggerInterface`, `Filesystem`, autre `Service`, classe `Api/`, `UrlGeneratorInterface`. Tout ce dont Domain a besoin lui est passé en paramètre de méthode.
+
+En revanche, **les attributs framework Symfony sont autorisés librement dans Domain** — au même titre que `Entity/` utilise `#[ORM\Column]` :
+
+- `#[Assert\…]` (Validator)
+- `#[Groups]` (Serializer)
+- `#[OA\…]` (Nelmio OpenAPI)
+
+C'est de la metadata déclarative, pas une dépendance runtime. Le projet est et reste Symfony — pas d'effort à faire pour rester « framework-agnostic ».
+
+**Domain/ répond aux questions :** « est-ce que cette étape est complétable ? », « quel score a cet utilisateur ? », « quel manager pour ce département ? »
 
 **Si une classe a besoin d'aller chercher des données** (repository, API, filesystem), elle va dans Service/. Si elle contient aussi des règles métier pures, extraire ces règles dans une classe Domain/ séparée et les appeler depuis le Service.
+
+### DTOs métier dans Domain
+
+Les DTOs qui représentent des **structures de données métier** (input/output d'un endpoint, payload de cron, format d'échange avec un partenaire) ont leur place dans `Domain/<Context>/` à côté des Rules et Calculators du même contexte. Ce sont des objets de domaine au même titre qu'une entité. Ils peuvent porter `#[Assert\…]`, `#[OA\…]`, `#[Groups]` sans souci.
+
+```php
+// src/Domain/Jdmf/JdmfImportRequestInput.php
+namespace App\Domain\Jdmf;
+
+use OpenApi\Attributes as OA;
+use Symfony\Component\Validator\Constraints as Assert;
+
+class JdmfImportRequestInput
+{
+    #[Assert\NotBlank, Assert\Uuid]
+    #[OA\Property(type: 'string', format: 'uuid')]
+    public string $farmUuid;
+}
+```
+
+`src/Dto/` reste utilisé pour les **DTOs techniques génériques** sans contexte métier clair (filtres GET réutilisés entre plusieurs entités, payloads d'orchestration cross-cutting). Si tu hésites : `Domain/<Context>/` quand le DTO décrit un échange métier, `src/Dto/` quand il décrit un échange technique.
 
 ### Enums PHP
 
@@ -1590,7 +1623,7 @@ Règles noires, valables partout. Si tu les vois dans le code existant, c'est à
 - Controllers qui étendent `AbstractController` directement et typent `getUser()` comme `UserInterface` — créer un `AbstractAppController` qui retourne l'entité `User` typée et en hériter partout
 
 **Domain / Service**
-- Classe `Domain/` qui injecte un Repository, une API, ou `Filesystem` — Domain reçoit ses données en paramètre
+- Classe `Domain/` qui **injecte (constructor)** un Repository, EntityManager, HttpClient, Logger, Filesystem, autre Service, classe `Api/` ou `UrlGeneratorInterface` — Domain reçoit ses données en paramètre. Les attributs framework (`Assert`, `OA`, `Groups`) restent autorisés.
 - Calculator qui accède à un repository — extraire le fetch dans `Service/`, Calculator reste pur
 - Service qui contient uniquement une règle métier pure — déplacer dans `Domain/`
 - Interface sur un service qui n'a qu'une implémentation — pas d'abstraction préventive
