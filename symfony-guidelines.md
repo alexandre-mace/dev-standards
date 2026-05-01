@@ -61,7 +61,6 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
 - **Composant React de form** (Zod + RHF) → Vitest + RTL + MSW pour les violations 422
 - **Composant React simple** (passthrough shadcn) → skip
 - **Refactor d'un composant fragile** → safety-net-first : tests qui pinent le comportement actuel **avant** de toucher
-- **Mutation testing Infection** sur `src/Domain/` en nightly — détecte les tests bidons
 - **Diff OpenAPI** en CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/`
 
 Détails et setup : section 13.
@@ -847,10 +846,9 @@ Stack standard, partagée par tous les projets Symfony+React. Pas de "léger" po
 | Integration | **PHPUnit** + DB transactionnelle (DAMA bundle) | services orchestrant Doctrine, repos, listeners | rapide |
 | Functional | **PHPUnit** `WebTestCase` + `KernelBrowser` | contrat HTTP des endpoints API | moyen |
 | E2E | **Playwright** + **`@axe-core/playwright`** | parcours utilisateur multi-pages, a11y | lent |
-| Mutation | **Infection** sur `src/Domain/` | détecte les tests qui passent mais testent rien | très lent (nightly) |
 | Contract drift | `make types && git diff --exit-code openapi.yaml assets/lib/api/` en CI | refuse un PR qui drift le contrat front/back | instantané |
 
-Couches 1-4 et 7 tournent sur **chaque PR**. Couches 5-6 tournent en **nightly** sur main, les régressions ouvrent une issue.
+Toutes les couches tournent sur **chaque PR**. Pas de mutation testing : Eris (property-based) couvre déjà la math money critique, et le ratio bénéfice/coût d'Infection en plus n'est pas justifié pour la taille du projet.
 
 ### Quand ne pas tester
 
@@ -1159,34 +1157,6 @@ Mêmes contraintes qu'en `tests/` : **jamais d'appel à HubSpot, ZohoSign, Penny
 - Override des services dans `config/packages/test/services.yaml` chargé par l'env de dev quand `APP_ENV=e2e`
 - Un wrapper `MockHttpClient` injecté à la place
 
-### Mutation testing — Infection
-
-Couvre la zone "tests qui passent mais ne testent rien". L'outil mute le code (change `>` en `>=`, supprime un `if`, etc.) et vérifie qu'au moins un test casse pour chaque mutation. Si aucun test ne casse → **tu as un test bidon**.
-
-```bash
-composer require --dev infection/infection
-```
-
-`infection.json5` :
-
-```json5
-{
-    source: { directories: ['src/Domain'] },     // Domain seul — controllers et services apportent du bruit
-    timeout: 30,
-    mutators: { '@default': true },
-    minMsi: 70,
-    minCoveredMsi: 80,
-}
-```
-
-Lancement :
-
-```bash
-vendor/bin/infection --threads=4 --show-mutations
-```
-
-Tourne en **nightly** (lent), pas sur chaque PR. Au début : pas de gate strict — observer le score sur 2 semaines, fixer un seuil défendable, **ensuite** gater dans CI.
-
 ### Contract drift — diff OpenAPI en CI
 
 Le SDK frontend est généré depuis `openapi.yaml` (Nelmio) via `make types`. Si le runtime backend drift du dump checked-in, le front casse silencieusement. Gate gratuit en CI :
@@ -1254,15 +1224,6 @@ jobs:
     # pnpm test
   playwright:
     # pnpm test:e2e (avec sharding si > 20 specs)
-```
-
-**Nightly** sur `main` :
-
-```yaml
-jobs:
-  infection:
-    # vendor/bin/infection --threads=4
-    # Si MSI < seuil : ouvre une issue automatique
 ```
 
 Pour Playwright sur grosses suites : sharder la matrice (`shardIndex: [1,2,3,4]`, `shardTotal: 4`) puis `merge-reports` job qui agrège les blob reports.
