@@ -359,6 +359,27 @@ public function completeStep(UserStep $userStep): Response
 }
 ```
 
+### Convention de nommage des URLs
+
+Une seule règle, pas d'exception : **un nom canonique par feature, en français complet pour les URLs visibles, anglais pour l'API**, jamais d'abréviation côté URL.
+
+| Surface | Convention | Exemple |
+|---|---|---|
+| Pages publiques | français complet, namespace par feature | `/aides-agricoles/diagnostic`, `/aides-agricoles/{slug}` |
+| Pages dashboard | préfixe `/tableau-de-bord/` + même nom feature | `/tableau-de-bord/aides-agricoles/{slug}` |
+| Embeds | préfixe `/embed/` + nom feature | `/embed/aides-agricoles` |
+| API REST | préfixe `/api/` + nom feature au pluriel + ressources EN au pluriel | `/api/aides-agricoles/leads`, `/api/aides-agricoles/diagnostics`, `/api/aides-agricoles/auth/login` |
+| Noms de routes Symfony | `app_<feature>_<action>` (pages) ou `api_<feature>_<resource>_<action>` (API) | `app_aides_agricoles_diagnostic_page`, `api_aides_agricoles_diagnostics_create` |
+| Code (classes, dossiers, namespaces) | abréviation tolérée si déjà en place | `AidesAgriController`, `assets/components/aides_agri/` |
+
+**Règles** :
+- **Pas de branding partenaire dans l'URL** (jamais `/diagnostic-aides-ecocert-feve`, toujours `/aides-agricoles/diagnostic`).
+- **Pluriel pour les collections** (`/leads`, `/aides`, `/diagnostics`), singulier seulement si la ressource n'a pas de "liste" (`{slug}` est déjà l'identifiant).
+- **Verbes HTTP plutôt que dans l'URL** : `POST /diagnostics` = create, jamais `/diagnostics/save`.
+- **Sub-resources logiques** : `/diagnostics/chat`, `/auth/login`, plutôt que tout au plat (`/check-email`, `/login`, `/register` à la racine de la feature).
+- **Catch-all en dernier** : si tu as `/aides-agricoles/{slug}` et `/aides-agricoles/signaler-une-aide`, le slug capture l'autre. Soit déclarer la spécifique avant, soit `priority: -10` sur le catch-all.
+- **Code interne ≠ URL** : on accepte que `AidesAgriController` serve `/aides-agricoles/...`. La cohérence côté URL prime, le code peut garder son abréviation historique pour éviter un refactor bruyant à chaque renaming produit.
+
 ### `format: 'json'` obligatoire
 
 **Toutes** les routes `/api/` doivent avoir `format: 'json'`. Sans ça, les erreurs 422 arrivent en HTML au lieu de JSON et le frontend ne peut pas les parser. C'est une source de bugs fréquente.
