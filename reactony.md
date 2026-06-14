@@ -805,7 +805,12 @@ Utiliser `cn()` de shadcn pour les classes conditionnelles, pas de ternaires dan
 
 ### Composants shadcn
 
-- Utiliser `<Button>` de shadcn avec les variants, pas de `<button>` brut
+- **Boutons & éléments cliquables** — choisir selon l'intention, comme le font les primitives shadcn elles-mêmes (leurs triggers/closes Radix sont des `<button>` stylés, pas le composant `<Button>`) :
+  - **Action** (submit, valider, supprimer…) → `<Button variant=…>`.
+  - **Lien** (navigation) → `<Button asChild variant=…><a href></Button>` : `asChild` garde un vrai `<a>`, le variant choisit le look (`link` = lien inline ; `default`/`secondary`/`outline` = bouton plein).
+  - **Sélectionnable / toggle** (pills de filtre, multi-select) → `Toggle` / `ToggleGroup` (pas `<Button>`).
+  - **Sur-mesure** (tuile d'image, carte-cliquable, micro-contrôle icône positionné en `absolute`, dropzone) → un `<button>` brut est légitime — `<Button>` n'y apporterait qu'un variant à réécrire.
+  - Échappatoire `buttonVariants({variant})` : pour donner le look bouton à un élément qu'on ne peut pas rendre via `<Button asChild>` (ex. composant `Link` tiers).
 - Utiliser les composants composés : `Dialog` + `DialogContent` + `DialogHeader`, `Select` + `SelectTrigger` + `SelectContent`, etc.
 - Loading : `<Loader2 className="h-4 w-4 animate-spin" />` de lucide-react
 - Notifications : `toast` de sonner (pas d'`alert()`)
@@ -1163,7 +1168,7 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 - `watch()` ou lecture du proxy `formState` au render avec le compiler actif — utiliser `useWatch` / `useFormState({ control })` / `useController` (lint `incompatible-library`)
 
 **Styling / UI kit**
-- `<button>` brut — utiliser `<Button>` shadcn avec variants
+- `<button>` brut pour une **action** ou un **lien** — utiliser `<Button>` (variant pour l'action, `asChild` + `<a>` pour le lien). _NB : un `<button>` brut reste correct pour le sur-mesure (tuile, carte-cliquable, micro-icône absolue, dropzone) et les toggles vont vers `Toggle`/`ToggleGroup` — cf. section « Composants shadcn »._
 - `className={...ternary...}` dans un template literal — utiliser `cn()` de shadcn pour les classes conditionnelles
 - `alert()` ou `window.confirm()` — utiliser `toast` de sonner et les composants `Dialog` / `AlertDialog` de shadcn
 - Icône `lucide-react` montée à la main dans un bouton avec loading — utiliser le loading state fourni par le composant shadcn
