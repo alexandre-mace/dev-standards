@@ -30,6 +30,13 @@ Lire le **playbook + Definition of Done** (ci-dessous) et les **anti-patterns (�
 6. **Pas d'abstraction préventive** — pas d'interface, pas de ValueObject, pas d'Aggregate sauf si réellement nécessaire
 7. **`#[IsGranted]`** — sécurité au niveau méthode sur les routes API, pas de `access_control` par pattern d'URL pour les `/api/`
 
+### Décisions d'architecture assumées — ce qu'on n'utilise PAS (et pourquoi)
+
+Gravé pour ne pas re-débattre à chaque session (codebase AI-first : l'IA reproposerait ces migrations en boucle sinon).
+
+- **Pas d'API Platform.** App **hybride** (API + nombreuses pages serveur Twig + EasyAdmin), endpoints *action-shaped* (pas du CRUD-resource), et le pipeline OpenAPI→TS (`make types`) existe déjà. API Platform = double paradigme + state processors pour toute logique bespoke → **plus** de concepts, pas moins. Nos controllers `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` donnent ~80 % de sa concision sans le coût. (Re-validé juin 2026 : reste vrai en API Platform 4.2.)
+- **Pas de RSC / React Server Components** (cf. `reactony.md`) — Symfony+Twig **est** déjà la couche serveur ; les îlots React sont les feuilles client intentionnelles. Bolter RSC = faire tourner un serveur Node de rendu à côté de PHP, pour un rôle que PHP tient déjà.
+
 ---
 
 ## Feature playbook — one-shot
@@ -407,6 +414,34 @@ Une seule règle, pas d'exception : **un nom canonique par feature, en français
 ```php
 #[Route('/api/mon-endpoint', methods: ['POST'], format: 'json')]
 ```
+
+### Réponse API — `#[Serialize]` (SF 8.1)
+
+Symétrique de `#[MapRequestPayload]` (entrée) : `#[Serialize]` est la **sortie**. Le controller `return` directement le DTO / tableau / entité ; l'attribut gère l'encodage JSON + la négociation de contenu + le code HTTP. Plus de `$this->json(...)` ni de `new JsonResponse(...)`.
+
+```php
+/** @return array<int, ModelSave> */
+#[Route('/api/farm-model/saves', methods: ['GET'], format: 'json')]
+#[Serialize(context: ['groups' => ['model_save:read']])]
+public function getModelSaves(): array
+{
+    return $this->getUser()->getModelSaves()->toArray();
+}
+```
+
+Options : `#[Serialize(code: 201, headers: [...], context: ['groups' => [...]])]`. Les `#[Groups]` se comportent **exactement** comme avec `$this->json(..., ['groups' => ...])` — validé sur pièce : sortie byte-identique, **zéro drift** OpenAPI/SDK/Zod.
+
+**Convention : défaut pour les *nouveaux* `/api/*` qui renvoient un DTO/entité.** Attribut neuf (8.1, mai 2026) → on **adopte en avant**, on migre l'existant **à l'occasion** (pas de big-bang sur les `JsonResponse` qui marchent ; beaucoup renvoient des `['status' => 'ok']` triviaux où il n'apporte rien).
+
+⚠️ **Gotcha** : un docblock **en prose** sur l'action fuite dans le `summary` OpenAPI de Nelmio (et le JSDoc du SDK généré). Garder le docblock **tag-only** (`@return ...`) ; mettre les explications d'implémentation en commentaire `//` interne.
+
+### Outils ciblés — dégainer sur besoin, jamais par défaut
+
+Modernes et corrects, mais les ajouter à vide trahit le « minimal code ». Notés pour savoir quoi dégainer quand la douleur **précise** apparaît :
+
+- **`JsonStreamer` (8.1)** — encodeur généré au cache-warmup (sans réflexion runtime), −50 % RAM / ~2× plus rapide. **Pour** un endpoint liste **volumineux sous pression mémoire** (recherche fermes, carte). Pas avant que le profiler le réclame.
+- **`cuyz/valinor`** — l'hydrateur le plus type-safe (`list<string>`, `positive-int`, `int<0,42>`, shaped arrays, validation récursive, « objet valide ou throw avec message précis »). **Pour** parser du **JSON externe / non-fiable en value objects** (`data/fermage/`, blobs Airtable, scrapers). PAS pour les requêtes HTTP — `#[MapRequestPayload]` + `#[Assert]` suffit ; éviter un 3ᵉ hydrateur par défaut.
+- **`Clock` (`ClockInterface`)** — temps injectable/déterministe. **Pour** la logique métier time-dépendante + tests ; pas de `new \DateTimeImmutable()` direct dans le domaine.
 
 ### Sécurité des routes API — `#[IsGranted]`
 
