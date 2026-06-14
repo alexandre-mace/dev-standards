@@ -1,17 +1,36 @@
 # Reactony — Convention Symfony + React
 
 > Source de vérité unique, pas de duplication, un seul pattern.
+>
+> **Dernière veille : 11 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2 · React Compiler 1.0 · @vitejs/plugin-react 6 / Vite 8 (Rolldown) · vite-plugin-symfony 8.2 · ux-react 3.1 · TanStack Query 5.10x · RHF 7.78 (v8 en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.98 (pin exact) · Tailwind 4.3 · shadcn (famille `Field`) · Vitest 4 · MSW 2 · Playwright 1.60 · eslint-plugin-react-hooks 7.
+
+## Routage — quoi lire pour quelle tâche
+
+Lire les **Principes** (ci-dessous) et les **anti-patterns (§10)** pour toute tâche ; puis seulement les sections concernées — pas le fichier entier.
+
+| Tâche | Sections |
+|---|---|
+| Afficher des données (props, useQuery) | §1 Lecture · §5 Pipeline |
+| Formulaire (création/édition) | §4 Formulaire · §3 Erreurs 422 · §2 Écriture |
+| Upload de fichier | §2 (+ symfony-guidelines §4) |
+| Nouvel endpoint consommé par React | §5 Pipeline · §2 Écriture |
+| Nouveau composant / montage Twig | §6 Infra · §7 Conventions |
+| « React ou Stimulus/Turbo ? » | §6 (Quand React, quand Stimulus) |
+| Perf / memoization / React Compiler | §7 (Performance) |
+| Tests front | §9 Tests · §8 QA |
+| Doute sur un pattern | §11 Résumé |
 
 ## Principes
 
 1. **Le PHP est la source de vérité** — types et validation vivent sur l'entité
 2. **Types et Zod v4 générés** — depuis les `#[Assert\...]` PHP, jamais écrits manuellement
-3. **Un seul pattern formulaire** — shadcn Form + RHF + Zod + `useMutation` (actions simples : `useMutation` + toast, cf. section 4)
+3. **Un seul pattern formulaire** — `Controller` RHF + shadcn `Field` + Zod + `useMutation` (actions simples : `useMutation` + toast, cf. section 4)
 4. **Entité ou DTO** — entité directe quand le payload correspond 1:1 ; DTO quand c'est un sous-ensemble d'une entité large (sécurité : allowlist, mapping via `ObjectMapper`) ou quand le payload n'a pas d'entité correspondante
 5. **Auth et sécurité en Twig** — login, inscription, mot de passe restent des formulaires Symfony classiques
-6. **React = Reactony, Twig = Symfony Form** — si la page est en React et dynamique, le formulaire suit Reactony (shadcn + RHF + Zod + `useMutation`). Si la page est en Twig sans React et le formulaire est simple (pas de dynamisme), un Symfony Form classique suffit
+6. **React = Reactony, Twig = Symfony Form** — si la page est en React et dynamique, le formulaire suit Reactony. Si la page est en Twig sans React et le formulaire est simple (pas de dynamisme), un Symfony Form classique suffit
 7. **SDK partout** — toujours utiliser les fonctions SDK générées, y compris pour les uploads (le SDK gère le multipart via `formDataBodySerializer`)
 8. **pnpm** — gestionnaire de paquets pour le front
+9. **React pour l'interactivité, Stimulus = infra de montage uniquement** — pas de nouveau contrôleur Stimulus custom, Turbo Drive désactivé (cf. section 6)
 
 ---
 
@@ -28,7 +47,7 @@
 
 ### Dynamique (filtres, pagination) — TanStack Query
 
-Les `queryOptions()` sont **auto-générés** par le plugin `@hey-api/tanstack-react-query` (cf. section 5). Pas besoin de les écrire manuellement :
+Les `queryOptions()` sont **auto-générés** par le plugin `@tanstack/react-query` de hey-api (cf. section 5). Pas besoin de les écrire manuellement :
 
 ```tsx
 // Importé directement depuis le code généré
@@ -149,7 +168,7 @@ const mutation = useMutation({
       throw new Error("Validation failed");
     }
   },
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["alerts"] }),
+  onSuccess: () => queryClient.invalidateQueries({ ...getAlertsOptions() }),
 });
 ```
 
@@ -207,27 +226,28 @@ public function save(
 > - Beaucoup de champs / entité existante → DTO allowlist + `ObjectMapper`
 > - Payload ≠ entité (champs calculés, agrégats, pas d'entité correspondante) → DTO dans `src/Dto/`
 
-### Upload de fichiers — `#[MapUploadedFile]`
+### Upload de fichiers — `UploadedFile` dans le DTO (SF 8.1)
 
 > Conventions backend upload détaillées dans `symfony-guidelines.md` section 4.
 
-Pour les endpoints recevant un fichier (FormData), utiliser `#[MapUploadedFile]` au lieu de `$request->files->get()`. La validation du fichier est gérée par les contraintes Assert :
+Depuis Symfony 8.1, le pattern par défaut est un **DTO plat** `#[MapRequestPayload]` contenant le fichier et les champs texte — un seul paramètre, une seule surface de validation :
 
 ```php
+class UploadAvatarPayload
+{
+    public ?string $caption = null;
+
+    #[Assert\NotNull]
+    #[Assert\Image(maxSize: '5M')]
+    public ?UploadedFile $avatar = null;
+}
+
 #[IsGranted('ROLE_USER')]
 #[Route('/api/avatar/upload', methods: ['POST'], format: 'json')]
-public function uploadAvatar(
-    #[MapUploadedFile(name: 'avatar', constraints: [new Assert\NotNull(), new Assert\File(mimeTypes: ['image/*'])])]
-    UploadedFile $file,
-    EntityManagerInterface $entityManager,
-): Response {
-    // ...
-}
+public function uploadAvatar(#[MapRequestPayload] UploadAvatarPayload $payload): Response { /* ... */ }
 ```
 
-Si l'endpoint a aussi des données texte en plus du fichier :
-
-1. **Identifiant** → paramètre de route (le plus propre) :
+Limites : DTO **plat** uniquement (un `UploadedFile` dans un objet imbriqué casse — [bug #64571](https://github.com/symfony/symfony/issues/64571) ; un payload d'upload imbriqué est de toute façon un smell, aplatir) ; identifiant → param de route (`{fieldId}`). `#[MapUploadedFile]` reste le fallback pour un fichier seul :
 
 ```php
 #[IsGranted('ROLE_USER')]
@@ -240,17 +260,6 @@ public function uploadProjectImage(
     // ...
 }
 ```
-
-2. **Plusieurs champs texte** → `#[MapRequestPayload]` sur un paramètre séparé (fonctionne avec multipart car le resolver lit `$request->request->all()`) :
-
-```php
-public function upload(
-    #[MapRequestPayload] UploadMetadataPayload $metadata,
-    #[MapUploadedFile(name: 'file', constraints: [...])] UploadedFile $file,
-): Response { /* ... */ }
-```
-
-> **Symfony 8.1+** : `#[MapRequestPayload]` supportera nativement `UploadedFile` dans le DTO ([RFC #60440](https://github.com/symfony/symfony/issues/60440)), permettant un seul paramètre pour fichier + champs texte. En attendant, on sépare les deux.
 
 Côté React, le SDK gère automatiquement les uploads multipart via `formDataBodySerializer`. Utiliser le SDK comme pour les autres appels :
 
@@ -315,7 +324,7 @@ const deleteMutation = useMutation({
     const result = await deleteAlert();
     handleSdkError(result);
   },
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["alerts"] }),
+  onSuccess: () => queryClient.invalidateQueries({ ...getAlertsOptions() }),
 });
 ```
 
@@ -363,28 +372,18 @@ Symfony renvoie automatiquement :
 - **Autre erreur (403, 500...)** → `throw new Error(...)` (catchée par `onError`)
 - **Pas d'erreur** → retourne `null`
 
-> **Gotcha `MapUploadedFile`** : quand PHP drop l'upload au niveau SAPI (`upload_max_filesize` dépassé), le resolver throw un `HttpException(422)` **avec body vide**, pas de `violations`. Le toast est muet. Solution : guard `file.size` côté front (cf. convention plus haut). Voir aussi `symfony-guidelines.md` section 6 pour le backend.
+> **Gotcha upload (drop SAPI)** : quand PHP drop l'upload au niveau SAPI (`upload_max_filesize` dépassé), le resolver — `RequestPayloadValueResolver` (DTO plat) comme `MapUploadedFile` — throw un `HttpException(422)` **avec body vide**, pas de `violations`. Le toast est muet. Solution : guard `file.size` côté front (cf. convention plus haut). Voir aussi `symfony-guidelines.md` section 4 pour le backend.
 
 > **Gotcha enum nullable** : React-hook-form défaulte les selects enum à `""` quand non rempli. Côté back, `Enum::from('')` throw un `ValueError` → 500. Soit le controller coerce `'' → null` avant denormalize (cf. `symfony-guidelines.md` section 4), soit le front omet la clé. On fait les deux par sécurité.
 
-### Le choix de lib formulaire (2026)
+### Le choix de lib formulaire (re-validé juin 2026)
 
-`react-hook-form` + `zod` + `@hookform/resolvers` est le stack confirmé pour ce projet. La question revient souvent ; voici la décision pour ne pas y repasser :
+`react-hook-form` + `zod` + `@hookform/resolvers` est le stack confirmé pour ce projet. La question revient souvent ; voici la décision pour ne pas y repasser (re-confrontée au web en juin 2026 : TanStack Form v1 est mature mais son mapping d'erreurs serveur reste moins propre que `setError` ; toujours aucun outillage `useActionState` hors Next — la décision tient) :
 
 - **Pas de migration vers TanStack Form.** Coût non trivial (réécrire `handleSdkError`, reporter tous les `setError`), gain marginal vu qu'openapi-ts + Zod couvrent déjà la type-safety bout-en-bout. RHF reste le choix.
 - **Pas de migration vers React 19 Actions** (`useActionState`) pour les forms avec validation serveur structurée. Le mapping `violations[].propertyPath` → erreurs par champ n'est pas natif dans Actions, et Actions veut posséder le `pending/error` state que TanStack Query possède déjà. Double-ownership awkward.
 - **Oui à `useOptimistic`** pour les mutations UI-instant (toggle favori, add to list, reorder). Compose proprement avec RHF + TanStack Query sans conflit.
-- **Oui à `useFormStatus`** pour supprimer le prop-drilling de `isSubmitting` sur les boutons submit imbriqués profondément.
-
-```tsx
-// useFormStatus — le bouton se reading lui-même son état depuis le <form> parent
-import { useFormStatus } from 'react-dom';
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>Enregistrer</Button>;
-}
-```
+- **`useFormStatus` : non, pas dans ce pattern** — il ne reporte `pending` que pour un `<form action={...}>` (React Actions). Avec RHF + `useMutation` (submit via `onSubmit`), il resterait toujours `false`. L'état de soumission vient de `mutation.isPending`, ou de `useFormState({ control }).isSubmitting` pour un bouton imbriqué profond.
 
 ```tsx
 // useOptimistic — UI instant pendant qu'une mutation TanStack Query est en vol
@@ -424,11 +423,13 @@ const mutation = useMutation({
 });
 ```
 
-Dans le JSX, afficher l'erreur root :
+Dans le JSX, afficher l'erreur root — via `useFormState`, pas en lisant le proxy `form.formState` au render (règle React Compiler, cf. section 7) :
 
 ```tsx
-{form.formState.errors.root && (
-  <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
+const { errors } = useFormState({ control: form.control });
+
+{errors.root && (
+  <p className="text-sm text-destructive">{errors.root.message}</p>
 )}
 ```
 
@@ -436,19 +437,21 @@ Dans le JSX, afficher l'erreur root :
 
 ## 4. Formulaire React
 
-### Formulaire multi-champs — RHF + Zod + shadcn Form
+### Formulaire multi-champs — RHF + Zod + shadcn `Field`
 
-Pour un formulaire avec plusieurs champs et validation côté client : **shadcn Form + React Hook Form + Zod généré + `useMutation`**.
+Pour un formulaire avec plusieurs champs et validation côté client : **`Controller` (RHF) + famille `Field` shadcn + Zod généré + `useMutation`**.
+
+Depuis octobre 2025, shadcn a remplacé le wrapper `<Form>/<FormField>/<FormMessage>` (boîte noire couplée RHF) par les composants **`Field`** agnostiques (`npx shadcn@latest add field`). Pattern canonique :
 
 ```tsx
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { zSearchFarmNotification } from "@/lib/api/zod.gen"; // généré (cf. section 5)
 import { postAlert } from "@/lib/api";
 import { handleSdkError } from "@/lib/parseViolations";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field";
 
 type FormValues = z.infer<typeof zSearchFarmNotification>;
 
@@ -475,23 +478,27 @@ export function FarmAlertForm() {
   });
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
-        <FormField control={form.control} name="canals" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Canaux</FormLabel>
-            <FormControl>{/* composant shadcn */}</FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <Button type="submit" disabled={mutation.isPending}>Enregistrer</Button>
-      </form>
-    </Form>
+    <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-6">
+      <Controller
+        name="canals"
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={field.name}>Canaux</FieldLabel>
+            {/* composant shadcn, avec id={field.name} et aria-invalid={fieldState.invalid} */}
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )}
+      />
+      <Button type="submit" disabled={mutation.isPending}>Enregistrer</Button>
+    </form>
   );
 }
 ```
 
-**Flow** : Zod valide côté client → SDK → Symfony valide côté serveur → 422 affiché par champ via `<FormMessage />`.
+Clés : `data-invalid` sur `<Field>` (bascule tout le bloc en état erreur) + `aria-invalid` sur le contrôle. L'ancien pattern `<Form>/<FormField>/<FormMessage>` est toléré dans le code existant — pas pour du nouveau code ; migration opportuniste quand on touche le fichier.
+
+**Flow** : Zod valide côté client → SDK → Symfony valide côté serveur → 422 affiché par champ via `form.setError` + `<FieldError>`.
 
 ### Action simple / édition inline — `useMutation` + SDK + toast
 
@@ -515,10 +522,12 @@ const mutation = useMutation({
 ```
 
 > **Quand utiliser quoi ?**
-> - Formulaire multi-champs avec validation client → RHF + Zod + shadcn Form
+> - Formulaire multi-champs avec validation client → RHF + Zod + shadcn `Field`
 > - Action simple, édition inline, toggle → `useMutation` + SDK + `handleSdkError` + toast
 
 ### Invalidation du cache après mutation
+
+Depuis TanStack Query 5.82, `mutationOptions()` est le pendant de `queryOptions()` — hey-api les génère aussi (`addPetMutation()`, etc.) : les utiliser pour factoriser une mutation partagée entre composants.
 
 Utiliser les queryOptions auto-générés pour invalider avec type-safety :
 
@@ -553,10 +562,11 @@ Types TS + Zod v4 + SDK + queryOptions + mutationOptions (générés dans assets
 composer require nelmio/api-doc-bundle
 ```
 
-**Frontend** — les packages doivent être déclarés dans `devDependencies` :
+**Frontend** — un seul package dev (plugins et clients **bundlés** — pas de package npm séparé), **en version exacte** (`-E` : projet pré-1.0, pin demandé par les mainteneurs) ; `zod` en dépendance runtime :
 
 ```bash
-pnpm add -D @hey-api/openapi-ts zod @hey-api/tanstack-react-query
+pnpm add -D -E @hey-api/openapi-ts
+pnpm add zod
 ```
 
 ```typescript
@@ -569,9 +579,9 @@ export default defineConfig({
   plugins: [
     "@hey-api/typescript",
     "@hey-api/client-fetch",
-    "@hey-api/sdk",
-    { name: "zod", version: "v4" },
-    "@hey-api/tanstack-react-query",
+    { name: "@hey-api/sdk", validator: { response: "zod" } }, // validation runtime des réponses (optionnel)
+    "zod",                   // Zod 4 par défaut ({ name: "zod", compatibilityVersion: 3 | "mini" } sinon)
+    "@tanstack/react-query", // nom du plugin bundlé — PAS un package npm
   ],
 });
 ```
@@ -579,9 +589,11 @@ export default defineConfig({
 Les 5 plugins :
 - `@hey-api/typescript` — types TS depuis le schéma OpenAPI
 - `@hey-api/client-fetch` — client HTTP (gère fetch, headers, sérialisation, **multipart**)
-- `@hey-api/sdk` — fonctions typées par endpoint (`postProfileSave({ body })`)
-- `zod` (version `v4`) — schémas Zod v4 pour validation côté client (14x plus rapide, 57% plus petit que v3)
-- `@hey-api/tanstack-react-query` — génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI — élimine le boilerplate de `lib/queries/`
+- `@hey-api/sdk` — fonctions typées par endpoint (`postProfileSave({ body })`) ; `validator: { response: 'zod' }` valide aussi les réponses au runtime avec les schémas déjà générés (coût perf — opt-in)
+- `zod` — schémas Zod 4 pour validation côté client
+- `@tanstack/react-query` — génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI — élimine le boilerplate de `lib/queries/`
+
+Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`. Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod 4.1+ fournit aussi `z.codec()` (transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) pour les conversions API ↔ domaine à la main.
 
 ### SDK : appels API typés
 
@@ -595,15 +607,15 @@ types:
     pnpm openapi-ts
 ```
 
-`openapi.yaml` et `assets/lib/api/` sont dans `.gitignore` (fichiers générés).
+`openapi.yaml` et `assets/lib/api/` sont **commités** — le gate de drift compare le généré au checked-in ; `git diff --exit-code` ne verrait rien s'ils étaient gitignorés.
 
-En CI : `make types && git diff --exit-code assets/lib/api/` pour détecter le drift.
+En CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/` pour détecter le drift. En complément, `oasdiff` classifie le diff d'`openapi.yaml` en breaking / non-breaking (cf. symfony-guidelines.md §13).
 
 ---
 
 ## 6. Infra : Vite + Symfony UX
 
-React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**.
+React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (ux-react 3.x : requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés — montée mécanique depuis 2.x.)
 
 ### Arborescence
 
@@ -664,6 +676,15 @@ Au moins 1 entry point dans `vite.config.js` : `app` (principal). Ajouter des en
 
 **Commandes** : `pnpm dev` (dev + HMR), `pnpm build` (production).
 
+### Quand React, quand Stimulus, quand Turbo
+
+Un seul modèle d'interactivité :
+
+- **Page = Twig statique par défaut. Interactivité = island React** (`react_component()`), même petite — le pipeline (types, SDK, shadcn) rend l'island moins cher à maintenir qu'un contrôleur Stimulus hors écosystème.
+- **Stimulus = infrastructure de montage uniquement.** Le pont `symfony/ux-react` est lui-même un contrôleur Stimulus — invisible, on n'y touche pas. **Ne pas écrire de nouveau contrôleur Stimulus custom** : pas d'état, pas de fetch, pas de logique métier dans Stimulus. Tolérance : micro-comportement DOM sans état (< ~30 lignes, ex. copy-to-clipboard) si un island serait disproportionné. Les contrôleurs custom existants sont du legacy à ne pas copier.
+- **Cas particulier — enrichir un champ de Symfony Form classique** (éditeur riche, datepicker, autocomplete sur un `<input>`/`<textarea>` rendu serveur) : c'est un usage Stimulus *légitime* en soi (progressive enhancement, le modèle Symfony UX). MAIS si l'équivalent React existe déjà (ex. un composant `Wysiwyg`), **réutilise-le en island** plutôt que de maintenir un contrôleur Stimulus parallèle qui le duplique : monte le composant React et fais-le **se synchroniser dans le champ caché** (`document.getElementById(targetId).value = ...` sur update) pour qu'il parte au POST. Un seul éditeur/composant pour toute l'app, le champ Symfony reste la source soumise. Cf. `AdvertWysiwygField` (island montée sur un Symfony Form, pas de RHF — le form reste serveur).
+- **Turbo Drive : désactivé globalement (`<body data-turbo="false">`) et c'est voulu** — la navigation Turbo remonte les islands React (état perdu, double-mount). Ne pas le réactiver sans décision explicite ; pour le polish de navigation, la voie est les View Transitions natives (CSS cross-document). `ux-turbo` reste installé pour un éventuel usage Turbo Streams/Mercure, pas pour le drive.
+
 ---
 
 ## 7. Conventions React
@@ -672,10 +693,12 @@ Au moins 1 entry point dans `vite.config.js` : `app` (principal). Ajouter des en
 
 React 19 est stable (React 18 est en security-support uniquement). Features clés :
 
-- **`ref` comme prop** — plus besoin de `forwardRef`, passer `ref` directement comme prop
+- **`ref` comme prop** — plus besoin de `forwardRef`, passer `ref` directement comme prop (+ fonctions de cleanup sur les refs)
 - **`use()` API** — lire des promesses et du contexte dans le rendu
 - **`useOptimistic`** — mises à jour optimistes natives
-- **`<Activity>`** — préserver l'état des composants cachés (anciennement `<Offscreen>`)
+- **`<Activity>`** — stable depuis 19.2 : préserver l'état des composants cachés (`mode="visible|hidden"`)
+- **`useEffectEvent`** — stable depuis 19.2 : extraire d'un Effect la logique événementielle qui lit props/state sans les mettre en dépendances. Jamais dans le tableau de deps (le lint react-hooks l'impose), à déclarer dans le composant qui contient l'Effect
+- View Transitions (`<ViewTransition>`) : toujours expérimental — pas en prod
 
 ```tsx
 // React 19 — ref comme prop directement
@@ -732,7 +755,7 @@ Pour les payloads envoyés au SDK, caster vers le type généré (`SaveProfilePa
 **Lecture** : `useQuery` + queryOptions auto-générés par hey-api. Jamais `useEffect` + `fetch()` + `useState`.
 
 ```tsx
-// Bon — queryOptions auto-générés par @hey-api/tanstack-react-query
+// Bon — queryOptions auto-générés par le plugin @tanstack/react-query (hey-api)
 import { getResourceListOptions } from "@/lib/api";
 const { data, isLoading } = useQuery({ ...getResourceListOptions({ query: filters }) });
 
@@ -754,7 +777,7 @@ const mutation = useMutation({
   },
   onSuccess: () => {
     toast.success("Enregistré");
-    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    queryClient.invalidateQueries({ ...getProfileOptions() });
   },
   onError: (error: Error) => toast.error(error.message),
 });
@@ -764,7 +787,7 @@ const mutation = useMutation({
 
 | Cas | Pattern |
 |-----|---------|
-| Formulaire multi-champs avec validation client | shadcn `Form` + RHF + Zod généré + `useMutation` |
+| Formulaire multi-champs avec validation client | `Controller` RHF + shadcn `Field` + Zod généré + `useMutation` |
 | Action simple / édition inline / toggle | `useMutation` + SDK + `handleSdkError` + toast |
 | Formulaire auth (login, inscription, mdp) | Twig + Symfony Form (pas React) |
 
@@ -793,18 +816,38 @@ Le `queryClient` partagé (`assets/lib/queryClient.ts`) a des defaults sensibles
 
 ### Performance — React Compiler
 
-Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet** via `babel-plugin-react-compiler` dans `vite.config.js` + `eslint-plugin-react-compiler` en warn.
+Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet**. ⚠️ Depuis `@vitejs/plugin-react` v6 (Vite 8), l'option `react({ babel: {...} })` n'existe plus (transforms Oxc) et est **ignorée silencieusement** — la seule config qui exécute réellement le compiler :
+
+```js
+// vite.config.js
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
+
+export default defineConfig({
+  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
+});
+```
+
+(`pnpm add -D -E babel-plugin-react-compiler` + `pnpm add -D @rolldown/plugin-babel @babel/core`). Les règles lint compiler sont fournies par `eslint-plugin-react-hooks` ≥ 7 (`configs.flat.recommended`) — le package `eslint-plugin-react-compiler` est gelé, ne plus l'installer.
 
 **Conséquence sur le code à écrire** :
 - Ne pas ajouter `useMemo` / `useCallback` / `React.memo` "par précaution". Le compiler les pose automatiquement là où c'est nécessaire.
 - Les laisser **uniquement** quand :
   - un profilage (React DevTools Profiler) montre un re-render coûteux spécifique
-  - l'ESLint warning `react-compiler/react-compiler` remonte un bail sur le composant (donc le compiler ne le mémoize pas, rare cas où un `useMemo` explicite a du sens)
+  - une règle compiler du lint `react-hooks` (≥ 7) remonte un bail sur le composant (donc le compiler ne le mémoize pas, rare cas où un `useMemo` explicite a du sens)
 - Les `useMemo`/`useCallback` existants dans le code pré-compiler ne sont pas à enlever activement — ils deviennent no-op (le compiler en met par-dessus). Nettoyage opportuniste quand on touche le fichier.
 
 **Composants bailés (compiler skip)** : le plugin ESLint signale en warn les composants qui violent les Rules of React (side effects dans render, writes à `window.*`, refs mutées depuis un callback externe, `// eslint-disable-next-line react-hooks/exhaustive-deps`). Ces composants fonctionnent correctement mais ne bénéficient pas de l'auto-memoization. Pas bloquant ; fixer au cas par cas si le profilage l'exige.
 
 **Règle d'or** : écris le code React le plus simple possible. Le compiler optimise.
+
+**React Compiler × react-hook-form (v7)** : le proxy `formState` et `watch()` reposent sur une mutabilité interne que le compiler mémoïse à tort (la règle `incompatible-library` du lint les signale). Avec compiler actif :
+
+- ❌ `watch('field')` et lecture de `form.formState.X` au render ; ne pas passer `formState` en prop
+- ✅ `useWatch({ control, name })`, `useFormState({ control })`, `useController` / `<Controller>` (abonnements explicites) ; `getValues()` réservé aux handlers/effects
+- Échappatoire transitoire : directive `'use no memo'` sur un composant formulaire problématique
+
+RHF v8 (refonte compiler-first) est en bêta — ne pas l'adopter avant la stable.
 
 ---
 
@@ -821,7 +864,7 @@ pnpm lint:fix      # auto-corrige
 
 Config flat (`eslint.config.js`) avec :
 - `@eslint/js` + `typescript-eslint` — règles TS
-- `eslint-plugin-react-hooks` — hooks rules (exhaustive-deps, rules-of-hooks)
+- `eslint-plugin-react-hooks` ≥ 7 via `configs.flat.recommended` — hooks rules **et règles React Compiler** (fusionnées depuis la v6 ; `eslint-plugin-react-compiler` est obsolète)
 - `eslint-config-prettier` — désactive les règles qui entrent en conflit avec Prettier
 
 ### Prettier
@@ -833,7 +876,7 @@ pnpm format        # formate
 pnpm format:check  # vérifie sans modifier
 ```
 
-Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatique des classes.
+Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatique des classes (≥ 0.8 requiert Prettier ≥ 3.7 ; depuis 0.7 le plugin trie aussi les classes dans les **templates Twig** — l'activer sur `templates/`).
 
 ### TypeScript strict
 
@@ -1028,17 +1071,19 @@ Ces pièges coûtent chacun 30 min à 1 h à diagnostiquer la première fois. Vi
     });
     ```
 
-2. **Passer en Vitest Browser Mode** (provider Playwright) pour les specs qui interagissent vraiment avec Select / Dialog / Popover. Ajouter dans `vitest.config.ts` :
+2. **Passer en Vitest Browser Mode** (stable depuis Vitest 4) pour les specs qui interagissent vraiment avec Select / Dialog / Popover. Provider en package séparé (`pnpm add -D @vitest/browser-playwright`) et passé en **fonction** :
     ```ts
+    import {playwright} from '@vitest/browser-playwright';
+
     test: {
         browser: {
             enabled: true,
-            provider: 'playwright',
+            provider: playwright(),
             instances: [{browser: 'chromium'}],
         },
     },
     ```
-    Plus rapide à écrire qu'un mock complexe, mais plus lent à exécuter (vrai navigateur). À utiliser au cas par cas.
+    Plus rapide à écrire qu'un mock complexe, mais plus lent à exécuter (vrai navigateur). À utiliser au cas par cas. jsdom reste le défaut pour l'unitaire léger.
 
 **shadcn `<Label>` n'est pas wired via `htmlFor`.** `getByLabelText(/Nom/)` ne résout pas. Helper :
 
@@ -1096,13 +1141,14 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 
 **Formulaires**
 - `useState` pour l'état d'un form multi-champs avec validation — utiliser RHF + Zod
+- `<Form>/<FormField>/<FormMessage>` shadcn pour du **nouveau** code — pattern legacy, utiliser `Controller` + famille `Field` (`data-invalid`, `<FieldError>`)
 - Zod schéma écrit à la main pour un payload API — importer depuis `zod.gen`
 - Catch 422 bespoke — utiliser `handleSdkError` + `form.setError` par champ
 - Form auth (login, inscription, mot de passe) en React — garder en Twig + Symfony Form
 - Form React qui manipule directement l'entité plutôt qu'un payload dérivé — passer par un DTO backend quand le form modifie un sous-ensemble de champs
 
 **Upload**
-- Upload fichier sans guard `file.size` côté front — PHP SAPI drop silencieux au-delà de `upload_max_filesize`, le resolver `MapUploadedFile` renvoie un 422 vide et le toast reste muet. Limite front = limite back (`Assert\File(maxSize)`)
+- Upload fichier sans guard `file.size` côté front — PHP SAPI drop silencieux au-delà de `upload_max_filesize`, le resolver (DTO `#[MapRequestPayload]` ou `MapUploadedFile`) renvoie un 422 vide et le toast reste muet. Limite front = limite back (`Assert\File(maxSize)`)
 - Upload via `FormData` fait main — le SDK gère le multipart automatiquement via `formDataBodySerializer`
 
 **Typage**
@@ -1114,6 +1160,7 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 - `useMemo` / `useCallback` / `React.memo` sans profilage concret — le React Compiler les pose automatiquement, les ajouter à la main est bruit (et ils deviennent no-op)
 - `forwardRef` — React 19 accepte `ref` comme prop directe
 - `useEffect` pour dériver un état d'un autre état — calculer pendant le render
+- `watch()` ou lecture du proxy `formState` au render avec le compiler actif — utiliser `useWatch` / `useFormState({ control })` / `useController` (lint `incompatible-library`)
 
 **Styling / UI kit**
 - `<button>` brut — utiliser `<Button>` shadcn avec variants
@@ -1125,6 +1172,10 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 - Imports relatifs `../../components/...` — utiliser l'alias `@/`
 - Barrel file `index.ts` qui réexporte N composants sans rapport — uniquement pour des sets de variants cohérents
 
+**Intégration Twig**
+- Nouveau contrôleur Stimulus custom (état, fetch, logique) — c'est un island React ; Stimulus n'est que le pont de montage UX (cf. section 6)
+- Réactiver Turbo Drive sans décision explicite — il remonte les islands React (état perdu) ; le site est volontairement en `data-turbo="false"`
+
 ---
 
 ## 11. Résumé
@@ -1134,18 +1185,18 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 | Données au mount | Props Twig (`react_component`) + Serializer `#[Groups]` |
 | Données dynamiques | `useQuery` + queryOptions auto-générés (hey-api + TanStack Query) |
 | Sérialisation API → React | Serializer + `#[Groups]` (simple) ou Formatter (complexe) |
-| Formulaire multi-champs | shadcn Form + RHF + Zod généré + `useMutation` |
+| Formulaire multi-champs | `Controller` RHF + shadcn `Field` + Zod généré + `useMutation` |
 | Action simple / édition inline | `useMutation` + SDK + `handleSdkError` + toast |
 | Création (POST) | `#[MapRequestPayload]` sur l'entité, `format: 'json'`, `#[IsGranted]` |
 | Modification (PUT, peu de champs) | `#[MapRequestPayload]`, même pattern que POST |
 | Modification (POST, beaucoup de champs) | DTO allowlist + `ObjectMapper` |
-| Upload de fichiers | `#[MapUploadedFile]` + constraints Assert + SDK (multipart auto) |
+| Upload de fichiers | DTO plat `#[MapRequestPayload]` + `UploadedFile` + Assert (SF 8.1) + SDK (multipart auto) |
 | Suppression (DELETE) | `useMutation` + `DELETE` + `invalidateQueries` |
 | Lecture filtrée (GET) | `#[MapQueryString]` sur un DTO filtre |
-| Erreurs 422 | `parseViolations()` + `form.setError()` par champ |
+| Erreurs 422 | `handleSdkError` + `form.setError()` par champ |
 | Erreurs 403/404/500 | `form.setError("root", ...)` + message global |
 | Nommage Groups | `entité:read`, `entité:create`, `entité:update` |
-| Types TS + Zod v4 + SDK + queryOptions | Générés via `make types` → `assets/lib/api/` |
+| Types TS + Zod v4 + SDK + queryOptions/mutationOptions | Générés via `make types` → `assets/lib/api/` |
 | Auth / sécurité | Twig + Symfony Form (pas React) |
 | Sécurité routes API | `#[IsGranted('ROLE_USER')]` sur méthode/classe |
 | Infra front | Vite + vite-plugin-symfony + Symfony UX React |
