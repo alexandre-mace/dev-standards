@@ -1,6 +1,24 @@
 # Symfony Guidelines
 
 > Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
+>
+> **Dernière veille : 11 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.4 (8.5 dispo) · Symfony 8.1 · Doctrine ORM 3.6 / doctrine-bundle 3.x / DBAL 4.4 · PHPUnit 12.5 (13 dispo, attendre dama) · PHPStan 2.2 · PHP-CS-Fixer 3.95 (ruleset `@Symfony`) · Foundry 2.10 · dama 8.6 · Eris 1.1 · EasyAdmin 5 · Twig ≥ 3.27.
+
+## Routage — quoi lire pour quelle tâche
+
+Lire le **playbook + Definition of Done** (ci-dessous) et les **anti-patterns (§18)** pour toute tâche ; puis seulement les sections concernées — pas le fichier entier.
+
+| Tâche | Sections |
+|---|---|
+| Nouvelle route API | §3 Controller · §4 Dto · §2 Domain |
+| Upload de fichier | §4 (+ reactony §2) |
+| Règle métier / calcul | §2 Domain · §15 Quand créer quoi |
+| Entité / requête DB | §8 Entity · §7 Repository |
+| API externe / rate limit / webhook | §6 Api · Logging & Sentry |
+| Commande console / cron | §11 Command · §17 Scheduler |
+| Appel externe async | §16 Messenger |
+| Écrire des tests | §13 Testing (+ reactony §9 côté front) |
+| Avant de committer | §14 QA |
 
 ## Principes
 
@@ -26,7 +44,7 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
   - Payload = entité 1:1 → `#[MapRequestPayload]` sur l'entité + `#[Assert\...]` sur les champs
   - Sous-ensemble d'une grosse entité → DTO allowlist (`#[Map(target: Entity::class)]`) + `ObjectMapper`
   - Pas d'entité → DTO simple
-- **Upload fichier** : `#[MapUploadedFile(constraints: [new Assert\File(maxSize: 'XM')])]`, identifiant en param de route
+- **Upload fichier** : DTO **plat** avec propriété `?UploadedFile` + `#[Assert\File(maxSize: 'XM')]` via `#[MapRequestPayload]` (SF 8.1). `#[MapUploadedFile]` en fallback. Identifiant en param de route.
 
 ### 2. Route controller
 
@@ -37,12 +55,12 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
 
 ### 3. Génération des types
 
-- `make types` (ou équivalent projet) → types TS + Zod + SDK + queryOptions dans `assets/lib/api/`
-- CI : `make types && git diff --exit-code assets/lib/api/` détecte le drift
+- `make types` (ou équivalent projet) → types TS + Zod + SDK + queryOptions/mutationOptions dans `assets/lib/api/`
+- CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/` détecte le drift
 
 ### 4. Composant React
 
-- **Multi-champs avec validation** : shadcn `Form` + RHF + `zodResolver(zSchema depuis zod.gen)` + `useMutation` + `handleSdkError` + `form.setError` par champ
+- **Multi-champs avec validation** : `Controller` RHF + shadcn `Field` + `zodResolver(zSchema depuis zod.gen)` + `useMutation` + `handleSdkError` + `form.setError` par champ
 - **Action simple / toggle / inline edit** : `useMutation` + SDK + `handleSdkError` + toast
 - **Lecture dynamique** : `useQuery({ ...getXOptions({...}) })`
 - **Mount point Twig** : wrapper la racine avec `<QueryClientProvider>` + `<Toaster>` (factoriser dans un `<AppProviders>` réutilisable)
@@ -67,7 +85,7 @@ Détails et setup : section 13.
 
 ### 7. Quality gate
 
-`/quality` (ou équivalent) doit passer vert avant merge : PHPStan level 8, PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`.
+`/quality` (ou équivalent) doit passer vert avant merge : PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`.
 
 ### Definition of Done
 
@@ -86,9 +104,11 @@ Une feature n'est "faite" que si **tous** ces points sont verts :
 
 ---
 
-## PHP 8.4
+## PHP 8.4+
 
 Le projet requiert PHP ≥ 8.4. Utiliser les features modernes : nullable explicite (`?Type $param = null`, l'implicite est déprécié), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
+
+Dès que le projet passe en PHP 8.5 : pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` pour les withers readonly, `#[\NoDiscard]` sur les méthodes dont le retour ne doit pas être ignoré, `array_first()`/`array_last()`. À éviter dès maintenant (dépréciés en 8.5) : casts non canoniques (`(integer)`, `(boolean)`, `(double)`) et `__sleep()`/`__wakeup()` (→ `__serialize()`/`__unserialize()`).
 
 ---
 
@@ -460,7 +480,7 @@ Controller/
 
 ## 4. Dto/ — Les payloads API
 
-DTOs pour `#[MapRequestPayload]`, `#[MapQueryString]`, et `#[MapUploadedFile]`. Cf. `docs/reactony.md` pour les patterns détaillés.
+DTOs pour `#[MapRequestPayload]`, `#[MapQueryString]`, et `#[MapUploadedFile]`. Le pendant React (SDK, formulaires, gestion des 422) est dans `docs/reactony.md`.
 
 ### Quand créer un DTO ?
 
@@ -500,6 +520,12 @@ public ?string $username;
 public ?string $debugOnly;
 ```
 
+Symfony 8.1 complète le composant :
+
+- `#[Map(source: ...)]` déclarable **sur la classe cible** — le DTO d'entrée reste sans attribut quand c'est la cible qui connaît le mapping
+- Condition `IsNotNull` : ne mapper la propriété que si la valeur source est non-null (alternative au pattern « propriété non initialisée » pour les updates partiels — les deux sont valides, le pattern non-initialisé reste le défaut documenté ici)
+- `MapCollection(targetClass: ...)` pour mapper les collections d'objets
+
 ```php
 public function save(
     #[MapRequestPayload] SaveProfilePayload $payload,
@@ -537,22 +563,34 @@ public function save(Request $request, DenormalizerInterface $denormalizer): Res
 
 Alternative côté front : omettre la clé quand elle est vide. Le backend reste défensif.
 
-### Upload de fichiers — `#[MapUploadedFile]`
+### Upload de fichiers — `UploadedFile` dans le DTO (SF 8.1)
 
-Pour les endpoints recevant un fichier, utiliser `#[MapUploadedFile]` au lieu de `$request->files->get()` :
+Depuis Symfony 8.1, `#[MapRequestPayload]` mappe les `UploadedFile` directement dans le DTO sur les requêtes `multipart/form-data` (fusion de `$request->request` + `$request->files` avant dénormalisation). C'est le pattern par défaut pour un endpoint fichier + champs texte — un seul paramètre, une seule surface de validation :
 
 ```php
-public function upload(
-    #[MapUploadedFile(name: 'avatar', constraints: [new Assert\NotNull(), new Assert\File(mimeTypes: ['image/*'])])]
-    UploadedFile $file,
-): Response {
-    // ...
+class UploadAvatarPayload
+{
+    public ?string $caption = null;
+
+    #[Assert\NotNull]
+    #[Assert\Image(maxSize: '5M')]
+    public ?UploadedFile $avatar = null;
 }
+
+public function upload(#[MapRequestPayload] UploadAvatarPayload $payload): Response { /* ... */ }
 ```
 
-Si l'endpoint a aussi des données texte : mettre les identifiants dans la route (`{fieldId}`), les champs texte multiples dans un `#[MapRequestPayload]` séparé. Ne pas utiliser `$request->request->get()`.
+Règles :
+- **DTO plat uniquement** pour l'instant : un `UploadedFile` dans un objet imbriqué casse ([bug #64571](https://github.com/symfony/symfony/issues/64571)). Un payload d'upload imbriqué est de toute façon un smell — aplatir.
+- Identifiant → param de route (`{fieldId}`), pas dans le payload.
+- `#[MapUploadedFile]` reste le fallback (fichier seul sans champs texte, ou cas qui ne rentre pas dans le DTO plat). Jamais `$request->files->get()` ni `$request->request->get()`.
+- Après adoption, vérifier que Nelmio décrit bien le body multipart dans `openapi.yaml` — le gate de drift attrape une régression du SDK.
 
-> **Symfony 8.1+** supportera `UploadedFile` directement dans les DTOs `#[MapRequestPayload]` ([RFC #60440](https://github.com/symfony/symfony/issues/60440)).
+### Divers `#[MapRequestPayload]` (SF 8.1)
+
+- `mapWhenEmpty: true` — dénormalise même un payload vide
+- `validationGroups` dynamiques via `Closure`/`Expression` évalués sur les arguments résolus
+- Arguments variadiques : `#[MapRequestPayload] Price ...$prices` mappe un tableau JSON de DTOs
 
 ---
 
@@ -568,6 +606,8 @@ Service/ fait les choses : persiste, envoie, upload, exporte, scrape, formate.
 | `*CsvExporter` | Export CSV |
 | `*FileUploadHandler` | Upload de fichiers |
 | `Scrapers/*Scraper` | Scraping de sites externes |
+
+> PDF : pour les documents à valeur contractuelle (factures, contrats), la cible est `sensiolabs/GotenbergBundle` (rendu Chromium, piste Factur-X). dompdf reste tolérable pour les documents simples (moteur CSS 2.1, pas de flexbox/grid).
 
 Pour la sérialisation simple, préférer `#[Groups]` directement sur l'entité (cf. reactony.md).
 
@@ -613,9 +653,13 @@ public function estimate(array $data): array
 
 Cas observé (corrigé) : `FarmEstimationService` wrappait `RetryableHttpClient` dans un `while` maison avec un post-loop check qui throwait sur `$retryCount === MAX_RETRIES` — donc la 3ᵉ tentative réussie à 200 throwait quand même. Résultat : 6 × 500 en prod.
 
-### Rate Limiter sur endpoints publics
+À connaître aussi : HttpClient a une **allow-list anti-SSRF** (SF 8.1 — à activer si une URL d'appel dépend d'input utilisateur) et un **cache HTTP conforme RFC 9111** (SF 7.4 — pertinent pour les réponses upstream cacheables type geodata/référentiels).
 
-Les endpoints qui acceptent du trafic non authentifié ou bon marché à fire massivement doivent être rate-limitées au niveau controller, via `symfony/rate-limiter`. Cas d'école : login, geodata/autocomplete, upload fichier, reset password, tout POST public.
+### Rate Limiter sur endpoints publics — `#[RateLimit]`
+
+Les endpoints qui acceptent du trafic non authentifié ou bon marché à fire massivement doivent être rate-limités. Cas d'école : login, geodata/autocomplete, upload fichier, reset password, tout POST public.
+
+Depuis Symfony 8.1, l'attribut `#[RateLimit('nom_du_limiter')]` (méthode ou classe, répétable) remplace l'injection manuelle de `RateLimiterFactory` : clé par défaut IP+méthode+path, 429 + headers `Retry-After`/`X-RateLimit-*` automatiques. Options : `methods:`, `key:` (Expression — ex. par user plutôt que par IP), `tokens:`. L'injection `RateLimiterFactory` + `consume()->ensureAccepted()` ne se justifie plus que pour une logique de clé impossible à exprimer en Expression.
 
 ```yaml
 # config/packages/rate_limiter.yaml
@@ -632,17 +676,15 @@ framework:
 ```
 
 ```php
-public function geodata(
-    Request $request,
-    #[MapQueryString] GeodataQuery $query,
-    #[Autowire('@limiter.anonymous_api')] RateLimiterFactory $limiter,
-): JsonResponse {
-    $limiter->create($request->getClientIp() ?? 'anon')->consume()->ensureAccepted();
-    // ...
+#[RateLimit('anonymous_api')]
+#[Route('/api/geodata', methods: ['GET'], format: 'json')]
+public function geodata(#[MapQueryString] GeodataQuery $query): JsonResponse
+{
+    // le 429 + Retry-After sont gérés par l'attribut
 }
 ```
 
-Sur une `TooManyRequestsHttpException`, le framework renvoie automatiquement un 429 avec les headers `Retry-After` et `X-RateLimit-*`. Côté front, `handleSdkError` doit catcher 429 comme une erreur non-422 (retry user-side OK).
+Pour les quotas calendaires (mensuels, journaliers alignés sur minuit), utiliser `anchor_at` sur une fenêtre fixe (SF 8.1). Côté front, `handleSdkError` doit catcher 429 comme une erreur non-422 (retry user-side OK).
 
 Endpoints à rate-limiter par défaut dans un projet Symfony+React :
 - `POST /api/profile/save` et autres mutations auth'd (limite large, 60/min/user)
@@ -735,7 +777,8 @@ private string $title;
 private string $description;
 ```
 
-- **Native lazy objects** : activer `$config->enableNativeLazyObjects(true)` pour PHP 8.4+ — élimine la code generation des proxies Doctrine (plus performant, plus simple)
+- **Native lazy objects** : avec doctrine-bundle 3.x c'est le **seul mode** — rien à activer, et l'option `enable_native_lazy_objects` est dépréciée (bundle 3.1) : la retirer de la config si présente. ORM 4 les rendra obligatoires.
+- **Index mono-colonne** : `#[ORM\Column(index: true)]` (ORM 3.5+) au lieu d'un `#[ORM\Index]` au niveau classe
 - **Enums Doctrine** : `#[ORM\Column(enumType: MonEnum::class)]`
 - **Getters calculés** simples : OK si ça ne dépend que de `$this` (`isExpired()`, `getFullName()`)
 - Logique qui dépend d'autres entités ou services → dans Domain/
@@ -775,6 +818,8 @@ class AppExtension
     public function isExpired(\DateTimeImmutable $date): bool { ... }
 }
 ```
+
+Contrainte de version : **Twig ≥ 3.27** obligatoire (corrige les CVE-2026-48805 à 48808). Twig 4 est en alpha — ne pas l'anticiper.
 
 ---
 
@@ -840,6 +885,10 @@ class CreateUserCommand
 }
 ```
 
+### Value resolvers en console (SF 8.1)
+
+Les resolvers des contrôleurs fonctionnent dans `__invoke()` : `#[Argument, MapEntity] User $user` (lookup auto + erreur propre si introuvable), `#[Option, MapDateTime(format: 'Y-m-d')]`, et injection de services directement en paramètre (`#[Autowire]`, `#[Target]`). `#[AsCommand]` se pose aussi sur des **méthodes** pour regrouper plusieurs petites commandes liées dans une classe à dépendances partagées.
+
 **Ce qui reste dans une Command** : progress bar, retry/reconnect DB, batch sizing, log orchestration, gestion des arguments CLI.
 
 **Ce qui part dans Service/** : parsing/scraping, règles métier, persistence complexe, envoi de notifications. Si une Command fait plus de ~100 lignes de logique métier, c'est un signal d'extraction.
@@ -887,6 +936,17 @@ Standard Symfony moderne pour fabriquer des entités de test. Remplace les fixtu
 composer require --dev zenstruck/foundry
 ```
 
+Depuis Foundry 2.9, les traits `Factories` / `ResetDatabase` sont **dépréciés** — brancher l'extension PHPUnit à la place (plus rien à déclarer dans les test cases) :
+
+```xml
+<!-- phpunit.xml.dist -->
+<extensions>
+    <bootstrap class="Zenstruck\Foundry\PHPUnit\FoundryExtension">
+        <parameter name="enabled-auto-reset" value="true"/>
+    </bootstrap>
+</extensions>
+```
+
 ```php
 use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
 
@@ -902,7 +962,7 @@ final class InvestmentFactory extends PersistentObjectFactory
             'shares' => self::faker()->numberBetween(1, 100),
             'fonciere' => Fonciere::LES_FEVES_1_TECH_ID,
             'status' => InvestmentStatus::STATUS_IDENTITY,
-            'createdAt' => new \DateTime(),
+            'createdAt' => new \DateTimeImmutable(),
         ];
     }
 }
@@ -939,7 +999,9 @@ return [
 </extensions>
 ```
 
-Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort.
+Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort. `#[SkipDatabaseRollback]` (dama 8.5+) désactive le rollback sur un test qui doit committer réellement.
+
+Contrainte PHPUnit recommandée : **`^12.5`** (PHPUnit 11 est EOL depuis février 2026 ; passer à 13 dès que dama le supporte officiellement). PHPUnit 12 n'accepte plus les annotations doc-comment — attributs uniquement.
 
 ### Exemple unit — Domain calculator
 
@@ -959,6 +1021,8 @@ Tester `InvestmentAmountComputer` à la main rate les edge cases (paliers, arron
 ```bash
 composer require --dev giorgiosironi/eris
 ```
+
+Contrainte : `^1.1` (support PHPUnit 12/13 ; le générateur `regex()` requiert désormais `ilario-pierbattista/reverse-regex`).
 
 ```php
 use Eris\Generator;
@@ -990,6 +1054,8 @@ final class InvestmentAmountComputerPropertyTest extends TestCase
 
 Cible : les **5-10 services de calcul money** (pas tout le code). C'est l'outil le plus puissant pour rattraper les bugs financiers qu'aucun test à la main n'écrira.
 
+Pour les règles temporelles (`"-18 years"`, échéances), les contraintes de comparaison de dates sont clock-aware en Symfony 8.1 : injecter `MockClock` dans le test au lieu de calculer des dates relatives à `now()`.
+
 ### Exemple integration — repository / listener avec DB
 
 Avec DAMA actif, plus de boilerplate. Hériter directement de `KernelTestCase` :
@@ -997,9 +1063,6 @@ Avec DAMA actif, plus de boilerplate. Hériter directement de `KernelTestCase` :
 ```php
 final class InvestmentRepositoryTest extends KernelTestCase
 {
-    use Factories;     // trait Foundry
-    use ResetDatabase; // (uniquement si pas de DAMA — sinon DAMA gère)
-
     public function testFindActiveByUserExcludesArchived(): void
     {
         $user = UserFactory::createOne();
@@ -1019,8 +1082,6 @@ final class InvestmentRepositoryTest extends KernelTestCase
 ```php
 final class ValidateSharesTest extends WebTestCase
 {
-    use Factories;
-
     public function testValidPayloadCreatesInvestmentInIdentityStatus(): void
     {
         $user = UserFactory::createOne();
@@ -1189,6 +1250,8 @@ git diff --exit-code openapi.yaml assets/lib/api/
 
 Si la commande échoue, le PR a oublié de regénérer le SDK ou a introduit un breaking change non assumé. Aucune dépendance Python/Node supplémentaire.
 
+En complément, [oasdiff](https://github.com/oasdiff/oasdiff) (GitHub Action) classifie le diff d'`openapi.yaml` en breaking / non-breaking : le `git diff` dit qu'il y a un drift, oasdiff dit s'il casse le contrat.
+
 ### Safeguard obligatoire : `tests/bootstrap.php` refuse les DB distantes
 
 Un test qui pointe par mégarde sur la DB de préprod ou de prod efface tout. Paranoïa utile : au boot, si l'URL sent le distant, `exit 1` avant même que PHPUnit démarre.
@@ -1257,7 +1320,7 @@ L'analyse statique remplace les inspections IDE (PHPStorm, plugin Symfony). Ces 
 
 ### PHPStan — analyse statique
 
-PHPStan (v2.x) avec les extensions `phpstan-symfony`, `phpstan-doctrine`, et `phpstan-deprecation-rules`. Level 8 (null-safety strict) est le standard recommandé pour les projets Symfony/Doctrine.
+PHPStan (v2.x) avec les extensions `phpstan-symfony`, `phpstan-doctrine`, et `phpstan-deprecation-rules`. Cible : **level 9 minimum, level 10 (`max`) recommandé** — monter avec une baseline plutôt que rester bloqué sous prétexte de legacy. Level 8 n'est plus le standard. `phpstan-strict-rules` + `bleedingEdge.neon` en option état de l'art.
 
 ```bash
 composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules
@@ -1271,7 +1334,7 @@ includes:
     - vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
-    level: 8
+    level: max
     paths:
         - src
     symfony:
@@ -1325,7 +1388,9 @@ private Collection $userActions;
 
 ### PHP-CS-Fixer — formatage
 
-Applique automatiquement les conventions de formatage (PER Coding Style / Symfony ruleset).
+Applique automatiquement les conventions de formatage. Sur un projet **Symfony**, utiliser le ruleset **`@Symfony`** (+ `@PHP84Migration`) — c'est le style que Symfony utilise en interne, idiomatique de l'écosystème, et il gère déjà property hooks / asymmetric visibility.
+
+⚠️ **Ne pas empiler `@PER-CS3x0` par-dessus `@Symfony`** : les deux se contredisent sur `concat_space` (`@Symfony` = `'none'` → `'a'.'b'` ; `@PER-CS3x0` = `'one'` → `'a' . 'b'`). Empilé après `@Symfony`, `@PER-CS3x0` gagne et reformate tout le repo dans un style non-Symfony. `@PER-CS3x0` (le standard PHP-FIG, successeur de PSR-12, sorti juillet 2025) est pertinent pour les **librairies framework-agnostiques**, pas pour un projet Symfony.
 
 ```bash
 composer require --dev friendsofphp/php-cs-fixer
@@ -1370,7 +1435,7 @@ composer audit
 
 | Outil | Rôle | Quand |
 |-------|------|-------|
-| PHPStan level 8 | Types, null-safety, logique, dépréciations, inspections Symfony/Doctrine | `/quality` |
+| PHPStan level 9-10 | Types, null-safety, logique, dépréciations, inspections Symfony/Doctrine | `/quality` |
 | PHP-CS-Fixer | Formatage + conversion PHPDoc → types natifs | `/quality` |
 | `doctrine:schema:validate` | Mappings Doctrine | `/quality` |
 | `lint:container` | Compilation DI | `/quality` |
@@ -1445,10 +1510,12 @@ Ordres de grandeur observés (projet Symfony + React de taille moyenne) :
 | `schema:validate --skip-sync` | ~0.3s |
 | `make types` + drift | ~2s |
 | `tsc --noEmit` | ~8s |
-| PHPStan level 8 (full) | ~8s |
+| PHPStan level 9/10 (full) | ~8s |
 | **Total pre-commit** | **~15–20s** |
 
 Pas tolérable pour un projet où tu commits 10 fois par heure, mais pour un rythme feature normal (2–5 commits / feature), c'est le prix de la garantie "zéro régression silencieuse au commit". Si le projet grossit et que ça dépasse ~30s, dégrader vers "PHPStan + tsc en CI uniquement, le reste en pre-commit".
+
+> `tsgo --noEmit` (TypeScript natif, en bêta mi-2026, stable imminente) est un remplaçant drop-in de `tsc --noEmit` : ~8s → ~1s. À adopter dès la stable.
 
 **Seuls les tests (unit + functional) ne vont PAS en pre-commit** — ils peuvent monter à plusieurs minutes. Eux restent en CI.
 
@@ -1473,7 +1540,7 @@ Lors d'une session de dev assistée par IA, lancer `/quality` **avant de déclar
 | Erreur métier | `Domain/MonContexte/Exception/MonException.php` |
 | Orchestration réutilisée ou complexe | `Service/MonHandler.php` |
 | Payload API (sous-ensemble entité) | `Dto/MonPayload.php` + `#[Map(target:)]` + `ObjectMapper` |
-| Payload API (pas d'entité) | `Dto/MonPayload.php` + `#[MapRequestPayload]` |
+| Payload API (pas d'entité) | `Domain/<Contexte>/MonPayload.php` (échange métier) ou `Dto/` (technique) + `#[MapRequestPayload]` |
 | Filtres GET | `Dto/MonFilterDto.php` + `#[MapQueryString]` |
 | API externe authentifiée | `Api/MonServiceApi.php` |
 | Scraping / export / upload | `Service/Mon*Handler.php` |
@@ -1559,6 +1626,8 @@ Si l'entité sera supprimée juste après le dispatch, passer les données néce
 
 3 retries avec backoff exponentiel (1s, 2s, 4s). Après 3 échecs → transport `failed`. Les erreurs CRITICAL remontent dans Sentry.
 
+Depuis Symfony 8.1 : les échecs de **décodage** (message corrompu, classe renommée) passent aussi par le pipeline retry/failed au lieu d'être perdus silencieusement ; `messenger:consume --fetch-size=N` fetch par lot pour les gros volumes ; le transport Doctrine PostgreSQL (LISTEN/NOTIFY) ne bloque plus la consommation multi-transports par priorité.
+
 ### Routing (`config/packages/messenger.yaml`)
 
 ```yaml
@@ -1614,12 +1683,12 @@ Règles noires, valables partout. Si tu les vois dans le code existant, c'est à
 **DTO / Payload**
 - DTO allowlist (`ObjectMapper`) avec `constructor`, `= null`, ou `readonly` sur les propriétés — casse le mapping partiel (les champs absents du JSON doivent rester **non initialisés**)
 - Filtre GET lu via `$request->query->get()` au lieu d'un DTO + `#[MapQueryString]`
-- Upload fichier via `$request->files->get()` — utiliser `#[MapUploadedFile]` avec les contraintes `Assert`
+- Upload fichier via `$request->files->get()` — utiliser `UploadedFile` dans le DTO `#[MapRequestPayload]` (SF 8.1, DTO plat) ou `#[MapUploadedFile]` avec les contraintes `Assert`
 
 **HttpClient / API externe**
 - `new RetryableHttpClient($client)` dans un service — retry se configure au niveau DI (`scoped_clients` + `retry_failed`)
 - Boucle `while ($attempts < $max)` autour d'un `$client->request()` — idem, c'est le job du DI
-- Endpoint public (login, autocomplete, upload, reset password) sans `RateLimiterFactory`
+- Endpoint public (login, autocomplete, upload, reset password) sans `#[RateLimit]` (`RateLimiterFactory` manuel uniquement pour clé custom complexe)
 
 **Command**
 - `extends Command` + `protected function execute()` — pattern invokable obligatoire : pas d'`extends`, `#[AsCommand]`, logique dans `__invoke()`, paramètres typés avec `#[Argument]` / `#[Option]`
