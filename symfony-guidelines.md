@@ -2,7 +2,7 @@
 
 > Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
 >
-> **Dernière veille : 11 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.4 (8.5 dispo) · Symfony 8.1 · Doctrine ORM 3.6 / doctrine-bundle 3.x / DBAL 4.4 · PHPUnit 12.5 (13 dispo, attendre dama) · PHPStan 2.2 · PHP-CS-Fixer 3.95 (ruleset `@Symfony`) · Foundry 2.10 · dama 8.6 · Eris 1.1 · EasyAdmin 5 · Twig ≥ 3.27.
+> **Dernière veille : 29 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5 (courant, GA nov. 2025 ; floor projet 8.4) · Symfony 8.1.1 · Doctrine ORM 3.6.7 / doctrine-bundle 3.2 / DBAL 4.4 · PHPUnit 13.2 (dama : support 13 sur `master` seulement — cf. §13) · PHPStan 2.2 · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.10 · dama 8.6 · Eris 1.1 · EasyAdmin 5.1 · Twig ≥ 3.27.
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -111,11 +111,11 @@ Une feature n'est "faite" que si **tous** ces points sont verts :
 
 ---
 
-## PHP 8.4+
+## PHP 8.4+ (runtime 8.5)
 
-Le projet requiert PHP ≥ 8.4. Utiliser les features modernes : nullable explicite (`?Type $param = null`, l'implicite est déprécié), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
+PHP 8.5 est la **stable courante** (GA 20 nov. 2025) et le runtime de prod tourne en 8.5 ; le floor `composer.json` reste `>= 8.4`. Features 8.4 à utiliser partout : nullable explicite (`?Type $param = null`, l'implicite est déprécié), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
-Dès que le projet passe en PHP 8.5 : pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` pour les withers readonly, `#[\NoDiscard]` sur les méthodes dont le retour ne doit pas être ignoré, `array_first()`/`array_last()`. À éviter dès maintenant (dépréciés en 8.5) : casts non canoniques (`(integer)`, `(boolean)`, `(double)`) et `__sleep()`/`__wakeup()` (→ `__serialize()`/`__unserialize()`).
+Features **PHP 8.5 utilisables maintenant** : pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` pour les withers readonly, `#[\NoDiscard]` sur les méthodes dont le retour ne doit pas être ignoré, `array_first()`/`array_last()`. À éviter (dépréciés en 8.5) : casts non canoniques (`(integer)`, `(boolean)`, `(double)`) et `__sleep()`/`__wakeup()` (soft-deprecation → `__serialize()`/`__unserialize()`).
 
 ---
 
@@ -262,6 +262,21 @@ Deux règles pour ne pas fighter le framework :
    ```
 
    Pas besoin de fichiers de traduction : `trans()` renvoie directement la string.
+
+#### Actions custom (EasyAdmin v5) — ne jamais lire `entityId` en query
+
+Avec les *pretty URLs* d'EA v5, l'`entityId` d'une action custom (`#[AdminRoute(path: '/{entityId}/…')]`) est un **paramètre de route**, pas un query param. Le lire dans la query renvoie toujours `null` (symptôme : l'action croit qu'aucune entité n'est sélectionnée). (Depuis EA **5.1**, les pretty URLs sont le **mode par défaut** et `usePrettyUrls()` a été supprimé — ne plus l'appeler.)
+
+```php
+// ❌ CASSÉ depuis la migration v5 — query->get('entityId') est toujours null
+$id = $context->getRequest()->query->get('entityId');
+
+// ✅ EA a déjà résolu l'entité dans le contexte
+$entity = $context->getEntity()->getInstance();
+// ou type-hint l'entité dans la signature : public function foo(MyEntity $e): Response
+```
+
+Test d'une action admin : firewall `admin` à part → form login `testadmin`/`testpass` (`config/packages/test/security.yaml`), `loginUser()` ne marche pas de façon fiable avec un provider in-memory.
 
 ### Données de référence
 
@@ -616,7 +631,7 @@ public function upload(#[MapRequestPayload] UploadAvatarPayload $payload): Respo
 ```
 
 Règles :
-- **DTO plat uniquement** pour l'instant : un `UploadedFile` dans un objet imbriqué casse ([bug #64571](https://github.com/symfony/symfony/issues/64571)). Un payload d'upload imbriqué est de toute façon un smell — aplatir.
+- **DTO plat** : garder le payload d'upload à plat — un `UploadedFile` dans un objet imbriqué reste un smell (aplatir). Le bug historique qui le faisait *casser* ([#64571](https://github.com/symfony/symfony/issues/64571)) est **corrigé** (PR #64576, mergé 6.4→up le 16/06/2026) ; la raison de garder le DTO plat est désormais le style, plus un blocage technique.
 - Identifiant → param de route (`{fieldId}`), pas dans le payload.
 - `#[MapUploadedFile]` reste le fallback (fichier seul sans champs texte, ou cas qui ne rentre pas dans le DTO plat). Jamais `$request->files->get()` ni `$request->request->get()`.
 - Après adoption, vérifier que Nelmio décrit bien le body multipart dans `openapi.yaml` — le gate de drift attrape une régression du SDK.
@@ -1036,7 +1051,7 @@ return [
 
 Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort. `#[SkipDatabaseRollback]` (dama 8.5+) désactive le rollback sur un test qui doit committer réellement.
 
-Contrainte PHPUnit recommandée : **`^12.5`** (PHPUnit 11 est EOL depuis février 2026 ; passer à 13 dès que dama le supporte officiellement). PHPUnit 12 n'accepte plus les annotations doc-comment — attributs uniquement.
+Contrainte PHPUnit : **PHPUnit 13** est la ligne courante (13.2.x). ⚠️ La dernière **dama taguée** (8.6.0) plafonne encore à `^11.5 || ^12.3` — le support PHPUnit 13 n'existe que sur la branche `master` (non taguée) de dama. Donc : pour un lockfile 100 % stable, rester en **`^12.5`** ; si on adopte 13 (cas de ce projet, déjà en `phpunit ^13`), **épingler dama au commit `master` compatible** plutôt que `"*"` (qui résout silencieusement en `dev-master`), et repasser sur `^8.7` dès qu'une release taguée intègre `^13.0`. PHPUnit 11 est EOL (février 2026) ; PHPUnit 12+ n'accepte plus les annotations doc-comment — attributs uniquement.
 
 ### Exemple unit — Domain calculator
 
@@ -1423,7 +1438,7 @@ private Collection $userActions;
 
 ### PHP-CS-Fixer — formatage
 
-Applique automatiquement les conventions de formatage. Sur un projet **Symfony**, utiliser le ruleset **`@Symfony`** (+ `@PHP84Migration`) — c'est le style que Symfony utilise en interne, idiomatique de l'écosystème, et il gère déjà property hooks / asymmetric visibility.
+Applique automatiquement les conventions de formatage. Sur un projet **Symfony**, utiliser le ruleset **`@Symfony`** — c'est le style que Symfony utilise en interne, idiomatique de l'écosystème, et il gère déjà property hooks / asymmetric visibility. Y ajouter le migration set de la version PHP cible : **`@PHP85Migration`** (dispo en stable depuis CS-Fixer 3.91 ; le runtime est en 8.5), à placer **après** `@Symfony`. Il ne touche pas à `concat_space` — mais si tu empiles un autre set ensuite, réimpose explicitement `concat_space: { spacing: 'none' }` pour garder le style Symfony.
 
 ⚠️ **Ne pas empiler `@PER-CS3x0` par-dessus `@Symfony`** : les deux se contredisent sur `concat_space` (`@Symfony` = `'none'` → `'a'.'b'` ; `@PER-CS3x0` = `'one'` → `'a' . 'b'`). Empilé après `@Symfony`, `@PER-CS3x0` gagne et reformate tout le repo dans un style non-Symfony. `@PER-CS3x0` (le standard PHP-FIG, successeur de PSR-12, sorti juillet 2025) est pertinent pour les **librairies framework-agnostiques**, pas pour un projet Symfony.
 

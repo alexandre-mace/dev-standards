@@ -2,7 +2,7 @@
 
 > Source de vérité unique, pas de duplication, un seul pattern.
 >
-> **Dernière veille : 11 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2 · React Compiler 1.0 · @vitejs/plugin-react 6 / Vite 8 (Rolldown) · vite-plugin-symfony 8.2 · ux-react 3.1 · TanStack Query 5.10x · RHF 7.78 (v8 en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.98 (pin exact) · Tailwind 4.3 · shadcn (famille `Field`) · Vitest 4 · MSW 2 · Playwright 1.60 · eslint-plugin-react-hooks 7.
+> **Dernière veille : 29 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.7 · React Compiler 1.0 · @vitejs/plugin-react 6 / Vite 8 (Rolldown) · vite-plugin-symfony 8.2 · ux-react 3.2 · TanStack Query 5.101 · RHF 7.80 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field`) · Vitest 4 · MSW 2 · Playwright 1.61 · eslint-plugin-react-hooks 7.
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -247,7 +247,7 @@ class UploadAvatarPayload
 public function uploadAvatar(#[MapRequestPayload] UploadAvatarPayload $payload): Response { /* ... */ }
 ```
 
-Limites : DTO **plat** uniquement (un `UploadedFile` dans un objet imbriqué casse — [bug #64571](https://github.com/symfony/symfony/issues/64571) ; un payload d'upload imbriqué est de toute façon un smell, aplatir) ; identifiant → param de route (`{fieldId}`). `#[MapUploadedFile]` reste le fallback pour un fichier seul :
+Limites : DTO **plat** (un payload d'upload imbriqué est un smell — aplatir ; le bug historique [#64571](https://github.com/symfony/symfony/issues/64571) qui le faisait *casser* est **corrigé** depuis juin 2026, la raison est donc le style) ; identifiant → param de route (`{fieldId}`). `#[MapUploadedFile]` reste le fallback pour un fichier seul :
 
 ```php
 #[IsGranted('ROLE_USER')]
@@ -441,7 +441,7 @@ const { errors } = useFormState({ control: form.control });
 
 Pour un formulaire avec plusieurs champs et validation côté client : **`Controller` (RHF) + famille `Field` shadcn + Zod généré + `useMutation`**.
 
-Depuis octobre 2025, shadcn a remplacé le wrapper `<Form>/<FormField>/<FormMessage>` (boîte noire couplée RHF) par les composants **`Field`** agnostiques (`npx shadcn@latest add field`). Pattern canonique :
+Depuis octobre 2025, shadcn **recommande** les composants **`Field`** agnostiques (`npx shadcn@latest add field`) plutôt que l'ancien wrapper `<Form>/<FormField>/<FormMessage>` (boîte noire couplée RHF). Ce dernier n'est **pas formellement déprécié**, mais `Field` est le pattern à suivre pour du neuf. Pattern canonique :
 
 ```tsx
 import { useForm, Controller } from "react-hook-form";
@@ -593,7 +593,7 @@ Les 5 plugins :
 - `zod` — schémas Zod 4 pour validation côté client
 - `@tanstack/react-query` — génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI — élimine le boilerplate de `lib/queries/`
 
-Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`. Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod 4.1+ fournit aussi `z.codec()` (transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) pour les conversions API ↔ domaine à la main.
+Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
 
 ### SDK : appels API typés
 
@@ -870,7 +870,7 @@ pnpm lint:fix      # auto-corrige
 
 Config flat (`eslint.config.js`) avec :
 - `@eslint/js` + `typescript-eslint` — règles TS
-- `eslint-plugin-react-hooks` ≥ 7 via `configs.flat.recommended` — hooks rules **et règles React Compiler** (fusionnées depuis la v6 ; `eslint-plugin-react-compiler` est obsolète)
+- `eslint-plugin-react-hooks` ≥ 7 via `configs.flat.recommended` — hooks rules **et règles React Compiler** (entrées dans le `recommended` standard en **v7.0** ; la v6 ne les exposait qu'en `recommended-latest` opt-in ; `eslint-plugin-react-compiler` est obsolète)
 - `eslint-config-prettier` — désactive les règles qui entrent en conflit avec Prettier
 
 ### Prettier
@@ -882,7 +882,7 @@ pnpm format        # formate
 pnpm format:check  # vérifie sans modifier
 ```
 
-Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatique des classes (≥ 0.8 requiert Prettier ≥ 3.7 ; depuis 0.7 le plugin trie aussi les classes dans les **templates Twig** — l'activer sur `templates/`).
+Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatique des classes (≥ 0.8 requiert Prettier ≥ 3.7 ; le tri dans les **templates Twig** existe depuis 0.6, et 0.7 l'étend aux **appels de fonction** Twig — l'activer sur `templates/`).
 
 ### TypeScript strict
 
@@ -1114,7 +1114,7 @@ Détails complets dans `symfony-guidelines.md` §13 (Playwright partage l'infra 
 1. **Une spec par parcours utilisateur**, pas une spec par page. Granularité = "ce qu'un utilisateur essaie de faire". Ex. `tunnel-invest.spec.ts`, pas `step-amount.spec.ts` + `step-identity.spec.ts`.
 2. **Locators sémantiques** : `page.getByRole('button', {name: /valider/i})` plutôt que `page.locator('.btn-submit')`. Résiste aux refactors Tailwind.
 3. **Forms shadcn** : `await page.getByLabel(/Nom/i).fill('Dupont')`. Si le `Label` n'est pas wired, fallback sur `getByPlaceholder` ou `getByRole('textbox', {name: ...})`.
-4. **a11y inline dans chaque spec** :
+4. **a11y inline dans chaque spec** (+ structure : `await expect(page).toMatchAriaSnapshot()`, aria snapshot pleine page depuis Playwright 1.61) :
     ```ts
     import AxeBuilder from '@axe-core/playwright';
 
