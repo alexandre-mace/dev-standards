@@ -674,7 +674,24 @@ Au moins 1 entry point dans `vite.config.js` : `app` (principal). Ajouter des en
 {{ vite_entry_script_tags('app', { dependency: 'react' }) }}
 ```
 
-**Commandes** : `pnpm dev` (dev + HMR), `pnpm build` (production).
+**Commandes** : `pnpm dev` (dev + HMR), `pnpm build` (production). L'intégration Symfony = **`pentatrion/vite-bundle`** (fonctions Twig `vite_entry_*_tags`) + **`vite-plugin-symfony`** côté JS (option `stimulus: true`) ; les entrées `assets/app.js`/`bootstrap.js` utilisent `import.meta.glob` (et non le `require.context` de webpack).
+
+#### EasyAdmin sous Vite — override de layout
+
+EasyAdmin n'a **pas** d'équivalent Vite natif à `Assets::addWebpackEncoreEntry()`. Pour charger une entrée dédiée (ex. `admin` : CSS de tweaks EA + petits listeners), ne pas bricoler `configureAssets()` — **override le layout** :
+
+```twig
+{# templates/bundles/EasyAdminBundle/layout.html.twig #}
+{% extends '@!EasyAdmin/layout.html.twig' %}  {# @! = template original du bundle, pas cet override (évite la boucle) #}
+{% block head_stylesheets %}{{ parent() }}{{ vite_entry_link_tags('admin') }}{% endblock %}
+{% block body_javascript %}{{ parent() }}{{ vite_entry_script_tags('admin') }}{% endblock %}
+```
+
+Et déclarer l'entrée `admin` dans `vite.config.js` (`build.rollupOptions.input`).
+
+#### ⚠️ Migrer Webpack Encore → Vite — piège Flex qui supprime des fichiers
+
+`composer remove symfony/webpack-encore-bundle` (ou le `update` qui le retire) déclenche l'**unconfigure de sa recette Flex** → Flex **SUPPRIME les fichiers que la recette possédait** : `package.json`, `assets/app.js`, `assets/styles/app.css`, `webpack.config.js`, **et retire `/node_modules/` + `/public/build/` du `.gitignore`** (ils vivent dans son bloc `###> … ###`). **Committer un état propre AVANT** ; **après** le retrait : `git status` (chercher les `D` inattendus + `grep node_modules public/build .gitignore`), restaurer par `git checkout <file>` et **ré-appliquer** les edits Vite perdus. Le déploiement, lui, reste transparent si le hook build lance `pnpm build` (script inchangé, sortie `public/build`).
 
 ### Quand React, quand Stimulus, quand Turbo
 
