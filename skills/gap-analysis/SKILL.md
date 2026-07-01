@@ -56,7 +56,17 @@ Audit the full codebase against the project's coding guidelines and produce an e
    - **React patterns** — `forwardRef` usage (React 19 doesn't need it), missing `useMemo`/`useCallback` that React Compiler handles
    - **Anything else weird** — same as backend: flag anything incoherent, fragile, or surprising beyond the listed axes. Inconsistent patterns between similar components, dead props, logic that doesn't make sense, etc.
 
-4. **Write the gap analysis**
+4. **Scan config, tooling & quality gate** — the axis agents scanning `src/`/`assets/` NEVER see, because they never open config files. **Do not skip this: the code can be pristine while the config silently lags the guideline** (real case: PHPStan stuck at `level: 8` while the guideline mandated `max` — invisible to a code-only scan, and the build was green).
+
+   The guidelines mandate a quality gate + tooling setup (`symfony-guidelines.md` §7 "Quality gate" + the PHPStan / testing sections ; `reactony.md` §8 "Quality Assurance"). Open the actual config files and compare against what the guidelines require:
+
+   - **PHPStan level** — read `phpstan.dist.neon` / `phpstan.neon`: does `level:` match the guideline's mandate (e.g. `level: max`)? A lower level (`8` while the guideline says "9+ / max recommandé, level 8 n'est plus le standard") is a **real gap even with a green build**. Check a baseline is used to get there, as the guideline prescribes.
+   - **Quality-gate completeness** — does the pre-commit hook (`.husky/pre-commit`) **and** the CI (`.github/workflows/*.yml`) each run every check §7 lists (PHPStan, PHP-CS-Fixer, `lint:container`, `doctrine:schema:validate --skip-sync`, ESLint, Prettier, `tsc --noEmit`, PHPUnit, build)? Flag any mandated check missing from either.
+   - **TS / ESLint config** — `tsconfig.json` strict flags + `eslint.config.js` rules vs the guideline (`reactony.md` §8).
+   - **Dependency versions** — compare `composer.lock` / `pnpm-lock.yaml` to the guideline's reference versions (the "Dernière veille" header lists them exactly). Flag notable drift where the project is behind.
+   - **Mandated config present** — any config the guidelines require (rate limiter, `http_client` retry, Sentry level, `.editorconfig`, etc.) that is absent or misconfigured.
+
+5. **Write the gap analysis**
 
    Overwrite `docs/gap-analysis.md` with the full findings. Use this structure:
 
@@ -85,7 +95,7 @@ Audit the full codebase against the project's coding guidelines and produce an e
    - **Moyenne** — convention violations (naming, property promotion, missing traits)
    - **Basse** — style/cosmetic (naming typos, dead code, hardcoded URLs)
 
-5. **Present summary** — After writing the file, show the user a short summary: number of findings per priority level, most critical items.
+6. **Present summary** — After writing the file, show the user a short summary: number of findings per priority level, most critical items.
 
 ## Rules
 
