@@ -833,6 +833,26 @@ Utiliser `cn()` de shadcn pour les classes conditionnelles, pas de ternaires dan
 - Loading : `<Loader2 className="h-4 w-4 animate-spin" />` de lucide-react
 - Notifications : `toast` de sonner (pas d'`alert()`)
 
+### Rester sur la dernière version de shadcn (SOTA) + gestion des mises à jour
+
+shadcn n'est **pas une dépendance npm** : les composants sont du **code source vendored** dans `components/ui/`. Il n'y a donc pas de `pnpm update` — la mise à jour se fait composant par composant via le CLI, en **préservant nos customisations locales**. On vise en permanence le **dernier style publié** (aujourd'hui `new-york-v4`, cf. `components.json` → `"style"`). Un `style` périmé fait résoudre le CLI sur l'ancien registry → les nouveaux composants (ex. les primitives de chat `message-scroller`/`message`/`bubble`) tombent en **404** alors qu'ils existent.
+
+**Ce qu'on customise (à NE JAMAIS perdre lors d'une mise à jour)** — surface à garder minuscule et documentée. Sur ce projet :
+- `button.tsx` : variants brand `feve` / `project` / `skills` / `ghostSkills` / `linkSkills` / `skillsSecondary` + taille `xs`.
+- `badge.tsx` : variants `skills` / `project`.
+- Composants **non shadcn** (custom/communauté, pas de `--diff` upstream) : ex. `multi-select.tsx`, `visually-hidden.tsx` → ne pas tenter de les « mettre à jour ».
+
+Tout le reste doit rester **au plus près de l'upstream** : ne pas éditer un `components/ui/*` sans raison, pour que les mises à jour restent des diffs propres.
+
+**Workflow de mise à jour (le CLI EST l'outil de gestion des maj)** :
+1. `npx shadcn@latest add <composant> --diff` — écart entre notre fichier local et l'upstream du style configuré. **Ne jamais fetcher les fichiers GitHub à la main.**
+2. `npx shadcn@latest add <composant> --diff <fichier>` — le diff fichier par fichier.
+3. Décider par fichier : pas de modif locale → overwrite sûr ; modif locale (nos variants brand) → lire le local, appliquer les updates upstream **en re-greffant nos ajouts**.
+4. **Jamais de `--overwrite` en aveugle.** Un `add` peut tirer une dépendance de registry (ex. `message-scroller` dépend de `button`) et vouloir écraser un composant customisé → décliner l'écrasement ou re-greffer nos variants juste après.
+5. Après tout `add`, relire le fichier + fixer les imports d'icônes (lib du projet, pas forcément `radix`) et les alias (`@/`). Vérifier le rendu **dans le navigateur** (le passage d'un style à l'autre change ombres, focus rings, tailles).
+
+**Cadence** : à chaque veille `/update-guidelines`, vérifier le style courant sur ui.shadcn.com et réconcilier les composants qui ont le plus dérivé (un `--diff` volumineux = candidat à re-greffer). Objectif : diff ~nul hors les variants brand documentés.
+
 ### QueryClient
 
 Le `queryClient` partagé (`assets/lib/queryClient.ts`) a des defaults sensibles — ne pas créer de `new QueryClient()` dans les composants.
