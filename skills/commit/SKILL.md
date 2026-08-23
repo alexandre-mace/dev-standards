@@ -10,7 +10,7 @@ Create a git commit following Conventional Commits convention.
 ## Steps
 
 1. Run `git status` to see staged and unstaged changes
-2. Run `git diff --cached` to analyze what's staged. If nothing is staged, stage all modified/untracked files with `git add -A`, then re-run `git diff --cached`.
+2. Run `git diff --cached` to analyze what's staged. If nothing is staged, show the user the `git status --short` list and **ask before staging** with `git add -A` — never auto-stage silently: a stray scratch file, `.env`, or debug artifact would ride into the commit unseen. If the user already named what to commit in `$ARGUMENTS` or the conversation, stage exactly that instead.
 3. Run `git log --oneline -5` to see recent commit style
 
 ## Commit message format

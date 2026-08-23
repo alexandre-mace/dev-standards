@@ -1,6 +1,6 @@
 ---
 name: check-implementation
-description: Verify that recent code changes follow the latest official documentation and best practices of the technologies used. Use after writing code to ensure the implementation aligns with current recommendations.
+description: Check recent code against the official docs of the exact versions used. Triggers - check implementation, best practices, deprecated, "is this still the recommended way", "c'est à jour ?".
 ---
 
 # Check Implementation Against Official Docs

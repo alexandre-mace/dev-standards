@@ -1,6 +1,6 @@
 ---
 name: update-guidelines
-description: Relie docs/symfony-guidelines.md et docs/reactony.md, confronte leurs recommandations aux dernières pratiques web (changelogs officiels, blogs mainteneurs, migration guides), et propose des modifs là où les reco ne sont plus au niveau de l'état de l'art.
+description: Veille techno sur docs/symfony-guidelines.md et docs/reactony.md contre les sources officielles. Déclencheurs - update guidelines, veille, "les guidelines sont-elles à jour", état de l'art.
 ---
 
 # update-guidelines

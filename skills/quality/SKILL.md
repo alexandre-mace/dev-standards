@@ -71,11 +71,15 @@ If `bin/phpunit` does not exist, skip.
 
 Run these only if Next.js is detected:
 
-### Next.js build check
+### Production build
 
 ```bash
-pnpm next build --dry-run 2>/dev/null || pnpm next lint
+pnpm build
 ```
+
+The build IS the check: it type-checks and fails on compile errors. Do NOT use
+`next lint` (removed in Next 16) or `--dry-run` (never existed) — linting is
+covered by the shared ESLint check below.
 
 ## Shared frontend checks (React, Next.js, or Symfony+React)
 
@@ -118,6 +122,7 @@ Doctrine schema:      PASS / FAIL
 Container lint:       PASS / FAIL
 Composer audit:       PASS / FAIL (N vulnerabilities)
 PHPUnit:              PASS / FAIL / SKIPPED (no bin/phpunit)
+Next build:           PASS / FAIL
 TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
 ESLint:               PASS / FAIL / SKIPPED (no lint script)
 Prettier:             PASS / FAIL / SKIPPED (no format:check script)
