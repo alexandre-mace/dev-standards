@@ -5,14 +5,15 @@
 >
 > **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn style `aria-nova` (base `react-aria-components`) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
-## Portée : socle et couche site statique
+## Portée : un socle, deux couches
 
-Deux niveaux, à ne pas confondre :
+Trois niveaux, à ne pas confondre :
 
 - **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn style `aria-nova` (React Aria), ESLint flat config, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
 - **La couche site statique d'écosystème** (portfolio, climatelab, wealth, taste, culture…) ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
+- **La couche application full-stack** (ex. symbl) remplace le « statique d'abord » par des choix eux aussi gravés : backend **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe), auth **Clerk** (`@clerk/nextjs`). Et là, les tests redeviennent obligatoires : Vitest + `convex-test` pour les fonctions backend, Playwright pour les parcours critiques.
 
-Un projet applicatif (vrai backend, tests, desktop… ex. symbl) garde le socle mais sort de la couche statique : ses conventions propres vivent dans son CLAUDE.md, et deviendront un doc de stack le jour où la structure se répète (doctrine des récurrences). Dans les principes ci-dessous, le 1 (statique), le 3 (kit), le 5 (mono-thème) et le « pas de tests » du §6 relèvent de la couche statique ; tout le reste est socle.
+Un projet full-stack garde donc tout le socle, prend Convex + Clerk plutôt que d'inventer, et documente le reste de ses conventions propres dans son CLAUDE.md ; elles deviendront des sections de ce doc le jour où un deuxième projet les répète (doctrine des récurrences). Dans les principes ci-dessous, le 1 (statique), le 3 (kit), le 5 (mono-thème) et le « pas de tests » du §6 relèvent de la couche statique ; tout le reste est socle.
 
 ## Principes
 
