@@ -3,7 +3,7 @@
 > Conventions de la stack perso (portfolio, climatelab, wealth, taste, culture, state…). Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn style `aria-nova` (base `react-aria-components`) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn style `aria-nova` (base `react-aria-components`, first-class depuis juillet 2026 ; Base UI est le défaut des nouveaux projets shadcn : vérifier la dispo aria avant chaque `add`) · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
 ## Portée : un socle, deux couches
 
@@ -42,16 +42,9 @@ scripts/        # pipeline data éventuel (*.mjs)
 - `next.config.ts` typé `NextConfig`, vide par défaut ; on n'y ajoute que le nécessaire (`images.remotePatterns` si images distantes).
 - `tsconfig` : alias `@/*` vers la racine ; target ES2017 minimum.
 - Scripts minimaux : `dev`, `build`, `start`, `lint` (+ `data` si pipeline). `dev` avec `--turbopack`.
-- ESLint flat config `eslint.config.mjs` :
+- **Biome pour le lint et le format** (un binaire, `biome.json`) : `next lint` a disparu en Next 16, Biome est une option officielle de `create-next-app` (moteur de types financé par Vercel), et son domaine `next` s'active tout seul dès `next >= 14` en couvrant l'essentiel d'eslint-config-next. Scripts : `"lint": "biome check"`, `"lint:fix": "biome check --write"`. Les sites existants en ESLint flat + eslint-config-next migrent à l'occasion, pas en big-bang.
 
-```js
-import { defineConfig } from "eslint/config";
-import coreWebVitals from "eslint-config-next/core-web-vitals";
-import typescript from "eslint-config-next/typescript";
-
-export default defineConfig([...coreWebVitals, ...typescript,
-  { ignores: [".next/**", "out/**", "node_modules/**"] }]);
-```
+  > Nuance de veille (août 2026) : la filière oxc (oxlint + oxfmt, le choix de Theo/t3) est l'autre sortie du duo ESLint+Prettier, plus rapide encore, mais oxfmt est en beta. Biome est le tout-en-un stable du moment ; re-statuer si oxfmt passe stable.
 
 ## 2. Kit et composants
 
