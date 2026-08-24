@@ -1,19 +1,33 @@
 # Dev Standards
 
-Coding guidelines for Symfony + React (TypeScript) projects.
+Coding guidelines organized by stack, plus the Claude Code skills that enforce them. The docs are prescriptive and shared: they say what SHOULD be, never the state of one project (that's `/gap-analysis`).
 
-## Files
+## Stacks
+
+### `symfony-react/` — pro (lagrange, fabacee, legrenier)
 
 - **`symfony-guidelines.md`** — Backend architecture: Domain/Service/Controller, enums, repositories, commands, DTOs, Doctrine patterns
 - **`reactony.md`** — Symfony + React integration: forms, mutations, type pipeline, error handling, SDK usage
 
+### `next/` — perso (portfolio, climatelab, wealth, ui kit…)
+
+- **`next-guidelines.md`** — Static-first Next.js sites: App Router, aria-nova kit, baked data pipeline, SEO, Vercel
+
+### Transverse
+
+- **`design-system-page.md`** — The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
+
 ## Usage
 
-Clone this repo and symlink the files into your project's `docs/` directory:
+Clone this repo and symlink the relevant stack's files into your project's `docs/` directory:
 
 ```bash
-ln -s ~/dev/dev-standards/symfony-guidelines.md docs/symfony-guidelines.md
-ln -s ~/dev/dev-standards/reactony.md docs/reactony.md
+# Symfony + React project
+ln -s ~/dev/dev-standards/symfony-react/symfony-guidelines.md docs/symfony-guidelines.md
+ln -s ~/dev/dev-standards/symfony-react/reactony.md docs/reactony.md
+
+# Next.js project
+ln -s ~/dev/dev-standards/next/next-guidelines.md docs/next-guidelines.md
 ```
 
 Then reference them in your project's `CLAUDE.md`:
@@ -21,10 +35,7 @@ Then reference them in your project's `CLAUDE.md`:
 ```markdown
 ## Architecture & Guidelines
 
-Detailed conventions are in `docs/`:
-- **`docs/symfony-guidelines.md`** — Backend architecture
-- **`docs/reactony.md`** — Symfony + React integration
-
+Detailed conventions are in `docs/` (symlinked from dev-standards).
 These docs are the source of truth for code conventions.
 ```
 

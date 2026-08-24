@@ -1,19 +1,19 @@
 ---
 name: update-guidelines
-description: Veille techno sur docs/symfony-guidelines.md et docs/reactony.md contre les sources officielles. Déclencheurs - update guidelines, veille, "les guidelines sont-elles à jour", état de l'art.
+description: Veille techno sur les guidelines dev-standards (stack symfony-react et stack next) contre les sources officielles. Déclencheurs - update guidelines, veille, "les guidelines sont-elles à jour", état de l'art.
 ---
 
 # update-guidelines
 
-Relie `docs/symfony-guidelines.md` et `docs/reactony.md`, confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art.
+Relie les guidelines de `~/dev/dev-standards` — stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`) et stack perso `next/` (`next-guidelines.md`) — confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les deux stacks ; l'utilisateur peut en cibler une.
 
 C'est une **veille techno** : les guidelines sont le point de référence, le web est le juge de paix, le repo du projet n'est **pas** une source (il peut contenir du legacy).
 
 ## Steps
 
 1. **Read current state**
-   - Read `docs/symfony-guidelines.md` and `docs/reactony.md`
-   - Read `composer.json` and `package.json` to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind, etc.)
+   - Read the stack's guidelines: `symfony-react/symfony-guidelines.md` + `symfony-react/reactony.md` (pro) and/or `next/next-guidelines.md` (perso)
+   - Read `composer.json` / `package.json` of a representative project per stack to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind — et côté next : Next.js, kit @alexandremace, etc.)
 
 2. **Research web-first : sources autoritaires uniquement**
 
@@ -31,6 +31,7 @@ C'est une **veille techno** : les guidelines sont le point de référence, le we
    - **PHP** : nouveautés de la version en `require`
    - **Doctrine** ORM/DBAL
    - **React & écosystème** : React, TanStack Query, React Hook Form, Zod, @hey-api/openapi-ts, Vite, vite-plugin-symfony, Tailwind, Shadcn/UI, React Compiler
+   - **Stack next (perso)** : Next.js (blog officiel + changelog), React, Tailwind, shadcn/registry + react-aria-components (aria-nova), Vercel (plateforme et limites), next/og, lucide
 
    **À NE PAS faire** :
    - **Ne pas s'inspirer des commits récents du projet**. Ils peuvent refléter du legacy, des compromis de livraison, ou des patterns antérieurs aux recommandations actuelles. Le repo est ce qu'on veut *corriger*, pas la source.
@@ -63,5 +64,5 @@ C'est une **veille techno** : les guidelines sont le point de référence, le we
 - French for prose, English for code and technical terms.
 - Don't add patterns the project doesn't use or plan to use : ask the user if unsure.
 - Don't remove existing patterns that are correct : only update, add, or clarify.
-- Both files should be self-contained but consistent where they overlap (DTO patterns, upload patterns, format:'json').
+- Within a stack, files must be self-contained but consistent where they overlap (ex. symfony-react : DTO patterns, upload patterns, format:'json').
 - If the guidelines are already up-to-date and correct after thorough review, it's perfectly fine to conclude with "no changes needed". The goal is accuracy, not change for the sake of change.
