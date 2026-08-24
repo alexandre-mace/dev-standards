@@ -3,7 +3,7 @@
 > Conventions de la stack perso (portfolio, climatelab, wealth, taste, culture, state…). Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16.3 (App Router ; Active LTS avec security releases préannoncées : **patcher sous une semaine**, ex. 16.3.3 critique le 26/08/2026) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
 ## Portée : un socle, deux couches
 
@@ -11,7 +11,7 @@ Trois niveaux, à ne pas confondre :
 
 - **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn base Base UI style Nova, Biome, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
 - **La couche site statique d'écosystème** (portfolio, climatelab, wealth, taste, culture…) ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
-- **La couche application full-stack** (ex. symbl) remplace le « statique d'abord » par des choix eux aussi gravés : backend **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe), auth **Clerk** (`@clerk/nextjs`). Et là, les tests redeviennent obligatoires : Vitest + `convex-test` pour les fonctions backend, Playwright pour les parcours critiques.
+- **La couche application full-stack** (ex. symbl) remplace le « statique d'abord » par des choix eux aussi gravés : backend **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe), auth **Clerk** (`@clerk/nextjs`). Et là, les tests redeviennent obligatoires : Vitest + `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Côté Next 16.3 : `catchError`/`retry()` stables pour les error boundaries, et `middleware.ts` est déprécié au profit de `proxy.ts`. Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>` (View Transitions typées) : à regarder, pas encore des normes.
 
 Un projet full-stack garde donc tout le socle, prend Convex + Clerk plutôt que d'inventer, et documente le reste de ses conventions propres dans son CLAUDE.md ; elles deviendront des sections de ce doc le jour où un deuxième projet les répète (doctrine des récurrences). Dans les principes ci-dessous, le 1 (statique), le 3 (kit), le 5 (mono-thème) et le « pas de tests » du §6 relèvent de la couche statique ; tout le reste est socle.
 
@@ -39,7 +39,8 @@ lib/            # données typées, utils (cn)
 scripts/        # pipeline data éventuel (*.mjs)
 ```
 
-- `next.config.ts` typé `NextConfig`, vide par défaut ; on n'y ajoute que le nécessaire (`images.remotePatterns` si images distantes).
+- `next.config.ts` typé `NextConfig`, vide par défaut ; on n'y ajoute que le nécessaire (`images.remotePatterns` si images distantes : jamais `hostname: "**"`, lister les hôtes réels ; `images.domains` est déprécié). Nouveaux défauts `next/image` en 16 à connaître : `qualities` réduit à `[75]`, cache TTL passé à 4 h, et une src locale avec query string exige `images.localPatterns`.
+- **`AGENTS.md` est commité** : depuis 16.3, `next dev` crée et maintient ce fichier (bloc auto-géré pointant la doc de la version installée). On le versionne tel quel et on n'édite pas le bloc auto-géré ; le CLAUDE.md du projet reste la source des conventions.
 - `tsconfig` : alias `@/*` vers la racine ; target ES2017 minimum.
 - Scripts minimaux : `dev`, `build`, `start`, `lint` (+ `data` si pipeline). `dev` avec `--turbopack`.
 - **Biome pour le lint et le format** (un binaire, `biome.json`) : `next lint` a disparu en Next 16, Biome est une option officielle de `create-next-app` (moteur de types financé par Vercel), et son domaine `next` s'active tout seul dès `next >= 14` en couvrant l'essentiel d'eslint-config-next. Scripts : `"lint": "biome check"`, `"lint:fix": "biome check --write"`. Les sites existants en ESLint flat + eslint-config-next migrent à l'occasion, pas en big-bang.
@@ -102,8 +103,8 @@ export const metadata: Metadata = {
 };
 ```
 
-- **OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse` de `next/og`, 1200×630. Pas d'image statique qui périme.
-- **Favicon** : `app/icon.tsx` (généré) ou emoji en data-URI dans `icons.icon`. Pas de `favicon.ico` par défaut Next qui traîne.
+- **OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse` de `next/og`, 1200×630. Pas d'image statique qui périme. Depuis 16.2, `ImageResponse` est nettement plus rapide et sa police par défaut est Geist Sans : cohérence gratuite avec le reste du système.
+- **Favicon** : `app/icon.tsx` (généré) ou emoji en data-URI dans `icons.icon`. Pas de `favicon.ico` par défaut Next qui traîne. Depuis 16.2, `icon.svg` et `icon.png` peuvent coexister dans `app/` avec fallback automatique.
 
 ## 5. Données cuites
 
@@ -120,7 +121,8 @@ Le contenu vit dans `lib/` en TypeScript typé, jamais en fetch runtime pour l'a
 ## 6. Qualité et déploiement
 
 - **`pnpm build` est le check** : types, lint Next, génération statique. Le lancer avant de pousser. Pas de suite de tests par défaut sur ces sites : la logique critique est dans les scripts data, contrôlée par leurs logs.
-- **Vercel : pousser = déployer** (webhook sur main). Grouper les pushes ; le plan Hobby plafonne à 100 déploiements par 24 h glissantes, et chaque push de chaque projet consomme un slot.
+- **Vercel : pousser = déployer** (webhook sur main). Grouper les pushes ; le plan Hobby plafonne à 100 déploiements par 24 h glissantes, et chaque push de chaque projet consomme un slot. Depuis avril 2026, la rétention Hobby est de **30 jours** (les 10 derniers déploiements prod et les déploiements aliasés sont préservés) : ne jamais compter sur une vieille URL de déploiement comme archive.
+- **Sécurité Next** : suivre le programme LTS (16.x Active, releases de sécurité préannoncées sur le blog Next) et **patcher tous les projets sous une semaine** après une security release.
 - Un ancien hébergement (GitHub Pages) se recycle en page de redirection (canonical + meta refresh) vers le domaine, jamais en doublon vivant.
 - Dev local : serveur via `.claude/launch.json`, un port dédié par projet.
 
