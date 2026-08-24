@@ -839,15 +839,13 @@ shadcn n'est **pas une dépendance npm** : les composants sont du **code source 
 
 > **Nouveau projet : préférer le style `aria-nova` (React Aria).** Même CLI, mêmes tokens, mais base `react-aria-components` au lieu de Radix : accessibilité clavier/lecteur d'écran supérieure d'origine. Les projets existants restent sur `new-york-v4` — en changer serait une migration (pas d'`asChild`, `onPress`/`isDisabled`, `LinkButton`), pas un réglage. Un `style` périmé fait résoudre le CLI sur l'ancien registry → les nouveaux composants (ex. les primitives de chat `message-scroller`/`message`/`bubble`) tombent en **404** alors qu'ils existent.
 
-**Ce qu'on customise (à NE JAMAIS perdre lors d'une mise à jour)** — inventaire à tenir à jour (un `--diff` complet le révèle). Sur ce projet, plusieurs sont des **API load-bearing** que v4 casse :
-- `button.tsx` : variants brand `feve`/`project`/`skills`/`ghostSkills`/`linkSkills`/`skillsSecondary` + taille `xs` (`h-7`, ≠ v4 `h-6`) + tailles `icon-xs`/`icon-sm`/`icon-lg`.
-- `badge.tsx` : variants `skills`/`project`/`land`/`finance`/`network`.
-- `dialog.tsx` : aligné sur le `showCloseButton` v4 ; le custom restant est `DialogFooter` qui accepte `showCloseButton` (inexistant upstream).
-- `popover.tsx` : `PopoverClose` (supprimé en v4) — 8 usages dans `InputWithLabel`.
-- `slider.tsx` : `cva` variants `default/muted/land` (`RangeSlider` en dépend activement).
-- `progress.tsx` : prop `color` (4 écrans).
-- `chart.tsx` : type `ChartPayloadItem` maison ; `navigation-menu.tsx` : viewport `rounded-2xl` ; `pagination.tsx` : libellés FR.
-- Composants **non shadcn** (pas de `--diff` upstream) : `multi-select.tsx`, `visually-hidden.tsx` → ne pas « mettre à jour ».
+**L'inventaire de ce qui est customisé est PAR PROJET et vit dans son `DESIGN-SYSTEM.md`** (section provenance, entrées `variant`/`custom`) : c'est lui qui fait foi, pas ce document. Reactony est partagé entre les produits, il ne peut pas porter un inventaire local sans mentir chez les voisins (leçon du 24/08/2026 : il listait les customisations de lagrange, pendant que le DS de lagrange en comptait 7 de moins). Avant de mettre à jour un composant : consulter l'inventaire du projet, passer un `--diff` complet pour attraper ce qu'il aurait raté, et le mettre à jour dans la foulée, même PR.
+
+**Pièges v4 upstream connus** (faits de la bibliothèque, valables pour tous les projets) :
+- `PopoverClose` supprimé du registre v4 : un projet qui l'utilise le conserve localement et le note `variant`.
+- Prop du dialog inversée : `hideCloseButton` est devenu `showCloseButton`.
+- Tailles du bouton : `xs` upstream passe à `h-6` ; `icon-xs`/`icon-sm`/`icon-lg` n'existent pas dans tous les styles.
+- Composants **non shadcn** (ex. `multi-select`, `visually-hidden`) : pas de `--diff` upstream, ne pas tenter de les « mettre à jour ».
 
 Tout le reste doit rester **au plus près de l'upstream** : ne pas éditer un `components/ui/*` sans raison, pour que les mises à jour restent des diffs propres.
 
