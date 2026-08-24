@@ -3,7 +3,7 @@
 > Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud).
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -1642,6 +1642,8 @@ Les appels vers des services externes (Hubspot, Discord, Slack, emails) sont dis
 ### Transport
 
 Doctrine (PostgreSQL, table `messenger_messages`). Les messages `SendEmailMessage`, `ChatMessage`, `SmsMessage` restent en **sync** car leurs templates reçoivent des entités Doctrine qui ne se sérialisent pas.
+
+Version PostgreSQL cible : **≥ 17** (défaut CleverCloud ; 18.3 dispo, avec io_uring et UUIDv7). Un add-on encore en 15/16 est un écart à remonter en gap-analysis, la montée de version chez Clever est peu coûteuse.
 
 ### Message — le DTO
 
