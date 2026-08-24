@@ -21,6 +21,7 @@ $ARGUMENTS
 - Utilise les outils de recherche (Glob, Grep, Read) — lance plusieurs recherches en parallèle quand c'est pertinent.
 - Lis réellement le code impacté (pas juste les noms de fichiers) pour comprendre l'existant : architecture, conventions locales, dépendances, tests, effets de bord possibles.
 - Vérifie si des patterns similaires existent déjà dans le projet à réutiliser plutôt que réinventer.
+- **Cartographie le rayon d'impact de ce que tu vas modifier** : liste les appelants de chaque symbole touché (Grep), repère les tests qui couvrent la zone et prévois de les lancer (`bin/phpunit --filter`, `pnpm test`), et signale explicitement quand le code touché est partagé entre plusieurs pages, composants ou lignes de produit — un petit changement dans du code partagé n'est pas un petit changement.
 - Consulte les guidelines du projet (ex. `docs/symfony-guidelines.md`, `docs/reactony.md`, `CLAUDE.md`) si elles existent.
 
 ### 3. Trancher tout ce qui peut l'être
