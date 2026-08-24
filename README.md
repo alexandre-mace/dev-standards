@@ -46,6 +46,31 @@ Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so th
 | `update-guidelines` | Web-first review of the guidelines themselves against latest ecosystem best practices |
 | `check-implementation` | Verify recent code against latest official docs of the techs used |
 | `check-logs` | Prod health audit: CleverCloud logs + Messenger DB + Sentry, prioritized report |
+| `unslop` | Strip AI writing tells from any text, French and English |
+
+### The thread of a feature
+
+The skills chain in a fixed order. Following it is what makes a feature
+land coherent on the first pass:
+
+```
+/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /preprod  →  recette  →  /deploy
+   │                              │
+   │                              └─ Feature playbook (symfony-guidelines §one-shot)
+   └─ investigation + blast radius + assumed decisions
+```
+
+- **`/ticket`** digests the PM ticket: investigates, maps the impact radius,
+  decides everything the code can decide, surfaces only what truly blocks.
+- **`/feature-start`** cuts the branch once the plan is clear — not before.
+- **Implement** follows the Feature playbook and the guidelines;
+  `/check-implementation` on demand when touching an API you don't use often.
+- **`/quality`** before declaring done, **`/commit`** per coherent step,
+  **`/preprod`** for the recette, **`/deploy`** merges to main and cleans up.
+
+Out of band, the hygiene loop: `/check-logs` monthly on prod,
+`/gap-analysis` after a big delivery, `/update-guidelines` as tech watch.
+Each feeds the next cycle's `/ticket` with a healthier baseline.
 
 ### Setup on a new machine
 
