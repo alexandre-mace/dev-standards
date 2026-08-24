@@ -3,13 +3,13 @@
 > Conventions de la stack perso (portfolio, climatelab, wealth, taste, culture, state…). Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn style `aria-nova` (base `react-aria-components`, first-class depuis juillet 2026 ; Base UI est le défaut des nouveaux projets shadcn : vérifier la dispo aria avant chaque `add`) · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
 ## Portée : un socle, deux couches
 
 Trois niveaux, à ne pas confondre :
 
-- **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn style `aria-nova` (React Aria), ESLint flat config, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
+- **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn base Base UI style Nova, Biome, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
 - **La couche site statique d'écosystème** (portfolio, climatelab, wealth, taste, culture…) ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
 - **La couche application full-stack** (ex. symbl) remplace le « statique d'abord » par des choix eux aussi gravés : backend **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe), auth **Clerk** (`@clerk/nextjs`). Et là, les tests redeviennent obligatoires : Vitest + `convex-test` pour les fonctions backend, Playwright pour les parcours critiques.
 
@@ -48,15 +48,15 @@ scripts/        # pipeline data éventuel (*.mjs)
 
 ## 2. Kit et composants
 
-- `components.json` : style **`aria-nova`**, `iconLibrary: lucide`, `cssVariables: true`, alias standards (`@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks`), et le registry déclaré :
+- `components.json` : **base Base UI, style Nova** (le défaut shadcn depuis juillet 2026 : les nouveaux composants sortent d'abord pour cette base), `iconLibrary: lucide`, `cssVariables: true`, alias standards (`@/components`, `@/lib/utils`, `@/components/ui`, `@/lib`, `@/hooks`), et le registry déclaré :
 
 ```json
 "registries": { "@alexandremace": "https://ui.alexandremace.fr/r/{name}.json" }
 ```
 
 - Installation d'un composant : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`…) passent par le registry aussi, jamais par copier-coller entre projets.
-- **Projet hors kit** (application, identité propre) : style `aria-nova` stock via le CLI shadcn officiel, sans le registry. Les idiomes React Aria ci-dessous s'appliquent à l'identique.
-- **React Aria, pas Radix** : pas d'`asChild`. Les liens stylés bouton passent par l'export `LinkButton` de `components/ui/button.tsx` ; interaction via `onPress`/`isDisabled` ; état de sélection stylé via `data-selected`.
+- **Projet hors kit** (application, identité propre) : base Base UI stock via le CLI shadcn officiel, sans le registry.
+- **Transition depuis la base React Aria** : le kit et ses consommateurs historiques sont partis d'`aria-nova` ; la cible est Base UI, la migration se fait **kit d'abord** (branche, primitives re-basées, démos comparées) puis propagation projet par projet, jamais en mélangeant les deux bases dans un même projet. Tant qu'un projet est encore sur la base aria, ses idiomes restent sa règle locale : pas d'`asChild`, liens stylés bouton via l'export `LinkButton`, interaction `onPress`/`isDisabled`, sélection via `data-selected`. Côté Base UI, la composition passe par la prop `render` (pas d'`asChild` non plus) et les handlers DOM standards (`onClick`).
 - **lucide-react 1.x n'a plus d'icônes de marque** (GitHub, X…) : SVG local dans `components/icons.tsx`.
 - Variantes de composants projet : CVA, comme dans le kit.
 
@@ -127,7 +127,7 @@ Le contenu vit dans `lib/` en TypeScript typé, jamais en fetch runtime pour l'a
 ## 7. Anti-patterns
 
 - Éditer un fichier de `components/ui/` dans un consommateur : le changement vit dans le kit, puis `/propagate-kit`.
-- `asChild`, `onClick` sur un trigger React Aria, ou un pattern Radix recopié d'un projet pro : autre base, autres idiomes (`onPress`, `LinkButton`, `data-selected`).
+- Mélanger les idiomes de deux bases dans un même projet : un projet encore en base aria garde `onPress`/`LinkButton`/`data-selected` partout ; un projet Base UI compose via `render` et `onClick`. `asChild` n'existe dans aucune des deux (c'est du Radix recopié d'un projet pro).
 - `tailwind.config.js` : Tailwind 4 se configure en CSS (`@theme`).
 - pnpm, yarn, ou un lockfile mixte : npm seul.
 - `useEffect + fetch` pour du contenu affichable au build : cuire dans `lib/` via `pnpm data`.
