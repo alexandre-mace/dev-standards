@@ -56,9 +56,10 @@ The skills chain in a fixed order. Following it is what makes a feature
 land coherent on the first pass:
 
 ```
-/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /preprod  →  recette  →  /review-diff  →  /deploy
-   │                              │                                                    │
-   │                              └─ Feature playbook (symfony-guidelines §one-shot)   └─ orchestre /quality + /check-implementation
+/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /review-diff¹  →  /preprod  →  recette  →  /review-diff²  →  /deploy
+   │                              │                                        │                                         │
+   │                              │                                        └─ passage 1 : revue complète             └─ passage 2 : delta + /quality frais
+   │                              └─ Feature playbook (symfony-guidelines §one-shot)
    └─ investigation + blast radius + assumed decisions
 
 Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
@@ -74,11 +75,12 @@ Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
 - **`/review-diff`** is the review a no-PR flow doesn't have: full **branch**
   diff (`main...HEAD`) vs the original ticket (everything asked, nothing more)
   and vs the guidelines, then it runs `/quality` and, only when the diff uses
-  unfamiliar APIs, `/check-implementation`. It reviews committed work — commits
-  are save points, the merge is the irreversible act — so its mandatory slot is
-  the last gate before `/deploy`, covering fixes made during the recette too.
-  On a big feature, also run it **before `/preprod`**: don't make the PM test
-  a diff the review would send back. **`/deploy`** merges to main and cleans up.
+  unfamiliar APIs, `/check-implementation`. It runs **twice**: pass 1 before
+  `/preprod` (full review — don't make the PM test a diff the review would
+  send back), pass 2 before `/deploy` (delta since pass 1 + fresh `/quality`,
+  fast by design). Commits are save points, the merge is the irreversible act:
+  nothing lands on main unreviewed, recette fixes included.
+  **`/deploy`** merges to main and cleans up.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod,
 `/gap-analysis` after a big delivery, `/update-guidelines` as tech watch.

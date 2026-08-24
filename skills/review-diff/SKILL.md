@@ -1,15 +1,26 @@
 ---
 name: review-diff
-description: Revue complète avant deploy - le diff contre le ticket d'origine et les guidelines, puis lance /quality et, si besoin, /check-implementation. Déclencheurs - review, relis le diff, "prêt à déployer ?", revue avant deploy.
+description: Revue du diff de branche contre le ticket et les guidelines, puis lance /quality et, si besoin, /check-implementation. Deux passages - avant /preprod (complet) et avant /deploy (delta). Déclencheurs - review, relis le diff, "prêt à recetter ?", "prêt à déployer ?".
 disable-model-invocation: true
 ---
 
-# Review du diff avant deploy
+# Review du diff
 
-La revue de PR d'un flux sans PR. À lancer entre la recette et `/deploy` :
-relit tout ce que la branche va poser sur `main`, contre l'intention
-d'origine et les règles maison, puis délègue les vérifications mécaniques
-aux skills spécialisés.
+La revue de PR d'un flux sans PR. Elle tourne **deux fois**, à deux moments :
+
+- **Passage 1 : avant `/preprod`.** Revue complète du diff de branche. Son
+  rôle : ne pas envoyer en recette un diff qui serait retoqué, le temps de la
+  PM vaut plus qu'un aller-retour.
+- **Passage 2 : avant `/deploy`.** Revue du **delta** depuis le passage 1
+  (`git diff` depuis le commit alors relu, typiquement les corrections de
+  recette), plus un `/quality` frais. Si rien n'a bougé depuis le passage 1,
+  le dire et rendre le verdict en trois lignes : ce passage doit être rapide,
+  pas cérémonieux. S'il n'y a pas eu de passage 1 (petite feature), ce
+  passage fait la revue complète.
+
+Le principe qui tient les deux : le commit est un point de sauvegarde, le
+merge est l'acte irréversible. Rien n'atterrit sur `main` sans avoir été relu,
+y compris les corrections faites pendant la recette.
 
 ## 1. Rassembler les deux termes de la comparaison
 
