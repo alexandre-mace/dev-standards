@@ -8,23 +8,23 @@ Audit the full codebase against the project's coding guidelines and produce an e
 ## Steps
 
 1. **Read the guidelines**
-   - Read `docs/symfony-guidelines.md` and `docs/reactony.md` in full — these are the source of truth
+   - Read `docs/symfony-guidelines.md` and `docs/reactony.md` in full : these are the source of truth
    - Read the existing `docs/gap-analysis.md` to know what's already been identified and what's been checked off
 
 2. **Scan the backend (`src/`)**
 
-   Use agents in parallel to cover all these axes. Be exhaustive — check every file, not a sample.
+   Use agents in parallel to cover all these axes. Be exhaustive : check every file, not a sample.
 
-   - **Domain/ vs Service/ separation** — any class in `Domain/` that injects a repository, EntityManager, API client, logger, or any infra dependency. Domain/ must be pure (Entity + other Domain only).
-   - **Enum patterns** — abstract classes with `public const` that should be PHP `enum`. Check naming (singular). Check Doctrine columns that should use `enumType:`.
+   - **Domain/ vs Service/ separation** : any class in `Domain/` that injects a repository, EntityManager, API client, logger, or any infra dependency. Domain/ must be pure (Entity + other Domain only).
+   - **Enum patterns** : abstract classes with `public const` that should be PHP `enum`. Check naming (singular). Check Doctrine columns that should use `enumType:`.
    - **Controller patterns** :
      - Routes `/api/` missing `format: 'json'`
      - Routes `/api/` missing `#[IsGranted]`
      - Usage of `$request->get()` (removed in Symfony 8.0)
-     - Controllers with inline business logic that should be in Domain/ or Service/. Note: controller length alone is NOT a problem — a well-organized controller with many thin actions can be long. Only flag controllers where actual business logic is inline and should be extracted.
-     - `getRepository()` calls — should inject typed Repository instead
-   - **DTO patterns** — MapRequestPayload on entities that should use a DTO (large entities), DTOs with constructors or `= null` defaults when used with ObjectMapper
-   - **Repository patterns** — queries living outside Repository/ (in Domain/, Service/, Twig/, Controllers via `getRepository()`)
+     - Controllers with inline business logic that should be in Domain/ or Service/. Note: controller length alone is NOT a problem, a well-organized controller with many thin actions can be long. Only flag controllers where actual business logic is inline and should be extracted.
+     - `getRepository()` calls : should inject typed Repository instead
+   - **DTO patterns** : MapRequestPayload on entities that should use a DTO (large entities), DTOs with constructors or `= null` defaults when used with ObjectMapper
+   - **Repository patterns** : queries living outside Repository/ (in Domain/, Service/, Twig/, Controllers via `getRepository()`)
    - **Entity patterns** :
      - Missing `Timestampable` trait
      - Explicit `type: 'datetime_immutable'` that can be removed (TypedFieldMapper)
@@ -34,44 +34,44 @@ Audit the full codebase against the project's coding guidelines and produce an e
      - Commands extending `Command` with `execute()` instead of invokable pattern
      - Missing `#[AsCommand]`
      - Business logic inline (>100 lines) that should be in Service/
-   - **Service patterns** — constructor without property promotion, missing `readonly`
-   - **Twig patterns** — extensions using `AbstractExtension` + `getFunctions()` instead of `#[AsTwigFunction]` attributes
-   - **PHP 8.4** — implicit nullable (`Type $param = null` without `?`), opportunities for asymmetric visibility or property hooks
-   - **General** — dead code (commented-out blocks, unused classes/methods), hardcoded URLs that belong in `.env`, inconsistent naming (plural enums, typos), code duplication
-   - **Anything else weird** — the axes above are a starting point, not a limit. Flag anything that looks incoherent, fragile, surprising, or just wrong — even if no specific guideline covers it. Use your judgement. Examples: suspicious logic, security smells, inconsistent patterns between similar files, things that will confuse the next developer.
+   - **Service patterns** : constructor without property promotion, missing `readonly`
+   - **Twig patterns** : extensions using `AbstractExtension` + `getFunctions()` instead of `#[AsTwigFunction]` attributes
+   - **PHP 8.4** : implicit nullable (`Type $param = null` without `?`), opportunities for asymmetric visibility or property hooks
+   - **General** : dead code (commented-out blocks, unused classes/methods), hardcoded URLs that belong in `.env`, inconsistent naming (plural enums, typos), code duplication
+   - **Anything else weird** : the axes above are a starting point, not a limit. Flag anything that looks incoherent, fragile, surprising, or just wrong, even if no specific guideline covers it. Use your judgement. Examples: suspicious logic, security smells, inconsistent patterns between similar files, things that will confuse the next developer.
 
 3. **Scan the frontend (`assets/`)**
 
    Use agents in parallel. Check every `.tsx`, `.ts` file.
 
-   - **Data fetching** — `useEffect` + `fetch` / `useState` instead of `useQuery` + SDK
-   - **SDK usage** — manual `fetch()` calls instead of generated SDK functions. Manual `new FormData()` instead of SDK multipart.
-   - **Error handling** — missing `handleSdkError` on SDK calls, inconsistent error patterns
-   - **Forms** — forms not using the RHF + Zod + shadcn Form pattern. Missing Zod validation. Manual Zod schemas that should be generated.
-   - **Imports** — relative imports (`../../`) instead of `@/` alias. Barrel files that shouldn't exist.
-   - **Typing** — `any` casts, untyped props, untyped components
-   - **CSS** — ternary className strings instead of `cn()`, raw `<button>` instead of shadcn `<Button>`
-   - **File naming** — files not in PascalCase, folders not in snake_case
-   - **QueryClient** — components creating `new QueryClient()` instead of using the shared one. Missing `<QueryClientProvider>` wrapper.
-   - **React patterns** — `forwardRef` usage (React 19 doesn't need it), missing `useMemo`/`useCallback` that React Compiler handles
-   - **Anything else weird** — same as backend: flag anything incoherent, fragile, or surprising beyond the listed axes. Inconsistent patterns between similar components, dead props, logic that doesn't make sense, etc.
+   - **Data fetching** : `useEffect` + `fetch` / `useState` instead of `useQuery` + SDK
+   - **SDK usage** : manual `fetch()` calls instead of generated SDK functions. Manual `new FormData()` instead of SDK multipart.
+   - **Error handling** : missing `handleSdkError` on SDK calls, inconsistent error patterns
+   - **Forms** : forms not using the RHF + Zod + shadcn Form pattern. Missing Zod validation. Manual Zod schemas that should be generated.
+   - **Imports** : relative imports (`../../`) instead of `@/` alias. Barrel files that shouldn't exist.
+   - **Typing** : `any` casts, untyped props, untyped components
+   - **CSS** : ternary className strings instead of `cn()`, raw `<button>` instead of shadcn `<Button>`
+   - **File naming** : files not in PascalCase, folders not in snake_case
+   - **QueryClient** : components creating `new QueryClient()` instead of using the shared one. Missing `<QueryClientProvider>` wrapper.
+   - **React patterns** : `forwardRef` usage (React 19 doesn't need it), missing `useMemo`/`useCallback` that React Compiler handles
+   - **Anything else weird** : same as backend: flag anything incoherent, fragile, or surprising beyond the listed axes. Inconsistent patterns between similar components, dead props, logic that doesn't make sense, etc.
 
-4. **Scan config, tooling & quality gate** — the axis agents scanning `src/`/`assets/` NEVER see, because they never open config files. **Do not skip this: the code can be pristine while the config silently lags the guideline** (real case: PHPStan stuck at `level: 8` while the guideline mandated `max` — invisible to a code-only scan, and the build was green).
+4. **Scan config, tooling & quality gate** : the axis agents scanning `src/`/`assets/` NEVER see, because they never open config files. **Do not skip this: the code can be pristine while the config silently lags the guideline** (real case: PHPStan stuck at `level: 8` while the guideline mandated `max`, invisible to a code-only scan, and the build was green).
 
    The guidelines mandate a quality gate + tooling setup (`symfony-guidelines.md` §7 "Quality gate" + the PHPStan / testing sections ; `reactony.md` §8 "Quality Assurance"). Open the actual config files and compare against what the guidelines require:
 
-   - **PHPStan level** — read `phpstan.dist.neon` / `phpstan.neon`: does `level:` match the guideline's mandate (e.g. `level: max`)? A lower level (`8` while the guideline says "9+ / max recommandé, level 8 n'est plus le standard") is a **real gap even with a green build**. Check a baseline is used to get there, as the guideline prescribes.
-   - **Quality-gate completeness** — does the pre-commit hook (`.husky/pre-commit`) **and** the CI (`.github/workflows/*.yml`) each run every check §7 lists (PHPStan, PHP-CS-Fixer, `lint:container`, `doctrine:schema:validate --skip-sync`, ESLint, Prettier, `tsc --noEmit`, PHPUnit, build)? Flag any mandated check missing from either.
-   - **TS / ESLint config** — `tsconfig.json` strict flags + `eslint.config.js` rules vs the guideline (`reactony.md` §8).
-   - **Dependency versions** — compare `composer.lock` / `pnpm-lock.yaml` to the guideline's reference versions (the "Dernière veille" header lists them exactly). Flag notable drift where the project is behind.
-   - **Mandated config present** — any config the guidelines require (rate limiter, `http_client` retry, Sentry level, `.editorconfig`, etc.) that is absent or misconfigured.
+   - **PHPStan level** : read `phpstan.dist.neon` / `phpstan.neon`: does `level:` match the guideline's mandate (e.g. `level: max`)? A lower level (`8` while the guideline says "9+ / max recommandé, level 8 n'est plus le standard") is a **real gap even with a green build**. Check a baseline is used to get there, as the guideline prescribes.
+   - **Quality-gate completeness** : does the pre-commit hook (`.husky/pre-commit`) **and** the CI (`.github/workflows/*.yml`) each run every check §7 lists (PHPStan, PHP-CS-Fixer, `lint:container`, `doctrine:schema:validate --skip-sync`, ESLint, Prettier, `tsc --noEmit`, PHPUnit, build)? Flag any mandated check missing from either.
+   - **TS / ESLint config** : `tsconfig.json` strict flags + `eslint.config.js` rules vs the guideline (`reactony.md` §8).
+   - **Dependency versions** : compare `composer.lock` / `pnpm-lock.yaml` to the guideline's reference versions (the "Dernière veille" header lists them exactly). Flag notable drift where the project is behind.
+   - **Mandated config present** : any config the guidelines require (rate limiter, `http_client` retry, Sentry level, `.editorconfig`, etc.) that is absent or misconfigured.
 
 5. **Write the gap analysis**
 
    Overwrite `docs/gap-analysis.md` with the full findings. Use this structure:
 
    ```markdown
-   # Gap Analysis — Theorie vs Pratique
+   # Gap Analysis : Theorie vs Pratique
 
    > Ecarts entre `docs/symfony-guidelines.md` / `docs/reactony.md` et le code actuel.
    > Organisé par priorité. Cocher au fur et à mesure du nettoyage.
@@ -85,24 +85,24 @@ Audit the full codebase against the project's coding guidelines and produce an e
 
    ### Sub-category
 
-   - [ ] `path/to/File.php` — description of the gap
+   - [ ] `path/to/File.php` : description of the gap
      - Details, what to extract/move/rename
    - [x] Already-fixed items (preserve from previous gap-analysis)
    ```
 
    Priority levels:
-   - **Haute** — architectural violations (Domain/Service confusion, missing security attributes, wrong patterns)
-   - **Moyenne** — convention violations (naming, property promotion, missing traits)
-   - **Basse** — style/cosmetic (naming typos, dead code, hardcoded URLs)
+   - **Haute** : architectural violations (Domain/Service confusion, missing security attributes, wrong patterns)
+   - **Moyenne** : convention violations (naming, property promotion, missing traits)
+   - **Basse** : style/cosmetic (naming typos, dead code, hardcoded URLs)
 
-6. **Present summary** — After writing the file, show the user a short summary: number of findings per priority level, most critical items.
+6. **Present summary** : After writing the file, show the user a short summary: number of findings per priority level, most critical items.
 
 ## Rules
 
-- **Exhaustive, not sampled** — check every file, not just a few examples. Use `Glob` + `Grep` systematically.
-- **Preserve checked items** — items marked `[x]` in the previous gap-analysis were already fixed. Keep them in the new file as-is so progress is visible.
-- **Concrete, not vague** — every finding must reference a specific file path and line/method. "Some controllers are too big" is bad. "`AdvertController.php` (531 lines) has inline icon mapping at line 245" is good.
-- **Don't invent problems** — only flag things that genuinely violate the guidelines or common sense. If the guidelines don't cover something, don't flag it unless it's clearly a bug or security issue.
-- **Group by theme, not by file** — organize findings by the type of gap (Domain/Service, Enums, Controllers...), not by individual file. This makes it actionable.
-- **French for prose** — same language as the guidelines and existing gap-analysis.
-- **Don't fix anything** — this skill only diagnoses. It does not modify source code.
+- **Exhaustive, not sampled** : check every file, not just a few examples. Use `Glob` + `Grep` systematically.
+- **Preserve checked items** : items marked `[x]` in the previous gap-analysis were already fixed. Keep them in the new file as-is so progress is visible.
+- **Concrete, not vague** : every finding must reference a specific file path and line/method. "Some controllers are too big" is bad. "`AdvertController.php` (531 lines) has inline icon mapping at line 245" is good.
+- **Don't invent problems** : only flag things that genuinely violate the guidelines or common sense. If the guidelines don't cover something, don't flag it unless it's clearly a bug or security issue.
+- **Group by theme, not by file** : organize findings by the type of gap (Domain/Service, Enums, Controllers...), not by individual file. This makes it actionable.
+- **French for prose** : same language as the guidelines and existing gap-analysis.
+- **Don't fix anything** : this skill only diagnoses. It does not modify source code.

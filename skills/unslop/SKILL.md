@@ -14,7 +14,7 @@ doc, copie de site. Le sens ne change pas, la longueur baisse presque toujours.
 
 Le texte fourni par l'utilisateur (`$ARGUMENTS`), ou à défaut le dernier texte
 substantiel produit dans la conversation. Détecte la langue et applique le
-volet correspondant — les deux si le texte est mixte.
+volet correspondant : les deux si le texte est mixte.
 
 ## Volet commun (les deux langues)
 
@@ -24,7 +24,7 @@ volet correspondant — les deux si le texte est mixte.
 - **Emphase vide** : remplacer l'impression par le mécanisme. « améliore considérablement les performances » → le chiffre, ou la cause.
 - **Hedging en grappe** : « peut-être », « il semblerait », « dans une certaine mesure » empilés → trancher ou dire franchement qu'on ne sait pas.
 - **Headers décoratifs** : pas de titre pour deux phrases, pas d'emoji de section.
-- **Auto-audit final** : relire et se demander « qu'est-ce qui sonne encore IA là-dedans ? », corriger, puis s'arrêter — un texte sur-nettoyé sonne aussi faux qu'un texte sloppé.
+- **Auto-audit final** : relire et se demander « qu'est-ce qui sonne encore IA là-dedans ? », corriger, puis s'arrêter, un texte sur-nettoyé sonne aussi faux qu'un texte sloppé.
 
 ## Volet français
 

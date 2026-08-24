@@ -70,5 +70,5 @@ Use this format for the report:
 - Always verify against the **version actually used** in the project, not just the latest
 - If the project uses an older version, note what's available in their version AND what the latest version offers
 - Be specific: link to the exact doc page, not just the homepage
-- Don't suggest changes just for style — only flag things that the official docs explicitly recommend differently
+- Don't suggest changes just for style : only flag things that the official docs explicitly recommend differently
 - If multiple valid approaches exist in the docs, say so and explain trade-offs

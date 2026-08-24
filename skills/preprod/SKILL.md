@@ -11,7 +11,7 @@ Merge the current feature branch into `preprod` for testing, then return to the 
 
 ## Pre-checks
 
-1. Run `git status` — if there are uncommitted changes, run `/commit` first (ask the user).
+1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).
 2. Verify you are NOT on `main` or `preprod`. If you are, abort with a message.
 3. Run `git branch --show-current` to get the branch name.
 
@@ -47,6 +47,6 @@ Show:
 
 ## Safety
 
-- NEVER touch `main` — this skill only merges into `preprod`
-- NEVER delete the feature branch — it stays for further work or future deploy
+- NEVER touch `main` : this skill only merges into `preprod`
+- NEVER delete the feature branch : it stays for further work or future deploy
 - If merge conflicts occur, stop and ask the user

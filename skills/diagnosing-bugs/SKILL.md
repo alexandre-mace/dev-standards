@@ -23,7 +23,7 @@ La boucle a cinq crans. **Dans cet ordre, sans en sauter.**
   via le MCP Sentry), pas d'une reconstitution imaginée. Le skill
   `sentry-fix-issues` connaît cette plomberie (recherche d'issues, lecture
   d'événements, analyse Seer) : s'appuyer dessus pour ce cran et pour la
-  résolution au cran 5 — la discipline de la boucle reste celle d'ici.
+  résolution au cran 5 : la discipline de la boucle reste celle d'ici.
 
 **Pas de repro = pas de fix.** Un correctif non reproduit est une hypothèse
 déguisée. Si la reproduction est réellement impossible (bug dépendant d'un état
@@ -42,7 +42,7 @@ l'instrumentation en prod.
 
 Log ciblé, `dump()`, test unitaire de la fonction suspecte, requête SQL à la
 main. L'hypothèse est confirmée ou tombe. Si elle tombe : retour au cran 2,
-hypothèse suivante. **Interdiction de « corriger pour voir »** — chaque
+hypothèse suivante. **Interdiction de « corriger pour voir »** : chaque
 correctif spéculatif pollue la zone et détruit la valeur de la repro.
 
 ## 4. Corriger la cause racine, pas le symptôme
@@ -57,7 +57,7 @@ correctif spéculatif pollue la zone et détruit la valeur de la repro.
 ## 5. La repro devient le test de régression
 
 - Le test du cran 1 (ou sa version propre) entre dans la suite. Il doit avoir
-  **échoué avant le fix et passer après** — c'est la preuve dans les deux
+  **échoué avant le fix et passer après** : c'est la preuve dans les deux
   directions. La montrer : sortie avant, sortie après.
 - Fermer la boucle d'origine : issue Sentry → la résoudre ; trouvaille de
   `/check-logs` → la noter ; ticket PM → signaler ce qui a été corrigé et la
@@ -68,7 +68,7 @@ correctif spéculatif pollue la zone et détruit la valeur de la repro.
 - Ne jamais annoncer « corrigé » sur la seule disparition du symptôme : c'est
   le test de régression qui fait foi.
 - Un bug qui révèle un pattern fragile répété ailleurs : le **signaler** (une
-  ligne, candidat pour `/gap-analysis`), ne pas partir le corriger partout —
+  ligne, candidat pour `/gap-analysis`), ne pas partir le corriger partout :
   le périmètre du fix reste le bug.
 - Si deux hypothèses tombent d'affilée, s'arrêter et présenter l'état : ce qui
   est exclu, ce qui reste possible, ce qui manque pour trancher. Trois fixes

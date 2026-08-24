@@ -19,7 +19,7 @@ aux skills spécialisés.
   demander. Sans intention de référence, la revue se limite aux guidelines et
   le dit explicitement.
 
-## 2. Le diff contre le ticket — le cœur du skill
+## 2. Le diff contre le ticket : le cœur du skill
 
 Trois questions, dans cet ordre :
 
@@ -36,7 +36,7 @@ Trois questions, dans cet ordre :
 
 ## 3. Le diff contre les guidelines
 
-Relire le diff (pas le projet entier — ça c'est `/gap-analysis`) avec
+Relire le diff (pas le projet entier : ça c'est `/gap-analysis`) avec
 `docs/symfony-guidelines.md` et `docs/reactony.md` en tête : patterns DTO,
 `format: 'json'` et `#[IsGranted]` sur les routes API, Domain/ pur, SDK plutôt
 que fetch manuel, formulaires RHF+Zod, imports `@/`. Ne signaler que ce que le
@@ -53,7 +53,7 @@ diff introduit ou aggrave.
 ## 5. Verdict
 
 ```
-Review — <branche> vs <ticket>
+Review : <branche> vs <ticket>
 --------------------------------
 Couverture du ticket :   complet | manques listés
 Périmètre :              net | N changements hors ticket

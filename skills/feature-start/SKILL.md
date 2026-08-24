@@ -12,7 +12,7 @@ Create a new feature branch from an up-to-date main.
 2. Run `git log --oneline -5` and `git diff HEAD --stat` to understand the current context
 3. Decide on a branch name based on either:
    - `$ARGUMENTS` if provided (use it as-is or adapt to kebab-case)
-   - The conversation context — what the user has been working on or asked for
+   - The conversation context : what the user has been working on or asked for
 4. Run: `git checkout main && git pull && git checkout -b feat/<branch-name>`
 5. Confirm the branch was created with `git branch --show-current`
 

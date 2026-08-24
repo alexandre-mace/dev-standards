@@ -11,7 +11,7 @@ Merge the current feature branch into `main` and push.
 
 ## Pre-checks
 
-1. Run `git status` — if there are uncommitted changes, run `/commit` first (ask the user).
+1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).
 2. Verify you are NOT on `main` or `preprod`. If you are, abort with a message.
 3. Run `git branch --show-current` to get the branch name.
 

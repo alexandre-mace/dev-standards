@@ -37,7 +37,7 @@ vendor/bin/php-cs-fixer fix --dry-run --diff
 
 If not installed, report as SKIPPED and suggest: `composer require --dev friendsofphp/php-cs-fixer`
 
-Do NOT run without `--dry-run` — show violations only, never auto-fix.
+Do NOT run without `--dry-run` : show violations only, never auto-fix.
 
 ### Doctrine schema validation
 
@@ -78,7 +78,7 @@ pnpm build
 ```
 
 The build IS the check: it type-checks and fails on compile errors. Do NOT use
-`next lint` (removed in Next 16) or `--dry-run` (never existed) — linting is
+`next lint` (removed in Next 16) or `--dry-run` (never existed) : linting is
 covered by the shared ESLint check below.
 
 ## Shared frontend checks (React, Next.js, or Symfony+React)
@@ -114,7 +114,7 @@ If no `format:check` script in `package.json`, skip.
 After all checks, show a summary table adapted to the detected project type:
 
 ```
-Quality Report — [Symfony + React | Next.js | etc.]
+Quality Report : [Symfony + React | Next.js | etc.]
 ----------------------------------------------------
 PHPStan:              PASS / FAIL / SKIPPED (not installed)
 PHP-CS-Fixer:         PASS / FAIL / SKIPPED (not installed)
