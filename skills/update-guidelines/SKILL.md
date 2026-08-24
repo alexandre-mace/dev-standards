@@ -58,6 +58,7 @@ C'est une **veille techno** : les guidelines sont le point de référence, le we
 ## Rules
 
 - The guidelines are prescriptive (how code SHOULD be written), not descriptive (how code IS written). Don't weaken a guideline just because the current code doesn't follow it yet. Don't strengthen one just because the recent commits do follow it : the web sources win.
+- **Jamais d'état par projet dans les guidelines.** Ces docs sont partagés entre plusieurs projets (lagrange, fabacee, legrenier…) : une phrase comme « le projet est en ^12.5 » ou « montée pas encore faite ici » est vraie pour l'un et ment chez les voisins. Constater les écarts projet ↔ guidelines, c'est le job de `/gap-analysis`. Les leçons tirées de l'historique (réf. ticket qui motive une règle) restent légitimes : c'est de la justification, pas de l'état. (Erreur commise puis corrigée le 24/08/2026.)
 - Keep the same tone and structure : pragmatic, concise, with code examples.
 - French for prose, English for code and technical terms.
 - Don't add patterns the project doesn't use or plan to use : ask the user if unsure.
