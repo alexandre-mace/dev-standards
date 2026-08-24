@@ -2,7 +2,7 @@
 
 > Source de vérité unique, pas de duplication, un seul pattern.
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue ; projets encore en 2.36, montée à faire) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact ; projets en 0.98.2, bump à planifier) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -596,7 +596,7 @@ Les 5 plugins :
 - `zod` — schémas Zod 4 pour validation côté client
 - `@tanstack/react-query` — génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI — élimine le boilerplate de `lib/queries/`
 
-Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). État août 2026 : 0.99.0 est la courante depuis juin (pas de 1.0) ; les projets épinglés en 0.98.2 ont ce bump à planifier. Côté backend du pipeline, nelmio/api-doc-bundle 5.11 durcit la génération pour les workers persistants et supporte la méthode HTTP QUERY. Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
+Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). État août 2026 : 0.99.0 est la courante depuis juin (pas de 1.0) ; tout projet épinglé en deçà rattrape via la page Migrating. Côté backend du pipeline, nelmio/api-doc-bundle 5.11 durcit la génération pour les workers persistants et supporte la méthode HTTP QUERY. Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
 
 ### SDK : appels API typés
 
@@ -618,7 +618,7 @@ En CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/` pour d
 
 ## 6. Infra : Vite + Symfony UX
 
-React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (symfony/ux 3.4 est la ligne active, avec le support d'`import.meta.glob()` par ux-react ; requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés — montée mécanique depuis 2.x, **pas encore faite ici** : composer est en 2.36, et le dist-tag npm `latest` de `@symfony/ux-react` pointe d'ailleurs toujours la 2.36. La ligne 2.x reste maintenue, pas d'urgence.)
+React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (symfony/ux 3.4 est la ligne active, avec le support d'`import.meta.glob()` par ux-react ; requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés — montée mécanique depuis 2.x. Piège : le dist-tag npm `latest` de `@symfony/ux-react` pointe encore la 2.36, un install par défaut ne donne pas la 3.x. La ligne 2.x reste maintenue.)
 
 ### Arborescence
 
@@ -885,7 +885,7 @@ export default defineConfig({
 
 Encore marquée **expérimentale** par le plugin : c'est la cible, à basculer à l'occasion d'une maintenance en vérifiant que la mémoïsation tient (React DevTools Profiler).
 
-**Voie Babel (celle en place aujourd'hui, stable)** :
+**Voie Babel (la voie stable)** :
 
 ```js
 // vite.config.js
