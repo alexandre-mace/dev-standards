@@ -2,7 +2,7 @@
 
 > Source de vérité unique, pas de duplication, un seul pattern.
 >
-> **Dernière veille : 29 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.7 · React Compiler 1.0 · @vitejs/plugin-react 6 / Vite 8 (Rolldown) · vite-plugin-symfony 8.2 · ux-react 3.2 · TanStack Query 5.101 · RHF 7.80 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field`) · Vitest 4 · MSW 2 · Playwright 1.61 · eslint-plugin-react-hooks 7.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue ; projets encore en 2.36, montée à faire) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact ; projets en 0.98.2, bump à planifier) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -384,6 +384,7 @@ Symfony renvoie automatiquement :
 - **Pas de migration vers React 19 Actions** (`useActionState`) pour les forms avec validation serveur structurée. Le mapping `violations[].propertyPath` → erreurs par champ n'est pas natif dans Actions, et Actions veut posséder le `pending/error` state que TanStack Query possède déjà. Double-ownership awkward.
 - **Oui à `useOptimistic`** pour les mutations UI-instant (toggle favori, add to list, reorder). Compose proprement avec RHF + TanStack Query sans conflit.
 - **`useFormStatus` : non, pas dans ce pattern** — il ne reporte `pending` que pour un `<form action={...}>` (React Actions). Avec RHF + `useMutation` (submit via `onSubmit`), il resterait toujours `false`. L'état de soumission vient de `mutation.isPending`, ou de `useFormState({ control }).isSubmitting` pour un bouton imbriqué profond.
+- **Floor RHF : ≥ 7.85** (support officiel d'`<Activity/>`, indispensable si un form vit dans un panneau `mode="hidden"`) ; 7.86 ajoute la méthode type-safe `getErrors`. v8 (refonte compiler-first) : toujours en bêta figée, la consigne « attendre la stable » tient (re-vérifié août 2026).
 
 ```tsx
 // useOptimistic — UI instant pendant qu'une mutation TanStack Query est en vol
@@ -529,6 +530,8 @@ const mutation = useMutation({
 
 Depuis TanStack Query 5.82, `mutationOptions()` est le pendant de `queryOptions()` — hey-api les génère aussi (`addPetMutation()`, etc.) : les utiliser pour factoriser une mutation partagée entre composants.
 
+Floor : **`^5.102`**. Cette version supprime les APIs expérimentales (render-time prefetching, propriété `promise` des résultats, `experimental_beforeQuery`/`afterQuery`), corrige l'émission des types `queryOptions` dans les `.d.ts` (profite directement aux options générées par hey-api), et introduit `queryClient.query()`/`infiniteQuery()` en remplacement des anciennes méthodes impératives, désormais dépréciées.
+
 Utiliser les queryOptions auto-générés pour invalider avec type-safety :
 
 ```tsx
@@ -593,7 +596,7 @@ Les 5 plugins :
 - `zod` — schémas Zod 4 pour validation côté client
 - `@tanstack/react-query` — génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI — élimine le boilerplate de `lib/queries/`
 
-Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
+Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). État août 2026 : 0.99.0 est la courante depuis juin (pas de 1.0) ; les projets épinglés en 0.98.2 ont ce bump à planifier. Côté backend du pipeline, nelmio/api-doc-bundle 5.11 durcit la génération pour les workers persistants et supporte la méthode HTTP QUERY. Zod 4.4 est volontairement plus strict — relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
 
 ### SDK : appels API typés
 
@@ -615,7 +618,7 @@ En CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/` pour d
 
 ## 6. Infra : Vite + Symfony UX
 
-React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (ux-react 3.x : requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés — montée mécanique depuis 2.x.)
+React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (symfony/ux 3.4 est la ligne active, avec le support d'`import.meta.glob()` par ux-react ; requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés — montée mécanique depuis 2.x, **pas encore faite ici** : composer est en 2.36, et le dist-tag npm `latest` de `@symfony/ux-react` pointe d'ailleurs toujours la 2.36. La ligne 2.x reste maintenue, pas d'urgence.)
 
 ### Arborescence
 
@@ -716,7 +719,7 @@ React 19 est stable (React 18 est en security-support uniquement). Features clé
 - **`useOptimistic`** — mises à jour optimistes natives
 - **`<Activity>`** — stable depuis 19.2 : préserver l'état des composants cachés (`mode="visible|hidden"`)
 - **`useEffectEvent`** — stable depuis 19.2 : extraire d'un Effect la logique événementielle qui lit props/state sans les mettre en dépendances. Jamais dans le tableau de deps (le lint react-hooks l'impose), à déclarer dans le composant qui contient l'Effect
-- View Transitions (`<ViewTransition>`) : toujours expérimental — pas en prod
+- View Transitions (`<ViewTransition>`) : toujours expérimental — pas en prod. Stabilisation annoncée pour React 19.3 (avec les Fragment refs), mais uniquement via une source secondaire (AMA de l'équipe Next.js, rien sur react.dev) : attendre l'annonce officielle
 
 ```tsx
 // React 19 — ref comme prop directement
@@ -856,6 +859,8 @@ Tout le reste doit rester **au plus près de l'upstream** : ne pas éditer un `c
 4. **Jamais de `--overwrite` en aveugle.** Un `add` peut tirer une dépendance de registry (ex. `message-scroller` dépend de `button`) et vouloir écraser un composant customisé → décliner l'écrasement ou re-greffer nos variants juste après.
 5. Après tout `add`, relire le fichier + fixer les imports d'icônes (lib du projet, pas forcément `radix`) et les alias (`@/`). Vérifier le rendu **dans le navigateur** (le passage d'un style à l'autre change ombres, focus rings, tailles).
 
+**Nouveautés CLI/registry (été 2026)** : les registries GitHub **privés** sont supportés (auth via les credentials `gh` ou `GH_TOKEN` : si tu peux lire le repo, le CLI peut installer depuis), pertinent si le kit perso doit un jour se privatiser. `npx shadcn migrate base-color` bascule la base color d'un projet : réécrit les variables du thème dans le CSS pointé par `components.json` et la valeur `baseColor` (les tokens custom non reconnus sont listés en fin de migration, à traiter à la main ; réversible en relançant dans l'autre sens ou via git). Nouveau composant `Questionnaire` multi-étapes, décliné React Aria, donc disponible pour `aria-nova`. Côté base React Aria : react-aria-components 1.20 (PreviewTrigger, TokenField en alpha, menus contextuels via `trigger="contextMenu"`), sans breaking.
+
 **Cadence** : à chaque veille `/update-guidelines`, vérifier le style courant sur ui.shadcn.com et réconcilier les composants qui ont le plus dérivé (un `--diff` volumineux = candidat à re-greffer). Objectif : diff ~nul hors les variants brand documentés.
 
 ### QueryClient
@@ -864,7 +869,23 @@ Le `queryClient` partagé (`assets/lib/queryClient.ts`) a des defaults sensibles
 
 ### Performance — React Compiler
 
-Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet**. ⚠️ Depuis `@vitejs/plugin-react` v6 (Vite 8), l'option `react({ babel: {...} })` n'existe plus (transforms Oxc) et est **ignorée silencieusement** — la seule config qui exécute réellement le compiler :
+Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet**. ⚠️ Depuis `@vitejs/plugin-react` v6 (Vite 8), l'option `react({ babel: {...} })` n'existe plus (transforms Oxc) et est **ignorée silencieusement**. Deux configs exécutent réellement le compiler :
+
+**Voie native (plugin-react ≥ 6.1, août 2026)** : le port Rust du compiler, plus de 10× plus rapide que le plugin Babel (~100 ms → ~10 ms par fichier) :
+
+```js
+// vite.config.js — pnpm add -D oxc-transform-react (peer dep optionnelle)
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react({ compiler: true })],
+  // options : react({ compiler: { compilationMode: 'annotation' } })
+});
+```
+
+Encore marquée **expérimentale** par le plugin : c'est la cible, à basculer à l'occasion d'une maintenance en vérifiant que la mémoïsation tient (React DevTools Profiler).
+
+**Voie Babel (celle en place aujourd'hui, stable)** :
 
 ```js
 // vite.config.js
@@ -934,6 +955,8 @@ Config (`.prettierrc`) avec `prettier-plugin-tailwindcss` pour le tri automatiqu
 pnpm tsc --noEmit
 ```
 
+**TypeScript 7 est GA depuis juillet 2026** : le port natif Go, publié sous le paquet npm `typescript` standard, binaire `tsc` inchangé, checks 7 à 12× plus rapides, language server passé à LSP. Migration depuis nos `^5.9` en deux temps : **5.9 → 6.0** (adopter les nouveaux défauts et purger les flags dépréciés, que 7.0 transforme en erreurs dures) **→ 7.0**. Caveat : pas d'API programmatique avant TS 7.1 ; typescript-eslint (≥ 8.67) passe par le shim `@typescript/typescript6`, non bloquant pour du React/TSX pur.
+
 ### Récapitulatif
 
 | Outil | Rôle | Quand |
@@ -971,6 +994,8 @@ pnpm test:e2e:ui         # Playwright en mode UI interactif
 ```
 
 > **Pourquoi Vitest et plus Jest** : projet sous Vite, donc Vitest partage la même config (alias `@/`, plugins, transformeurs TS/TSX). ESM natif → `lucide-react`, hey-api SDK et autres modules ESM marchent sans `transformIgnorePatterns`. Compatible React 19, 5–28× plus rapide que Jest selon la suite. L'API est quasi-identique : `vi` à la place de `jest`, `vi.mock()` hoisted comme `jest.mock()`, mêmes matchers via `@testing-library/jest-dom` (compatible Vitest).
+
+> **Vitest 5 est en RC** (août 2026) : ne pas adopter avant la stable, mais écrire dès maintenant du code qui y survivra. Breaking annoncés : `clearMocks: true` devient le défaut, une assertion async non `await`ée fait échouer le test, `toHaveTextContent` devient une égalité stricte (le matching partiel migre vers `toMatchTextContent`), Node ≥ 22.12 requis (Node 24 est l'Active LTS d'août 2026).
 
 ### Quoi tester — par ordre de ROI
 

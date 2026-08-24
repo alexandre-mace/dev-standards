@@ -2,7 +2,7 @@
 
 > Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
 >
-> **Dernière veille : 29 juin 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5 (courant, GA nov. 2025 ; floor projet 8.4) · Symfony 8.1.1 · Doctrine ORM 3.6.7 / doctrine-bundle 3.2 / DBAL 4.4 · PHPUnit 13.2 (dama : support 13 sur `master` seulement — cf. §13) · PHPStan 2.2 · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.10 · dama 8.6 · Eris 1.1 · EasyAdmin 5.1 · Twig ≥ 3.27.
+> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11.
 
 ## Routage — quoi lire pour quelle tâche
 
@@ -116,6 +116,26 @@ Une feature n'est "faite" que si **tous** ces points sont verts :
 PHP 8.5 est la **stable courante** (GA 20 nov. 2025) et le runtime de prod tourne en 8.5 ; le floor `composer.json` reste `>= 8.4`. Features 8.4 à utiliser partout : nullable explicite (`?Type $param = null`, l'implicite est déprécié), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
 Features **PHP 8.5 utilisables maintenant** : pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` pour les withers readonly, `#[\NoDiscard]` sur les méthodes dont le retour ne doit pas être ignoré, `array_first()`/`array_last()`. À éviter (dépréciés en 8.5) : casts non canoniques (`(integer)`, `(boolean)`, `(double)`) et `__sleep()`/`__wakeup()` (soft-deprecation → `__serialize()`/`__unserialize()`).
+
+**Floor sécurité : runtime ≥ 8.5.9.** Les patchs 8.5.8 (juillet 2026, CVE OpenSSL) et surtout 8.5.9 sont des security releases ; 8.5.9 corrige notamment CVE-2026-17543, une injection SQL dans ext-pgsql via `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()` (corrigée aussi en 8.4.24 pour la branche 8.4).
+
+## Radar Symfony 8.2 (novembre 2026)
+
+Deprecations et changements de comportement **déjà mergés** sur la branche 8.2 (UPGRADE-8.2.md), à anticiper dès maintenant :
+
+- **Serializer durci** : les collections union-typées dénormalisent désormais leurs éléments, et les tableaux dénormalisés vers des propriétés typées `list` devront satisfaire `array_is_list()` (exception en 9.0). À tester sur nos DTO `#[MapRequestPayload]` à collections.
+- `#[IsCsrfTokenValid]` renverra un **403** (`InvalidCsrfTokenException`) au lieu d'une redirection vers le login.
+- Contrainte `File` : `mimeTypes` et `extensions` seront vérifiés indépendamment (plus de restriction des MIME déduite de l'extension).
+- `Schedule::with()` déprécié (cloner ou construire un nouveau schedule) ; `framework.ide` déprécié au profit de la variable `SYMFONY_IDE`.
+
+Features annoncées pour 8.2 : option `concurrency` sur Messenger (traitement parallèle des messages), transports Mailer rate-limités, contrainte `Cron`, URLs signées à usage unique.
+
+À surveiller aussi, hors core :
+
+- **VichUploader v3 imminente** : 2.10 est annoncé comme dernier minor de la branche 2, la 3.0.0-rc4 est publiée. Prévoir la montée.
+- **Doctrine ORM 4** : pas d'alpha publiée ; cap confirmé (PHP 8.4 minimum, entièrement bâti sur les native lazy objects), release espérée fin 2026/début 2027.
+- **Twig 3.29** apportera les commentaires de documentation ; **Twig 4 toujours en alpha**, ne pas l'anticiper.
+- **Symfony Reprise** (couche d'intégration Vite/Rsbuild officielle, pressentie comme successeur d'Encore) : encore en 0.x expérimental, déjà supportée par EasyAdmin 5.3. On reste sur `pentatrion/vite-bundle` ; re-statuer quand Reprise sera stable.
 
 ---
 
@@ -277,6 +297,8 @@ $entity = $context->getEntity()->getInstance();
 ```
 
 Test d'une action admin : firewall `admin` à part → form login `testadmin`/`testpass` (`config/packages/test/security.yaml`), `loginUser()` ne marche pas de façon fiable avec un provider in-memory.
+
+⚠️ **Sécurité : EasyAdmin ≥ 5.5.1 obligatoire** (GHSA-g2fm-8hr4-j82h, août 2026, CVSS 8.1) : le `routeName` des custom actions était substitué **après** l'évaluation du firewall, permettant de contourner les règles `access_control` par pattern d'URL. Les `#[IsGranted]` posés sur les contrôleurs restaient effectifs : notre règle « sécurité par attribut, pas par pattern d'URL » a précisément servi de défense en profondeur ici. Au passage, EA 5.2 à 5.5 ont apporté des composants Twig (Switch, Modal, Pagination, Sidebar), une Theming API officielle, les filtres et le tri sur propriétés imbriquées, et la persistance des onglets.
 
 ### Données de référence
 
@@ -657,7 +679,7 @@ Service/ fait les choses : persiste, envoie, upload, exporte, scrape, formate.
 | `*FileUploadHandler` | Upload de fichiers |
 | `Scrapers/*Scraper` | Scraping de sites externes |
 
-> PDF : pour les documents à valeur contractuelle (factures, contrats), la cible est `sensiolabs/GotenbergBundle` (rendu Chromium, piste Factur-X). dompdf reste tolérable pour les documents simples (moteur CSS 2.1, pas de flexbox/grid).
+> PDF : pour les documents à valeur contractuelle (factures, contrats), la cible est `sensiolabs/GotenbergBundle` (rendu Chromium, piste Factur-X). dompdf reste tolérable pour les documents simples (moteur CSS 2.1, pas de flexbox/grid) : contrainte **dompdf ≥ 3.1.6**, release de sécurité corrigeant six advisories (dont un bypass de la validation chroot).
 
 Pour la sérialisation simple, préférer `#[Groups]` directement sur l'entité (cf. reactony.md).
 
@@ -762,6 +784,8 @@ Le handler Sentry Monolog est configuré à niveau `ERROR` (cf. `config/packages
 | `$logger->critical()` | Logs Clever + **Sentry** | Erreur bloquante / data corruption |
 
 Règle : si on attend d'un humain qu'il réagisse, c'est `error`. Sinon c'est `warning` ou `notice`.
+
+Contrainte de version : **sentry-symfony ≥ 5.12** démarre le runtime context avant le router et le firewall, ce qui empêche logs et breadcrumbs de fuiter entre requêtes sur les workers persistants (FrankenPHP, RoadRunner). Sans effet en PHP-FPM classique, mais le floor est gratuit et prépare ce mode.
 
 ### Exceptions ignorées globalement
 
@@ -1024,6 +1048,8 @@ $batch = InvestmentFactory::createMany(10, ['fonciere' => Fonciere::LES_FEVES_2_
 
 Une factory par entité critique. Les autres entités (passthrough) peuvent rester en `new Entity()` direct.
 
+Contrainte de version : **Foundry ≥ 2.10.3**. Les patchs 2.10.2/2.10.3 (juillet 2026) corrigent des bugs de persistance réels : persist différé jusqu'à l'instanciation complète du graphe d'objets, events Doctrine sur entités imbriquées.
+
 ### DAMA Doctrine Test Bundle — rollback transactionnel auto
 
 `dama/doctrine-test-bundle` wrappe **chaque test** dans une transaction et rollback au tearDown. Plus besoin d'écrire une `DatabaseTransactionTestCase` à la main, plus besoin de wipe entre tests, et la suite tourne 5× plus vite.
@@ -1051,7 +1077,7 @@ return [
 
 Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort. `#[SkipDatabaseRollback]` (dama 8.5+) désactive le rollback sur un test qui doit committer réellement.
 
-Contrainte PHPUnit : **PHPUnit 13** est la ligne courante (13.2.x). ⚠️ La dernière **dama taguée** (8.6.0) plafonne encore à `^11.5 || ^12.3` — le support PHPUnit 13 n'existe que sur la branche `master` (non taguée) de dama. Donc : pour un lockfile 100 % stable, rester en **`^12.5`** ; si on adopte 13 (cas de ce projet, déjà en `phpunit ^13`), **épingler dama au commit `master` compatible** plutôt que `"*"` (qui résout silencieusement en `dev-master`), et repasser sur `^8.7` dès qu'une release taguée intègre `^13.0`. PHPUnit 11 est EOL (février 2026) ; PHPUnit 12+ n'accepte plus les annotations doc-comment — attributs uniquement.
+Contrainte PHPUnit : **PHPUnit 13** est la ligne courante (13.3.x). Vérifié sur pièces (août 2026) : le « plafond » de dama n'existe qu'en `require-dev` du bundle (sa matrice CI), la seule contrainte runtime de la v8.6.0 taguée est `conflict: phpunit < 11`, et `master` n'a **aucun changement de code** par rapport à elle. Donc **dama v8.6.0 s'installe et fonctionne avec `phpunit ^13`** ; le conseil précédent d'épingler un commit `master` était inutile, ne pas le suivre. Le projet est en `^12.5` (PHPUnit 12 : support bugfix jusqu'au 5 février 2027), les deux lignes sont tenables. À la montée en 13.3, noter : `#[Retry]`/`#[Repeat]` (et `--retry`/`--repeat`) pour rejouer les tests, et la dépréciation de `--cache-result`/`--do-not-cache-result` au profit de `--record-test-run-history`/`--do-not-record-test-run-history`. PHPUnit 11 : fin du support bugfix en février 2026 ; PHPUnit 12+ n'accepte plus les annotations doc-comment — attributs uniquement.
 
 ### Exemple unit — Domain calculator
 
@@ -1154,6 +1180,8 @@ final class ValidateSharesTest extends WebTestCase
 ### E2E avec Playwright
 
 `tests/` couvre le contrat HTTP, mais **n'attrape pas** les régressions multi-pages (le tunnel investissement = 5 étapes, JS interactif, redirections). Playwright tape sur l'app dans Chromium réel.
+
+Playwright 1.62 (juillet 2026) : `signal` (AbortSignal) sur la plupart des opérations, screenshots de comparaison au format WebP, `retryStrategy: 'isolated'` (retries séquentiels en fin de run dans un worker unique) ; des APIs dépréciées ont été supprimées au passage, lire les release notes au bump. Côté a11y, garder `@axe-core/playwright` en `^4.13` : chaque bump du moteur axe peut faire apparaître de nouvelles violations, les traiter au bump plutôt que les ignorer.
 
 #### Setup
 
@@ -1400,6 +1428,8 @@ Ce que `phpstan-symfony` apporte (vs PHPStan seul) :
 vendor/bin/phpstan analyse
 ```
 
+Depuis PHPStan 2.2.6, **Turbo** : une extension PHP native optionnelle (binaires précompilés livrés dans le paquet Composer, chargés automatiquement sur PHP 8.3+) accélère l'analyse de 10 à 30 % avec une sortie identique bit à bit. Rien à configurer, juste mettre à jour. (Utilisateurs du phar : `pie install phpstan/turbo`.)
+
 #### AbstractAppController — typer `getUser()`
 
 `AbstractController::getUser()` retourne `UserInterface|null` — PHPStan ne sait pas que c'est ton entité `User`. Créer un base controller qui type le retour :
@@ -1565,7 +1595,7 @@ Ordres de grandeur observés (projet Symfony + React de taille moyenne) :
 
 Pas tolérable pour un projet où tu commits 10 fois par heure, mais pour un rythme feature normal (2–5 commits / feature), c'est le prix de la garantie "zéro régression silencieuse au commit". Si le projet grossit et que ça dépasse ~30s, dégrader vers "PHPStan + tsc en CI uniquement, le reste en pre-commit".
 
-> `tsgo --noEmit` (TypeScript natif, en bêta mi-2026, stable imminente) est un remplaçant drop-in de `tsc --noEmit` : ~8s → ~1s. À adopter dès la stable.
+> **TypeScript 7** (port natif Go) est GA depuis juillet 2026, publié sous le paquet npm `typescript` standard, binaire `tsc` inchangé : `tsc --noEmit` passe de ~8s à ~1s. Migration en deux temps depuis ^5.9 : 5.9 → 6.0 (absorber les nouveaux défauts) → 7.0. Détails dans reactony §8.
 
 **Seuls les tests (unit + functional) ne vont PAS en pre-commit** — ils peuvent monter à plusieurs minutes. Eux restent en CI.
 
