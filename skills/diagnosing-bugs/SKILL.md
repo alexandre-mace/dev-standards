@@ -20,7 +20,10 @@ La boucle a cinq crans. **Dans cet ordre, sans en sauter.**
   il resservira au cran 5) ;
 - sinon un script, un `curl` sur la route, un scénario Playwright ;
 - pour un bug Sentry : partir de l'événement réel (payload, stack, breadcrumbs
-  via le MCP Sentry), pas d'une reconstitution imaginée.
+  via le MCP Sentry), pas d'une reconstitution imaginée. Le skill
+  `sentry-fix-issues` connaît cette plomberie (recherche d'issues, lecture
+  d'événements, analyse Seer) : s'appuyer dessus pour ce cran et pour la
+  résolution au cran 5 — la discipline de la boucle reste celle d'ici.
 
 **Pas de repro = pas de fix.** Un correctif non reproduit est une hypothèse
 déguisée. Si la reproduction est réellement impossible (bug dépendant d'un état
