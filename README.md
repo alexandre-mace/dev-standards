@@ -47,6 +47,8 @@ Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so th
 | `check-implementation` | Verify recent code against latest official docs of the techs used |
 | `check-logs` | Prod health audit: CleverCloud logs + Messenger DB + Sentry, prioritized report |
 | `unslop` | Strip AI writing tells from any text, French and English |
+| `review-diff` | Pre-deploy review: diff vs ticket + guidelines, then runs `/quality` (+ `/check-implementation` if relevant) |
+| `diagnosing-bugs` | Disciplined bug-fix loop: reproduce, hypothesis, instrument, root cause, regression test |
 
 ### The thread of a feature
 
@@ -54,10 +56,12 @@ The skills chain in a fixed order. Following it is what makes a feature
 land coherent on the first pass:
 
 ```
-/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /preprod  →  recette  →  /deploy
-   │                              │
-   │                              └─ Feature playbook (symfony-guidelines §one-shot)
+/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /preprod  →  recette  →  /review-diff  →  /deploy
+   │                              │                                                    │
+   │                              └─ Feature playbook (symfony-guidelines §one-shot)   └─ orchestre /quality + /check-implementation
    └─ investigation + blast radius + assumed decisions
+
+Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
 ```
 
 - **`/ticket`** digests the PM ticket: investigates, maps the impact radius,
@@ -66,7 +70,11 @@ land coherent on the first pass:
 - **Implement** follows the Feature playbook and the guidelines;
   `/check-implementation` on demand when touching an API you don't use often.
 - **`/quality`** before declaring done, **`/commit`** per coherent step,
-  **`/preprod`** for the recette, **`/deploy`** merges to main and cleans up.
+  **`/preprod`** for the recette.
+- **`/review-diff`** is the review a no-PR flow doesn't have: full diff vs
+  the original ticket (everything asked, nothing more) and vs the guidelines,
+  then it runs `/quality` and, only when the diff uses unfamiliar APIs,
+  `/check-implementation`. **`/deploy`** merges to main and cleans up.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod,
 `/gap-analysis` after a big delivery, `/update-guidelines` as tech watch.
