@@ -835,12 +835,19 @@ Utiliser `cn()` de shadcn pour les classes conditionnelles, pas de ternaires dan
 
 ### Rester sur la dernière version de shadcn (SOTA) + gestion des mises à jour
 
-shadcn n'est **pas une dépendance npm** : les composants sont du **code source vendored** dans `components/ui/`. Il n'y a donc pas de `pnpm update` — la mise à jour se fait composant par composant via le CLI, en **préservant nos customisations locales**. On vise en permanence le **dernier style publié** (aujourd'hui `new-york-v4`, cf. `components.json` → `"style"`). Un `style` périmé fait résoudre le CLI sur l'ancien registry → les nouveaux composants (ex. les primitives de chat `message-scroller`/`message`/`bubble`) tombent en **404** alors qu'ils existent.
+shadcn n'est **pas une dépendance npm** : les composants sont du **code source vendored** dans `components/ui/`. Il n'y a donc pas de `pnpm update` — la mise à jour se fait composant par composant via le CLI, en **préservant nos customisations locales**. On vise en permanence le **dernier style publié** (aujourd'hui `new-york-v4`, cf. `components.json` → `"style"`).
 
-**Ce qu'on customise (à NE JAMAIS perdre lors d'une mise à jour)** — surface à garder minuscule et documentée. Sur ce projet :
-- `button.tsx` : variants brand `feve` / `project` / `skills` / `ghostSkills` / `linkSkills` / `skillsSecondary` + taille `xs`.
-- `badge.tsx` : variants `skills` / `project`.
-- Composants **non shadcn** (custom/communauté, pas de `--diff` upstream) : ex. `multi-select.tsx`, `visually-hidden.tsx` → ne pas tenter de les « mettre à jour ».
+> **Nouveau projet : préférer le style `aria-nova` (React Aria).** Même CLI, mêmes tokens, mais base `react-aria-components` au lieu de Radix : accessibilité clavier/lecteur d'écran supérieure d'origine. Les projets existants restent sur `new-york-v4` — en changer serait une migration (pas d'`asChild`, `onPress`/`isDisabled`, `LinkButton`), pas un réglage. Un `style` périmé fait résoudre le CLI sur l'ancien registry → les nouveaux composants (ex. les primitives de chat `message-scroller`/`message`/`bubble`) tombent en **404** alors qu'ils existent.
+
+**Ce qu'on customise (à NE JAMAIS perdre lors d'une mise à jour)** — inventaire à tenir à jour (un `--diff` complet le révèle). Sur ce projet, plusieurs sont des **API load-bearing** que v4 casse :
+- `button.tsx` : variants brand `feve`/`project`/`skills`/`ghostSkills`/`linkSkills`/`skillsSecondary` + taille `xs` (`h-7`, ≠ v4 `h-6`) + tailles `icon-xs`/`icon-sm`/`icon-lg`.
+- `badge.tsx` : variants `skills`/`project`/`land`/`finance`/`network`.
+- `dialog.tsx` : aligné sur le `showCloseButton` v4 ; le custom restant est `DialogFooter` qui accepte `showCloseButton` (inexistant upstream).
+- `popover.tsx` : `PopoverClose` (supprimé en v4) — 8 usages dans `InputWithLabel`.
+- `slider.tsx` : `cva` variants `default/muted/land` (`RangeSlider` en dépend activement).
+- `progress.tsx` : prop `color` (4 écrans).
+- `chart.tsx` : type `ChartPayloadItem` maison ; `navigation-menu.tsx` : viewport `rounded-2xl` ; `pagination.tsx` : libellés FR.
+- Composants **non shadcn** (pas de `--diff` upstream) : `multi-select.tsx`, `visually-hidden.tsx` → ne pas « mettre à jour ».
 
 Tout le reste doit rester **au plus près de l'upstream** : ne pas éditer un `components/ui/*` sans raison, pour que les mises à jour restent des diffs propres.
 
