@@ -5,6 +5,15 @@
 >
 > **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16 (App Router) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn style `aria-nova` (base `react-aria-components`) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
+## Portée : socle et couche site statique
+
+Deux niveaux, à ne pas confondre :
+
+- **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn style `aria-nova` (React Aria), ESLint flat config, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
+- **La couche site statique d'écosystème** (portfolio, climatelab, wealth, taste, culture…) ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
+
+Un projet applicatif (vrai backend, tests, desktop… ex. symbl) garde le socle mais sort de la couche statique : ses conventions propres vivent dans son CLAUDE.md, et deviendront un doc de stack le jour où la structure se répète (doctrine des récurrences). Dans les principes ci-dessous, le 1 (statique), le 3 (kit), le 5 (mono-thème) et le « pas de tests » du §6 relèvent de la couche statique ; tout le reste est socle.
+
 ## Principes
 
 1. **Statique d'abord.** Pas de backend : pas de route handlers, pas de server actions, pas de DB. Tout ce que la page affiche existe au build, dans des constantes typées sous `lib/`.
@@ -52,6 +61,7 @@ export default defineConfig([...coreWebVitals, ...typescript,
 ```
 
 - Installation d'un composant : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`…) passent par le registry aussi, jamais par copier-coller entre projets.
+- **Projet hors kit** (application, identité propre) : style `aria-nova` stock via le CLI shadcn officiel, sans le registry. Les idiomes React Aria ci-dessous s'appliquent à l'identique.
 - **React Aria, pas Radix** : pas d'`asChild`. Les liens stylés bouton passent par l'export `LinkButton` de `components/ui/button.tsx` ; interaction via `onPress`/`isDisabled` ; état de sélection stylé via `data-selected`.
 - **lucide-react 1.x n'a plus d'icônes de marque** (GitHub, X…) : SVG local dans `components/icons.tsx`.
 - Variantes de composants projet : CVA, comme dans le kit.
