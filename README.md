@@ -4,17 +4,18 @@ The recipe for each stack Alexandre Macé builds on, in the version he and the `
 
 ## Stacks
 
-### `symfony-react/` : pro (lagrange, fabacee, legrenier)
+### `symfony-react/` : Symfony backend, React islands, EasyAdmin
 
 - **`symfony-guidelines.md`** : Backend architecture: Domain/Service/Controller, enums, repositories, commands, DTOs, Doctrine patterns
 - **`reactony.md`** : Symfony + React integration: forms, mutations, type pipeline, error handling, SDK usage
 
-### `next/` : perso (portfolio, climatelab, wealth, ui kit…)
+### `next/` : static-first Next.js, with a full-stack layer (Convex, Clerk)
 
-- **`next-guidelines.md`** : Static-first Next.js sites: App Router, aria-nova kit, baked data pipeline, SEO, Vercel
+- **`next-guidelines.md`** : Static-first Next.js sites: App Router, base-nova kit, baked data pipeline, SEO, Vercel
 
 ### Transverse
 
+- **`agent/`** : how the agent should work, whatever the stack: writing rules, register, how to research. Symlinked into `~/.claude/rules/`, loaded in every session. See its own README for what belongs there.
 - **`design-system-page.md`** : The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
 ## Usage
@@ -30,7 +31,7 @@ ln -s ~/dev/dev-standards/symfony-react/reactony.md docs/reactony.md
 ln -s ~/dev/dev-standards/next/next-guidelines.md docs/next-guidelines.md
 ```
 
-Then reference them in your project's `CLAUDE.md`:
+Then reference them from your project's `AGENTS.md` (`CLAUDE.md` is a one-line `@AGENTS.md` import):
 
 ```markdown
 ## Architecture & Guidelines
@@ -41,7 +42,7 @@ These docs are the source of truth for code conventions.
 
 ## Claude Code Skills
 
-Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so they're discoverable by Claude Code globally.
+Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so they're discoverable by Claude Code globally. Same mechanic for `agent/`, symlinked into `~/.claude/rules/`.
 
 **Installed skills:**
 

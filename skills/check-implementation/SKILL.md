@@ -21,6 +21,9 @@ For each piece of code, identify:
 - The specific feature used (e.g., form validation, routing, hooks, etc.)
 - The current version used in the project (check `composer.json`, `package.json`, etc.)
 
+> Search in English and go to primary sources (changelog, official docs, advisories),
+> whatever the language of the conversation. See `agent/recherche.md`.
+
 ### 3. Search the official documentation
 
 For each technology/feature identified:

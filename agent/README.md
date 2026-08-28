@@ -16,6 +16,7 @@ dans `~/.claude/skills/`.
 
 ```bash
 ln -s ~/dev/dev-standards/agent/redaction.md ~/.claude/rules/redaction.md
+ln -s ~/dev/dev-standards/agent/recherche.md ~/.claude/rules/recherche.md
 ```
 
 ## Où va quoi
