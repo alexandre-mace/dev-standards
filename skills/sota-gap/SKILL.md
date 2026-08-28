@@ -1,9 +1,13 @@
 ---
-name: update-guidelines
-description: Veille techno sur les guidelines dev-standards (stack symfony-react et stack next) contre les sources officielles. Déclencheurs - update guidelines, veille, "les guidelines sont-elles à jour", état de l'art.
+name: sota-gap
+description: Mesure l'écart entre les guidelines dev-standards (stack symfony-react et stack next) et l'état de l'art, en confrontant leurs recommandations aux sources officielles du web. Déclencheurs - sota gap, veille, update guidelines, "les guidelines sont-elles à jour", "on est encore au sota ?", état de l'art.
 ---
 
-# update-guidelines
+# sota-gap
+
+L'écart entre la recette et l'écosystème. Le pendant de `/gap-analysis`, qui mesure
+l'écart entre le code et la recette : ici l'autorité est inversée, c'est
+l'écosystème qui a raison et la recette qu'on corrige.
 
 Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`) et stack perso `next/` (`next-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les deux stacks ; l'utilisateur peut en cibler une.
 

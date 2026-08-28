@@ -1,9 +1,9 @@
 # Next Guidelines : sites statiques perso
 
 > Conventions de la stack perso (portfolio, climatelab, wealth, taste, culture, state…). Pragmatique, pas dogmatique.
-> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
+> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais où en est un projet particulier. Mesurer l'écart entre un code et cette recette, c'est le job de `/gap-analysis`, qui produit une liste d'écarts et non un état d'avancement.
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`), repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16.3 (App Router ; Active LTS avec security releases préannoncées : **patcher sous une semaine**, ex. 16.3.3 critique le 26/08/2026) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
+> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16.3 (App Router ; Active LTS avec security releases préannoncées : **patcher sous une semaine**, ex. 16.3.3 critique le 26/08/2026) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
 
 ## Portée : un socle, deux couches
 

@@ -1,6 +1,6 @@
 # Dev Standards
 
-Coding guidelines organized by stack, plus the Claude Code skills that enforce them. The docs are prescriptive and shared: they say what SHOULD be, never the state of one project (that's `/gap-analysis`).
+The recipe for each stack Alexandre Macé builds on, in the version he and the `/sota-gap` watch agree is state of the art, plus the Claude Code skills that go with them.
 
 ## Stacks
 
@@ -54,7 +54,7 @@ Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so th
 | `quality` | Run all quality checks (PHPStan, PHP-CS-Fixer, tsc, ESLint, Prettier) |
 | `ticket` | Deep-analyze a product ticket before coding (forces questions, prevents premature implementation) |
 | `gap-analysis` | Audit a codebase against the guidelines, produce `docs/gap-analysis.md` |
-| `update-guidelines` | Web-first review of the guidelines themselves against latest ecosystem best practices |
+| `sota-gap` | Measure how far the guidelines sit from the state of the art, web sources being the judge |
 | `check-implementation` | Verify recent code against latest official docs of the techs used |
 | `check-logs` | Prod health audit: CleverCloud logs + Messenger DB + Sentry, prioritized report |
 | `unslop` | Strip AI writing tells from any text, French and English |
@@ -94,7 +94,7 @@ Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
   **`/deploy`** merges to main and cleans up.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod,
-`/gap-analysis` after a big delivery, `/update-guidelines` as tech watch.
+`/gap-analysis` after a big delivery, `/sota-gap` as tech watch.
 Each feeds the next cycle's `/ticket` with a healthier baseline.
 
 ### Setup on a new machine

@@ -2,7 +2,7 @@
 
 Ce dossier ne contient **aucune recette de stack**. Les recettes techniques vivent
 dans `symfony-react/` et `next/`, et l'état d'un projet ne vit nulle part ici
-(c'est le job de `/gap-analysis`).
+L'écart entre un code et la recette se mesure avec `/gap-analysis`.
 
 Ici vivent les règles **comportementales** : valables sur tous les projets, quelle
 que soit la stack, quel que soit le langage. Rédaction, registre, façon de
@@ -26,4 +26,4 @@ ln -s ~/dev/dev-standards/agent/redaction.md ~/.claude/rules/redaction.md
 | Recette technique liée à une stack | `symfony-react/` ou `next/` |
 | Vrai pour un seul dépôt | l'`AGENTS.md` de ce dépôt |
 | Procédure outillée, déclenchée à la demande | `skills/` |
-| État d'avancement d'un projet | nulle part : `/gap-analysis` le mesure |
+| Où en est un projet | nulle part : ce n'est pas de la doc. `/gap-analysis` liste les écarts au code, pas l'avancement |

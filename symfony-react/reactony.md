@@ -1,9 +1,9 @@
 # Reactony : Convention Symfony + React
 
 > Source de vérité unique, pas de duplication, un seul pattern.
-> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
+> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais où en est un projet particulier. Mesurer l'écart entre un code et cette recette, c'est le job de `/gap-analysis`, qui produit une liste d'écarts et non un état d'avancement.
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`), repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
+> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
 
 ## Routage : quoi lire pour quelle tâche
 
@@ -862,7 +862,7 @@ Tout le reste doit rester **au plus près de l'upstream** : ne pas éditer un `c
 
 **Nouveautés CLI/registry (été 2026)** : les registries GitHub **privés** sont supportés (auth via les credentials `gh` ou `GH_TOKEN` : si tu peux lire le repo, le CLI peut installer depuis), pertinent si le kit perso doit un jour se privatiser. `npx shadcn migrate base-color` bascule la base color d'un projet : réécrit les variables du thème dans le CSS pointé par `components.json` et la valeur `baseColor` (les tokens custom non reconnus sont listés en fin de migration, à traiter à la main ; réversible en relançant dans l'autre sens ou via git). Nouveau composant `Questionnaire` multi-étapes, décliné React Aria, donc disponible pour `aria-nova`. Côté base React Aria : react-aria-components 1.20 (PreviewTrigger, TokenField en alpha, menus contextuels via `trigger="contextMenu"`), sans breaking.
 
-**Cadence** : à chaque veille `/update-guidelines`, vérifier le style courant sur ui.shadcn.com et réconcilier les composants qui ont le plus dérivé (un `--diff` volumineux = candidat à re-greffer). Objectif : diff ~nul hors les variants brand documentés.
+**Cadence** : à chaque veille `/sota-gap`, vérifier le style courant sur ui.shadcn.com et réconcilier les composants qui ont le plus dérivé (un `--diff` volumineux = candidat à re-greffer). Objectif : diff ~nul hors les variants brand documentés.
 
 ### QueryClient
 
