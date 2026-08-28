@@ -5,7 +5,7 @@ description: Veille techno sur les guidelines dev-standards (stack symfony-react
 
 # update-guidelines
 
-Relie les guidelines de `~/dev/dev-standards` — stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`) et stack perso `next/` (`next-guidelines.md`) — confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les deux stacks ; l'utilisateur peut en cibler une.
+Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`) et stack perso `next/` (`next-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les deux stacks ; l'utilisateur peut en cibler une.
 
 C'est une **veille techno** : les guidelines sont le point de référence, le web est le juge de paix, le repo du projet n'est **pas** une source (il peut contenir du legacy).
 
@@ -13,7 +13,7 @@ C'est une **veille techno** : les guidelines sont le point de référence, le we
 
 1. **Read current state**
    - Read the stack's guidelines: `symfony-react/symfony-guidelines.md` + `symfony-react/reactony.md` (pro) and/or `next/next-guidelines.md` (perso)
-   - Read `composer.json` / `package.json` of a representative project per stack to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind — et côté next : Next.js, kit @alexandremace, etc.)
+   - Read `composer.json` / `package.json` of a representative project per stack to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind : et côté next : Next.js, kit @alexandremace, etc.)
 
 2. **Research web-first : sources autoritaires uniquement**
 

@@ -3,11 +3,11 @@
 > Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais l'état d'un projet particulier (ça, c'est `/gap-analysis`).
 >
-> **Dernière veille : 24 août 2026** (`/update-guidelines`) — repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud).
+> **Dernière veille : 24 août 2026** (`/update-guidelines`), repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud).
 
-## Routage — quoi lire pour quelle tâche
+## Routage : quoi lire pour quelle tâche
 
-Lire le **playbook + Definition of Done** (ci-dessous) et les **anti-patterns (§18)** pour toute tâche ; puis seulement les sections concernées — pas le fichier entier.
+Lire le **playbook + Definition of Done** (ci-dessous) et les **anti-patterns (§18)** pour toute tâche ; puis seulement les sections concernées : pas le fichier entier.
 
 | Tâche | Sections |
 |---|---|
@@ -23,25 +23,25 @@ Lire le **playbook + Definition of Done** (ci-dessous) et les **anti-patterns (�
 
 ## Principes
 
-1. **Domain/ = les règles** — décide, valide, calcule. Ne dépend de rien d'externe.
-2. **Service/ = l'exécution** — persiste, envoie, appelle des APIs. Fait les choses.
-3. **Controller = l'orchestrateur** — câble Domain + Service + Api. Extrait dans Service/ si ça se répète ou déborde.
-4. **Enums PHP natifs** — pour tout ensemble fini de valeurs (statuts, types, catégories)
-5. **Constructor property promotion + `readonly`** — injection moderne, propriétés `private readonly`, pas d'assignation manuelle
-6. **Pas d'abstraction préventive** — pas d'interface, pas de ValueObject, pas d'Aggregate sauf si réellement nécessaire
-7. **`#[IsGranted]`** — sécurité au niveau méthode sur les routes API, pas de `access_control` par pattern d'URL pour les `/api/`
+1. **Domain/ = les règles** : décide, valide, calcule. Ne dépend de rien d'externe.
+2. **Service/ = l'exécution** : persiste, envoie, appelle des APIs. Fait les choses.
+3. **Controller = l'orchestrateur** : câble Domain + Service + Api. Extrait dans Service/ si ça se répète ou déborde.
+4. **Enums PHP natifs** : pour tout ensemble fini de valeurs (statuts, types, catégories)
+5. **Constructor property promotion + `readonly`** : injection moderne, propriétés `private readonly`, pas d'assignation manuelle
+6. **Pas d'abstraction préventive** : pas d'interface, pas de ValueObject, pas d'Aggregate sauf si réellement nécessaire
+7. **`#[IsGranted]`** : sécurité au niveau méthode sur les routes API, pas de `access_control` par pattern d'URL pour les `/api/`
 
-### Décisions d'architecture assumées — ce qu'on n'utilise PAS (et pourquoi)
+### Décisions d'architecture assumées : ce qu'on n'utilise PAS (et pourquoi)
 
 Gravé pour ne pas re-débattre à chaque session (codebase AI-first : l'IA reproposerait ces migrations en boucle sinon).
 
 - **Pas d'API Platform.** App **hybride** (API + nombreuses pages serveur Twig + EasyAdmin), endpoints *action-shaped* (pas du CRUD-resource), et le pipeline OpenAPI→TS (`make types`) existe déjà. API Platform = double paradigme + state processors pour toute logique bespoke → **plus** de concepts, pas moins. Nos controllers `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` donnent ~80 % de sa concision sans le coût. (Re-validé juin 2026 : reste vrai en API Platform 4.2.)
-- **Pas de RSC / React Server Components** (cf. `reactony.md`) — Symfony+Twig **est** déjà la couche serveur ; les îlots React sont les feuilles client intentionnelles. Bolter RSC = faire tourner un serveur Node de rendu à côté de PHP, pour un rôle que PHP tient déjà.
+- **Pas de RSC / React Server Components** (cf. `reactony.md`) : Symfony+Twig **est** déjà la couche serveur ; les îlots React sont les feuilles client intentionnelles. Bolter RSC = faire tourner un serveur Node de rendu à côté de PHP, pour un rôle que PHP tient déjà.
 - **PHP-FPM, pas FrankenPHP (pour l'instant).** Vérifié sur benchmarks sérieux (août 2026) : le mode classique de FrankenPHP est à parité de perf avec FPM, et le worker mode ne rapporte que le bootstrap économisé sur une app SQL-dominante (x1.2-x1.5 réel, pas les x3-x4 des hello-world), au prix d'une classe de bugs d'état persistant (fuites mémoire, services stateful) et d'une RAM en hausse. À trafic modéré, FPM ne coûte rien de mesurable. Chemin d'évolution le jour où un déclencheur apparaît (pics CPU, besoin Mercure/temps réel, réduction d'instance) : d'abord le mode **classique** (runtime CleverCloud GA, HTTP/3 + Early Hints, risque faible), puis le worker sous conditions (sentry-symfony ≥ 5.12, audit des services stateful/`ResetInterface`, `max_requests` ~1000, alerte RAM, plateforme la moins critique d'abord). Re-statuer à chaque veille.
 
 ---
 
-## Feature playbook — one-shot
+## Feature playbook : one-shot
 
 Séquence standard pour implémenter une feature full-stack. L'IA qui la suit dans l'ordre évite les questions aller-retour et livre une feature cohérente du premier coup.
 
@@ -57,8 +57,8 @@ Séquence standard pour implémenter une feature full-stack. L'IA qui la suit da
 
 ### 2. Route controller
 
-- `#[Route(path: '/api/...', methods: [...], format: 'json')]` — `format: 'json'` **obligatoire**
-- `#[IsGranted('ROLE_USER')]` sur méthode ou classe — obligatoire sur `/api/`
+- `#[Route(path: '/api/...', methods: [...], format: 'json')]` : `format: 'json'` **obligatoire**
+- `#[IsGranted('ROLE_USER')]` sur méthode ou classe : obligatoire sur `/api/`
 - CRUD simple → EntityManager direct dans le controller. Logique métier → extraire Domain + Service.
 - Appel externe non critique → catch + `logger->error()` + swallow (le flow user ne doit pas casser pour un upstream flaky)
 
@@ -107,7 +107,7 @@ Une feature n'est "faite" que si **tous** ces points sont verts :
 - [ ] Functional test écrit pour toute nouvelle route API non triviale
 - [ ] Property-based test (Eris) ajouté pour toute nouvelle logique de calcul money / fees / paliers
 - [ ] Spec Playwright ajoutée pour tout nouveau parcours utilisateur
-- [ ] Feature testée en navigateur — golden path + au moins un edge case
+- [ ] Feature testée en navigateur : golden path + au moins un edge case
 - [ ] `#[IsGranted]` et `format: 'json'` présents sur les nouvelles routes `/api/`
 - [ ] Aucun anti-pattern de la section dédiée (notamment : `useEffect+fetch`, `$request->get()`, `new RetryableHttpClient`, `any` hors RHF `setError`)
 
@@ -175,7 +175,7 @@ Domain/ ne dépend de rien d'autre. Service/ peut appeler Domain/. Le Controller
 
 ---
 
-## 2. Domain/ — Les règles
+## 2. Domain/ : Les règles
 
 Chaque sous-dossier de `Domain/` est un **contexte métier**.
 
@@ -185,13 +185,13 @@ La règle qui compte : **Service → Domain ✓**, **Domain → Service ✗**. S
 
 Concrètement, un constructor de Domain **n'injecte pas** : Repository, `EntityManagerInterface`, `HttpClientInterface`, `LoggerInterface`, `Filesystem`, autre `Service`, classe `Api/`, `UrlGeneratorInterface`. Tout ce dont Domain a besoin lui est passé en paramètre de méthode.
 
-En revanche, **les attributs framework Symfony sont autorisés librement dans Domain** — au même titre que `Entity/` utilise `#[ORM\Column]` :
+En revanche, **les attributs framework Symfony sont autorisés librement dans Domain** : au même titre que `Entity/` utilise `#[ORM\Column]` :
 
 - `#[Assert\…]` (Validator)
 - `#[Groups]` (Serializer)
 - `#[OA\…]` (Nelmio OpenAPI)
 
-C'est de la metadata déclarative, pas une dépendance runtime. Le projet est et reste Symfony — pas d'effort à faire pour rester « framework-agnostic ».
+C'est de la metadata déclarative, pas une dépendance runtime. Le projet est et reste Symfony : pas d'effort à faire pour rester « framework-agnostic ».
 
 **Domain/ répond aux questions :** « est-ce que cette étape est complétable ? », « quel score a cet utilisateur ? », « quel manager pour ce département ? »
 
@@ -261,7 +261,7 @@ private AdvertStatus $status = AdvertStatus::Pending;
 
 Deux règles pour ne pas fighter le framework :
 
-1. **Laisser EA gérer le round-trip.** Dès que la colonne Doctrine a `#[ORM\Column(enumType: MyEnum::class)]`, `ChoiceField::new('monChamp')` détecte les cases tout seul. Ne pas ajouter `setChoices()` ni `choice_value()` — ça casse l'edit form (cf. LAGRANGE-3Q / LAGRANGE-4V, où un `choice_value` polymorphe avait dû être ajouté pour rattraper un `setChoices()` redondant).
+1. **Laisser EA gérer le round-trip.** Dès que la colonne Doctrine a `#[ORM\Column(enumType: MyEnum::class)]`, `ChoiceField::new('monChamp')` détecte les cases tout seul. Ne pas ajouter `setChoices()` ni `choice_value()` : ça casse l'edit form (cf. LAGRANGE-3Q / LAGRANGE-4V, où un `choice_value` polymorphe avait dû être ajouté pour rattraper un `setChoices()` redondant).
 
 2. **Implémenter `Symfony\Contracts\Translation\TranslatableInterface` sur l'enum** pour que EA appelle `trans()` et affiche un libellé humain au lieu du raw value. On réutilise `label()` :
 
@@ -285,9 +285,9 @@ Deux règles pour ne pas fighter le framework :
 
    Pas besoin de fichiers de traduction : `trans()` renvoie directement la string.
 
-#### Actions custom (EasyAdmin v5) — ne jamais lire `entityId` en query
+#### Actions custom (EasyAdmin v5) : ne jamais lire `entityId` en query
 
-Avec les *pretty URLs* d'EA v5, l'`entityId` d'une action custom (`#[AdminRoute(path: '/{entityId}/…')]`) est un **paramètre de route**, pas un query param. Le lire dans la query renvoie toujours `null` (symptôme : l'action croit qu'aucune entité n'est sélectionnée). (Depuis EA **5.1**, les pretty URLs sont le **mode par défaut** et `usePrettyUrls()` a été supprimé — ne plus l'appeler.)
+Avec les *pretty URLs* d'EA v5, l'`entityId` d'une action custom (`#[AdminRoute(path: '/{entityId}/…')]`) est un **paramètre de route**, pas un query param. Le lire dans la query renvoie toujours `null` (symptôme : l'action croit qu'aucune entité n'est sélectionnée). (Depuis EA **5.1**, les pretty URLs sont le **mode par défaut** et `usePrettyUrls()` a été supprimé, ne plus l'appeler.)
 
 ```php
 // ❌ CASSÉ depuis la migration v5 — query->get('entityId') est toujours null
@@ -330,7 +330,7 @@ class StepRules
 
 ### Calculator
 
-Calculs métier sans side effect. **Un Calculator reçoit toutes ses données en paramètre** — il ne dépend jamais d'un repository ou d'un service. C'est ce qui le rend pur et testable sans mock.
+Calculs métier sans side effect. **Un Calculator reçoit toutes ses données en paramètre** : il ne dépend jamais d'un repository ou d'un service. C'est ce qui le rend pur et testable sans mock.
 
 ```php
 class ScoreCalculator
@@ -394,7 +394,7 @@ class StepNotCompletableException extends \DomainException
 
 ---
 
-## 3. Controller — L'orchestrateur
+## 3. Controller : L'orchestrateur
 
 Le controller câble Domain + Service + Api. C'est le premier endroit où on met l'orchestration.
 
@@ -454,7 +454,7 @@ Une seule règle, pas d'exception : **un nom canonique par feature, en français
 #[Route('/api/mon-endpoint', methods: ['POST'], format: 'json')]
 ```
 
-### Réponse API — `#[Serialize]` (SF 8.1)
+### Réponse API : `#[Serialize]` (SF 8.1)
 
 Symétrique de `#[MapRequestPayload]` (entrée) : `#[Serialize]` est la **sortie**. Le controller `return` directement le DTO / tableau / entité ; l'attribut gère l'encodage JSON + la négociation de contenu + le code HTTP. Plus de `$this->json(...)` ni de `new JsonResponse(...)`.
 
@@ -468,21 +468,21 @@ public function getModelSaves(): array
 }
 ```
 
-Options : `#[Serialize(code: 201, headers: [...], context: ['groups' => [...]])]`. Les `#[Groups]` se comportent **exactement** comme avec `$this->json(..., ['groups' => ...])` — validé sur pièce : sortie byte-identique, **zéro drift** OpenAPI/SDK/Zod.
+Options : `#[Serialize(code: 201, headers: [...], context: ['groups' => [...]])]`. Les `#[Groups]` se comportent **exactement** comme avec `$this->json(..., ['groups' => ...])`, validé sur pièce : sortie byte-identique, **zéro drift** OpenAPI/SDK/Zod.
 
 **Convention : défaut pour les *nouveaux* `/api/*` qui renvoient un DTO/entité.** Attribut neuf (8.1, mai 2026) → on **adopte en avant**, on migre l'existant **à l'occasion** (pas de big-bang sur les `JsonResponse` qui marchent ; beaucoup renvoient des `['status' => 'ok']` triviaux où il n'apporte rien).
 
 ⚠️ **Gotcha** : un docblock **en prose** sur l'action fuite dans le `summary` OpenAPI de Nelmio (et le JSDoc du SDK généré). Garder le docblock **tag-only** (`@return ...`) ; mettre les explications d'implémentation en commentaire `//` interne.
 
-### Outils ciblés — dégainer sur besoin, jamais par défaut
+### Outils ciblés : dégainer sur besoin, jamais par défaut
 
 Modernes et corrects, mais les ajouter à vide trahit le « minimal code ». Notés pour savoir quoi dégainer quand la douleur **précise** apparaît :
 
-- **`JsonStreamer` (8.1)** — encodeur généré au cache-warmup (sans réflexion runtime), −50 % RAM / ~2× plus rapide. **Pour** un endpoint liste **volumineux sous pression mémoire** (recherche fermes, carte). Pas avant que le profiler le réclame.
-- **`cuyz/valinor`** — l'hydrateur le plus type-safe (`list<string>`, `positive-int`, `int<0,42>`, shaped arrays, validation récursive, « objet valide ou throw avec message précis »). **Pour** parser du **JSON externe / non-fiable en value objects** (`data/fermage/`, blobs Airtable, scrapers). PAS pour les requêtes HTTP — `#[MapRequestPayload]` + `#[Assert]` suffit ; éviter un 3ᵉ hydrateur par défaut.
-- **`Clock` (`ClockInterface`)** — temps injectable/déterministe. **Pour** la logique métier time-dépendante + tests ; pas de `new \DateTimeImmutable()` direct dans le domaine.
+- **`JsonStreamer` (8.1)** : encodeur généré au cache-warmup (sans réflexion runtime), −50 % RAM / ~2× plus rapide. **Pour** un endpoint liste **volumineux sous pression mémoire** (recherche fermes, carte). Pas avant que le profiler le réclame.
+- **`cuyz/valinor`** : l'hydrateur le plus type-safe (`list<string>`, `positive-int`, `int<0,42>`, shaped arrays, validation récursive, « objet valide ou throw avec message précis »). **Pour** parser du **JSON externe / non-fiable en value objects** (`data/fermage/`, blobs Airtable, scrapers). PAS pour les requêtes HTTP, `#[MapRequestPayload]` + `#[Assert]` suffit ; éviter un 3ᵉ hydrateur par défaut.
+- **`Clock` (`ClockInterface`)** : temps injectable/déterministe. **Pour** la logique métier time-dépendante + tests ; pas de `new \DateTimeImmutable()` direct dans le domaine.
 
-### Sécurité des routes API — `#[IsGranted]`
+### Sécurité des routes API : `#[IsGranted]`
 
 Les routes `/api/` ne sont pas protégées par `access_control` (qui fonctionne par pattern d'URL). Utiliser `#[IsGranted]` au niveau de la méthode ou de la classe :
 
@@ -516,10 +516,10 @@ Préférer les attributs de mapping (`#[MapRequestPayload]`, `#[MapQueryString]`
 
 ### Quand extraire dans Service/ ?
 
-**Commence toujours dans le controller.** La taille du controller n'est pas un problème en soi — un controller avec beaucoup d'actions CRUD bien organisées peut être long sans que ce soit un souci. Extrait dans un `Service/*Handler` quand :
+**Commence toujours dans le controller.** La taille du controller n'est pas un problème en soi : un controller avec beaucoup d'actions CRUD bien organisées peut être long sans que ce soit un souci. Extrait dans un `Service/*Handler` quand :
 
-1. **Plusieurs endroits font la même chose** — le même combo d'appels est dupliqué dans 2+ controllers, ou dans un controller + une command
-2. **Le controller contient de la logique métier extractable** — calculs, validations complexes, orchestration multi-étapes qui serait plus claire dans un service dédié
+1. **Plusieurs endroits font la même chose** : le même combo d'appels est dupliqué dans 2+ controllers, ou dans un controller + une command
+2. **Le controller contient de la logique métier extractable** : calculs, validations complexes, orchestration multi-étapes qui serait plus claire dans un service dédié
 
 ```php
 // Service/StepCompletionHandler.php — justifié : appelé depuis Controller ET Command
@@ -552,7 +552,7 @@ Controller/
 
 ---
 
-## 4. Dto/ — Les payloads API
+## 4. Dto/ : Les payloads API
 
 DTOs pour `#[MapRequestPayload]`, `#[MapQueryString]`, et `#[MapUploadedFile]`. Le pendant React (SDK, formulaires, gestion des 422) est dans `docs/reactony.md`.
 
@@ -596,8 +596,8 @@ public ?string $debugOnly;
 
 Symfony 8.1 complète le composant :
 
-- `#[Map(source: ...)]` déclarable **sur la classe cible** — le DTO d'entrée reste sans attribut quand c'est la cible qui connaît le mapping
-- Condition `IsNotNull` : ne mapper la propriété que si la valeur source est non-null (alternative au pattern « propriété non initialisée » pour les updates partiels — les deux sont valides, le pattern non-initialisé reste le défaut documenté ici)
+- `#[Map(source: ...)]` déclarable **sur la classe cible** : le DTO d'entrée reste sans attribut quand c'est la cible qui connaît le mapping
+- Condition `IsNotNull` : ne mapper la propriété que si la valeur source est non-null (alternative au pattern « propriété non initialisée » pour les updates partiels, les deux sont valides, le pattern non-initialisé reste le défaut documenté ici)
 - `MapCollection(targetClass: ...)` pour mapper les collections d'objets
 
 ```php
@@ -637,9 +637,9 @@ public function save(Request $request, DenormalizerInterface $denormalizer): Res
 
 Alternative côté front : omettre la clé quand elle est vide. Le backend reste défensif.
 
-### Upload de fichiers — `UploadedFile` dans le DTO (SF 8.1)
+### Upload de fichiers : `UploadedFile` dans le DTO (SF 8.1)
 
-Depuis Symfony 8.1, `#[MapRequestPayload]` mappe les `UploadedFile` directement dans le DTO sur les requêtes `multipart/form-data` (fusion de `$request->request` + `$request->files` avant dénormalisation). C'est le pattern par défaut pour un endpoint fichier + champs texte — un seul paramètre, une seule surface de validation :
+Depuis Symfony 8.1, `#[MapRequestPayload]` mappe les `UploadedFile` directement dans le DTO sur les requêtes `multipart/form-data` (fusion de `$request->request` + `$request->files` avant dénormalisation). C'est le pattern par défaut pour un endpoint fichier + champs texte : un seul paramètre, une seule surface de validation :
 
 ```php
 class UploadAvatarPayload
@@ -655,20 +655,20 @@ public function upload(#[MapRequestPayload] UploadAvatarPayload $payload): Respo
 ```
 
 Règles :
-- **DTO plat** : garder le payload d'upload à plat — un `UploadedFile` dans un objet imbriqué reste un smell (aplatir). Le bug historique qui le faisait *casser* ([#64571](https://github.com/symfony/symfony/issues/64571)) est **corrigé** (PR #64576, mergé 6.4→up le 16/06/2026) ; la raison de garder le DTO plat est désormais le style, plus un blocage technique.
+- **DTO plat** : garder le payload d'upload à plat, un `UploadedFile` dans un objet imbriqué reste un smell (aplatir). Le bug historique qui le faisait *casser* ([#64571](https://github.com/symfony/symfony/issues/64571)) est **corrigé** (PR #64576, mergé 6.4→up le 16/06/2026) ; la raison de garder le DTO plat est désormais le style, plus un blocage technique.
 - Identifiant → param de route (`{fieldId}`), pas dans le payload.
 - `#[MapUploadedFile]` reste le fallback (fichier seul sans champs texte, ou cas qui ne rentre pas dans le DTO plat). Jamais `$request->files->get()` ni `$request->request->get()`.
-- Après adoption, vérifier que Nelmio décrit bien le body multipart dans `openapi.yaml` — le gate de drift attrape une régression du SDK.
+- Après adoption, vérifier que Nelmio décrit bien le body multipart dans `openapi.yaml` : le gate de drift attrape une régression du SDK.
 
 ### Divers `#[MapRequestPayload]` (SF 8.1)
 
-- `mapWhenEmpty: true` — dénormalise même un payload vide
+- `mapWhenEmpty: true` : dénormalise même un payload vide
 - `validationGroups` dynamiques via `Closure`/`Expression` évalués sur les arguments résolus
 - Arguments variadiques : `#[MapRequestPayload] Price ...$prices` mappe un tableau JSON de DTOs
 
 ---
 
-## 5. Service/ — L'exécution
+## 5. Service/ : L'exécution
 
 Service/ fait les choses : persiste, envoie, upload, exporte, scrape, formate.
 
@@ -708,7 +708,7 @@ APIs externes avec authentification. URLs et credentials dans `.env`, injectés 
 
 `config/packages/http_client.yaml` configure déjà des clients scopés (`webflow.client`, `discord.client`, etc.) avec `retry_failed` : 3 tentatives, backoff exponentiel 1s→10s sur les codes `[0, 429, 500, 502, 503, 504]`.
 
-**Ne pas ré-implémenter** de boucle retry par-dessus — ni avec `RetryableHttpClient` dans le service, ni avec un `while` maison. Les services injectent le client scopé directement et laissent la couche DI gérer les retries :
+**Ne pas ré-implémenter** de boucle retry par-dessus : ni avec `RetryableHttpClient` dans le service, ni avec un `while` maison. Les services injectent le client scopé directement et laissent la couche DI gérer les retries :
 
 ```php
 // OK — le client scopé gère le retry
@@ -725,15 +725,15 @@ public function estimate(array $data): array
 }
 ```
 
-Cas observé (corrigé) : `FarmEstimationService` wrappait `RetryableHttpClient` dans un `while` maison avec un post-loop check qui throwait sur `$retryCount === MAX_RETRIES` — donc la 3ᵉ tentative réussie à 200 throwait quand même. Résultat : 6 × 500 en prod.
+Cas observé (corrigé) : `FarmEstimationService` wrappait `RetryableHttpClient` dans un `while` maison avec un post-loop check qui throwait sur `$retryCount === MAX_RETRIES`, donc la 3ᵉ tentative réussie à 200 throwait quand même. Résultat : 6 × 500 en prod.
 
-À connaître aussi : HttpClient a une **allow-list anti-SSRF** (SF 8.1 — à activer si une URL d'appel dépend d'input utilisateur) et un **cache HTTP conforme RFC 9111** (SF 7.4 — pertinent pour les réponses upstream cacheables type geodata/référentiels).
+À connaître aussi : HttpClient a une **allow-list anti-SSRF** (SF 8.1, à activer si une URL d'appel dépend d'input utilisateur) et un **cache HTTP conforme RFC 9111** (SF 7.4, pertinent pour les réponses upstream cacheables type geodata/référentiels).
 
-### Rate Limiter sur endpoints publics — `#[RateLimit]`
+### Rate Limiter sur endpoints publics : `#[RateLimit]`
 
 Les endpoints qui acceptent du trafic non authentifié ou bon marché à fire massivement doivent être rate-limités. Cas d'école : login, geodata/autocomplete, upload fichier, reset password, tout POST public.
 
-Depuis Symfony 8.1, l'attribut `#[RateLimit('nom_du_limiter')]` (méthode ou classe, répétable) remplace l'injection manuelle de `RateLimiterFactory` : clé par défaut IP+méthode+path, 429 + headers `Retry-After`/`X-RateLimit-*` automatiques. Options : `methods:`, `key:` (Expression — ex. par user plutôt que par IP), `tokens:`. L'injection `RateLimiterFactory` + `consume()->ensureAccepted()` ne se justifie plus que pour une logique de clé impossible à exprimer en Expression.
+Depuis Symfony 8.1, l'attribut `#[RateLimit('nom_du_limiter')]` (méthode ou classe, répétable) remplace l'injection manuelle de `RateLimiterFactory` : clé par défaut IP+méthode+path, 429 + headers `Retry-After`/`X-RateLimit-*` automatiques. Options : `methods:`, `key:` (Expression, ex. par user plutôt que par IP), `tokens:`. L'injection `RateLimiterFactory` + `consume()->ensureAccepted()` ne se justifie plus que pour une logique de clé impossible à exprimer en Expression.
 
 ```yaml
 # config/packages/rate_limiter.yaml
@@ -766,11 +766,11 @@ Endpoints à rate-limiter par défaut dans un projet Symfony+React :
 - `GET /api/*/geodata` / autocompletes externes (limite large car appelé vite côté front debounced)
 - Endpoints qui tapent une API payante (OpenAI, Hubspot forms, etc.)
 
-### Webhook component — pattern cible pour les webhooks entrants
+### Webhook component : pattern cible pour les webhooks entrants
 
 Quand un projet accumule 3+ webhooks entrants différents (Webflow, Hubspot, Stripe, Mailjet…), migrer depuis les controllers bespoke vers le `symfony/webhook` component. Bénéfices : abstraction uniforme (`AbstractRequestParser` + `RemoteEvent` + `#[AsRemoteEventConsumer]`), retry async via `remote_event` transport, signature-check standardisée.
 
-Pas de parser built-in pour Webflow/Hubspot/Stripe — on écrit le sien. Tant qu'on n'a que 1-2 webhooks, la controller bespoke reste acceptable, mais la convention cible en Symfony 8 est le component. Ne pas ajouter un 3ème webhook custom sans évaluer la migration.
+Pas de parser built-in pour Webflow/Hubspot/Stripe : on écrit le sien. Tant qu'on n'a que 1-2 webhooks, la controller bespoke reste acceptable, mais la convention cible en Symfony 8 est le component. Ne pas ajouter un 3ème webhook custom sans évaluer la migration.
 
 ---
 
@@ -793,8 +793,8 @@ Contrainte de version : **sentry-symfony ≥ 5.12** démarre le runtime context 
 
 `ignore_exceptions` dans `sentry.yaml` filtre les exceptions qui ne sont pas des bugs applicatifs :
 
-- `Symfony\Component\HttpKernel\Exception\NotFoundHttpException` — 404 = "resource not found", pas un bug. Ça reste dans les access logs Clever si audit nécessaire.
-- `Symfony\Component\ErrorHandler\Error\FatalError` + `FatalErrorException` — remontés par PHP, déjà capturés par les autres handlers.
+- `Symfony\Component\HttpKernel\Exception\NotFoundHttpException` : 404 = "resource not found", pas un bug. Ça reste dans les access logs Clever si audit nécessaire.
+- `Symfony\Component\ErrorHandler\Error\FatalError` + `FatalErrorException` : remontés par PHP, déjà capturés par les autres handlers.
 
 Pour ajouter une classe à ignorer, éviter les catégories trop larges (ex. ignorer toutes les `HttpException` masquerait de vrais bugs). Préférer la classe précise.
 
@@ -837,7 +837,7 @@ class StepRepository extends ServiceEntityRepository
 
 ## 8. Entity/
 
-- **Trait `Timestampable`** sur toutes les entités métier — `DateTimeImmutable` partout (pas de `DateTime` mutable)
+- **Trait `Timestampable`** sur toutes les entités métier : `DateTimeImmutable` partout (pas de `DateTime` mutable)
 - **TypedFieldMapper** (Doctrine ORM 3.x) : le type de colonne est inféré du type PHP. Pas besoin de `type:` explicite si la propriété est typée :
 
 ```php
@@ -853,7 +853,7 @@ private string $title;
 private string $description;
 ```
 
-- **Native lazy objects** : avec doctrine-bundle 3.x c'est le **seul mode** — rien à activer, et l'option `enable_native_lazy_objects` est dépréciée (bundle 3.1) : la retirer de la config si présente. ORM 4 les rendra obligatoires.
+- **Native lazy objects** : avec doctrine-bundle 3.x c'est le **seul mode**, rien à activer, et l'option `enable_native_lazy_objects` est dépréciée (bundle 3.1) : la retirer de la config si présente. ORM 4 les rendra obligatoires.
 - **Index mono-colonne** : `#[ORM\Column(index: true)]` (ORM 3.5+) au lieu d'un `#[ORM\Index]` au niveau classe
 - **Enums Doctrine** : `#[ORM\Column(enumType: MonEnum::class)]`
 - **Getters calculés** simples : OK si ça ne dépend que de `$this` (`isExpired()`, `getFullName()`)
@@ -895,7 +895,7 @@ class AppExtension
 }
 ```
 
-Contrainte de version : **Twig ≥ 3.27** obligatoire (corrige les CVE-2026-48805 à 48808). Twig 4 est en alpha — ne pas l'anticiper.
+Contrainte de version : **Twig ≥ 3.27** obligatoire (corrige les CVE-2026-48805 à 48808). Twig 4 est en alpha, ne pas l'anticiper.
 
 ---
 
@@ -907,7 +907,7 @@ Les commandes sont des orchestrateurs, comme les controllers. Mêmes règles : D
 
 Utiliser le pattern **invokable** : pas de `extends Command`, pas de `execute()`, pas de `parent::__construct()`. La logique va dans `__invoke()`, les arguments/options sont des attributs `#[Argument]`/`#[Option]` sur les paramètres.
 
-> `Command` est toujours importé pour les constantes `SUCCESS`/`FAILURE` — c'est le seul usage.
+> `Command` est toujours importé pour les constantes `SUCCESS`/`FAILURE` : c'est le seul usage.
 
 ```php
 #[AsCommand(name: 'app:my-command', description: 'Does something')]
@@ -936,7 +936,7 @@ public function __invoke(
 ): int { /* ... */ }
 ```
 
-### Commandes complexes — `#[MapInput]`
+### Commandes complexes : `#[MapInput]`
 
 Quand une commande a beaucoup d'arguments/options, les grouper dans un DTO avec `#[MapInput]` :
 
@@ -981,7 +981,7 @@ Pour un simple `new Entity()` avec quelques setters, pas besoin de Factory.
 
 ## 13. Testing
 
-Stack standard, partagée par tous les projets Symfony+React. Pas de "léger" pour les uns, "lourd" pour les autres — la même chose partout. Solo dev sur des plateformes critiques (argent, PII, audit gov), le filet doit être maximal et homogène.
+Stack standard, partagée par tous les projets Symfony+React. Pas de "léger" pour les uns, "lourd" pour les autres : la même chose partout. Solo dev sur des plateformes critiques (argent, PII, audit gov), le filet doit être maximal et homogène.
 
 ### La pyramide
 
@@ -1002,9 +1002,9 @@ Toutes les couches tournent sur **chaque PR**. Pas de mutation testing : Eris (p
 - configuration pure (classes qui ne font que exposer des env vars)
 - code mort ou déprécié qui va disparaître
 
-Écrire un test parce que la complexité du code le justifie, pas parce qu'on a un fichier à toucher. Si un service orchestre 6 autres services avec beaucoup de plomberie, c'est souvent le signe qu'il faut le découper — pas qu'il faut écrire un test qui mocke tout.
+Écrire un test parce que la complexité du code le justifie, pas parce qu'on a un fichier à toucher. Si un service orchestre 6 autres services avec beaucoup de plomberie, c'est souvent le signe qu'il faut le découper : pas qu'il faut écrire un test qui mocke tout.
 
-### Foundry — factories de tests
+### Foundry : factories de tests
 
 Standard Symfony moderne pour fabriquer des entités de test. Remplace les fixtures à la main et les `$entity = new Entity(); $entity->setX(...);` répétés dans les `setUp()`.
 
@@ -1012,7 +1012,7 @@ Standard Symfony moderne pour fabriquer des entités de test. Remplace les fixtu
 composer require --dev zenstruck/foundry
 ```
 
-Depuis Foundry 2.9, les traits `Factories` / `ResetDatabase` sont **dépréciés** — brancher l'extension PHPUnit à la place (plus rien à déclarer dans les test cases) :
+Depuis Foundry 2.9, les traits `Factories` / `ResetDatabase` sont **dépréciés** : brancher l'extension PHPUnit à la place (plus rien à déclarer dans les test cases) :
 
 ```xml
 <!-- phpunit.xml.dist -->
@@ -1052,7 +1052,7 @@ Une factory par entité critique. Les autres entités (passthrough) peuvent rest
 
 Contrainte de version : **Foundry ≥ 2.10.3**. Les patchs 2.10.2/2.10.3 (juillet 2026) corrigent des bugs de persistance réels : persist différé jusqu'à l'instanciation complète du graphe d'objets, events Doctrine sur entités imbriquées.
 
-### DAMA Doctrine Test Bundle — rollback transactionnel auto
+### DAMA Doctrine Test Bundle : rollback transactionnel auto
 
 `dama/doctrine-test-bundle` wrappe **chaque test** dans une transaction et rollback au tearDown. Plus besoin d'écrire une `DatabaseTransactionTestCase` à la main, plus besoin de wipe entre tests, et la suite tourne 5× plus vite.
 
@@ -1079,9 +1079,9 @@ return [
 
 Tous les `KernelTestCase` / `WebTestCase` héritent automatiquement du rollback. Les tests deviennent **isolés** et **rapides** sans effort. `#[SkipDatabaseRollback]` (dama 8.5+) désactive le rollback sur un test qui doit committer réellement.
 
-Contrainte PHPUnit : **PHPUnit 13** est la ligne courante (13.3.x). Vérifié sur pièces (août 2026) : le « plafond » de dama n'existe qu'en `require-dev` du bundle (sa matrice CI), la seule contrainte runtime de la v8.6.0 taguée est `conflict: phpunit < 11`, et `master` n'a **aucun changement de code** par rapport à elle. Donc **dama v8.6.0 s'installe et fonctionne avec `phpunit ^13`** ; le conseil précédent d'épingler un commit `master` était inutile, ne pas le suivre. PHPUnit 12 reste supporté (bugfix jusqu'au 5 février 2027) : `^12.5` et `^13` sont deux lignes tenables, dama n'est plus un critère de choix. À la montée en 13.3, noter : `#[Retry]`/`#[Repeat]` (et `--retry`/`--repeat`) pour rejouer les tests, et la dépréciation de `--cache-result`/`--do-not-cache-result` au profit de `--record-test-run-history`/`--do-not-record-test-run-history`. PHPUnit 11 : fin du support bugfix en février 2026 ; PHPUnit 12+ n'accepte plus les annotations doc-comment — attributs uniquement.
+Contrainte PHPUnit : **PHPUnit 13** est la ligne courante (13.3.x). Vérifié sur pièces (août 2026) : le « plafond » de dama n'existe qu'en `require-dev` du bundle (sa matrice CI), la seule contrainte runtime de la v8.6.0 taguée est `conflict: phpunit < 11`, et `master` n'a **aucun changement de code** par rapport à elle. Donc **dama v8.6.0 s'installe et fonctionne avec `phpunit ^13`** ; le conseil précédent d'épingler un commit `master` était inutile, ne pas le suivre. PHPUnit 12 reste supporté (bugfix jusqu'au 5 février 2027) : `^12.5` et `^13` sont deux lignes tenables, dama n'est plus un critère de choix. À la montée en 13.3, noter : `#[Retry]`/`#[Repeat]` (et `--retry`/`--repeat`) pour rejouer les tests, et la dépréciation de `--cache-result`/`--do-not-cache-result` au profit de `--record-test-run-history`/`--do-not-record-test-run-history`. PHPUnit 11 : fin du support bugfix en février 2026 ; PHPUnit 12+ n'accepte plus les annotations doc-comment, attributs uniquement.
 
-### Exemple unit — Domain calculator
+### Exemple unit : Domain calculator
 
 ```php
 public function testCalculateScores(): void
@@ -1092,7 +1092,7 @@ public function testCalculateScores(): void
 }
 ```
 
-### Exemple property-based — math d'argent (Eris)
+### Exemple property-based : math d'argent (Eris)
 
 Tester `InvestmentAmountComputer` à la main rate les edge cases (paliers, arrondis, cumuls). Eris balance des centaines d'entrées random et asserte des **invariants**.
 
@@ -1134,7 +1134,7 @@ Cible : les **5-10 services de calcul money** (pas tout le code). C'est l'outil 
 
 Pour les règles temporelles (`"-18 years"`, échéances), les contraintes de comparaison de dates sont clock-aware en Symfony 8.1 : injecter `MockClock` dans le test au lieu de calculer des dates relatives à `now()`.
 
-### Exemple integration — repository / listener avec DB
+### Exemple integration : repository / listener avec DB
 
 Avec DAMA actif, plus de boilerplate. Hériter directement de `KernelTestCase` :
 
@@ -1155,7 +1155,7 @@ final class InvestmentRepositoryTest extends KernelTestCase
 }
 ```
 
-### Exemple functional — contract test d'un endpoint
+### Exemple functional : contract test d'un endpoint
 
 ```php
 final class ValidateSharesTest extends WebTestCase
@@ -1237,7 +1237,7 @@ export default defineConfig({
 
 #### Commande de seed dédiée
 
-`src/Command/E2eSeedCommand.php` — **idempotente** (wipe puis insère), prefixe les rows avec `__e2e__` pour isolation, ne dépend d'aucune API externe :
+`src/Command/E2eSeedCommand.php` : **idempotente** (wipe puis insère), prefixe les rows avec `__e2e__` pour isolation, ne dépend d'aucune API externe :
 
 ```php
 #[AsCommand(name: 'app:e2e:seed', description: 'Seed la DB pour les tests Playwright')]
@@ -1319,7 +1319,7 @@ Mêmes contraintes qu'en `tests/` : **jamais d'appel à HubSpot, ZohoSign, Penny
 - Override des services dans `config/packages/test/services.yaml` chargé par l'env de dev quand `APP_ENV=e2e`
 - Un wrapper `MockHttpClient` injecté à la place
 
-### Contract drift — diff OpenAPI en CI
+### Contract drift : diff OpenAPI en CI
 
 Le SDK frontend est généré depuis `openapi.yaml` (Nelmio) via `make types`. Si le runtime backend drift du dump checked-in, le front casse silencieusement. Gate gratuit en CI :
 
@@ -1350,7 +1350,7 @@ foreach (['clever-cloud', 'production', '.rds.amazonaws.com', /* patterns spéci
 
 Un run de tests ne doit jamais toucher une API externe (HubSpot, Slack, webhooks tiers). Pattern : remplacer le `HttpClientInterface` injecté dans chaque API wrapper par un `MockHttpClient` qui renvoie un `200 {}` pour tout.
 
-À déclarer dans `config/services_test.yaml` (loaded **après** `config/services.yaml` par MicroKernelTrait — donc `config/packages/test/services.yaml` ne suffit **pas**, ce piège a coûté 3 essais) :
+À déclarer dans `config/services_test.yaml` (loaded **après** `config/services.yaml` par MicroKernelTrait : donc `config/packages/test/services.yaml` ne suffit **pas**, ce piège a coûté 3 essais) :
 
 ```yaml
 services:
@@ -1372,7 +1372,7 @@ Avant de refactorer un composant gros et fragile (> 500 lignes, beaucoup de bran
 
 C'est particulièrement vrai pour les composants côté tunnel d'investissement / paiement : une régression silencieuse coûte du CA.
 
-### CI — orchestrer la pyramide
+### CI : orchestrer la pyramide
 
 Sur **chaque PR** (GitHub Actions) :
 
@@ -1394,13 +1394,13 @@ Pour Playwright sur grosses suites : sharder la matrice (`shardIndex: [1,2,3,4]`
 
 ---
 
-## 14. Quality Assurance — Analyse statique & formatage
+## 14. Quality Assurance : Analyse statique & formatage
 
 L'analyse statique remplace les inspections IDE (PHPStorm, plugin Symfony). Ces outils sont regroupés dans la **skill `/quality`** (Claude Code), à lancer avant de committer ou pour vérifier la qualité en cours de dev.
 
-### PHPStan — analyse statique
+### PHPStan : analyse statique
 
-PHPStan (v2.x) avec les extensions `phpstan-symfony`, `phpstan-doctrine`, et `phpstan-deprecation-rules`. Cible : **level 9 minimum, level 10 (`max`) recommandé** — monter avec une baseline plutôt que rester bloqué sous prétexte de legacy. Level 8 n'est plus le standard. `phpstan-strict-rules` + `bleedingEdge.neon` en option état de l'art.
+PHPStan (v2.x) avec les extensions `phpstan-symfony`, `phpstan-doctrine`, et `phpstan-deprecation-rules`. Cible : **level 9 minimum, level 10 (`max`) recommandé**, monter avec une baseline plutôt que rester bloqué sous prétexte de legacy. Level 8 n'est plus le standard. `phpstan-strict-rules` + `bleedingEdge.neon` en option état de l'art.
 
 ```bash
 composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules
@@ -1432,9 +1432,9 @@ vendor/bin/phpstan analyse
 
 Depuis PHPStan 2.2.6, **Turbo** : une extension PHP native optionnelle (binaires précompilés livrés dans le paquet Composer, chargés automatiquement sur PHP 8.3+) accélère l'analyse de 10 à 30 % avec une sortie identique bit à bit. Rien à configurer, juste mettre à jour. (Utilisateurs du phar : `pie install phpstan/turbo`.)
 
-#### AbstractAppController — typer `getUser()`
+#### AbstractAppController : typer `getUser()`
 
-`AbstractController::getUser()` retourne `UserInterface|null` — PHPStan ne sait pas que c'est ton entité `User`. Créer un base controller qui type le retour :
+`AbstractController::getUser()` retourne `UserInterface|null` : PHPStan ne sait pas que c'est ton entité `User`. Créer un base controller qui type le retour :
 
 ```php
 abstract class AbstractAppController extends AbstractController
@@ -1458,7 +1458,7 @@ Quand PHP peut exprimer le type nativement, utiliser le type PHP, pas un `@param
 
 PHP-CS-Fixer convertit automatiquement avec les règles `phpdoc_to_param_type`, `phpdoc_to_return_type`, `phpdoc_to_property_type`.
 
-#### Collections Doctrine — generics
+#### Collections Doctrine : generics
 
 Annoter les propriétés `Collection` avec le type générique pour que PHPStan comprenne les boucles :
 
@@ -1468,9 +1468,9 @@ Annoter les propriétés `Collection` avec le type générique pour que PHPStan 
 private Collection $userActions;
 ```
 
-### PHP-CS-Fixer — formatage
+### PHP-CS-Fixer : formatage
 
-Applique automatiquement les conventions de formatage. Sur un projet **Symfony**, utiliser le ruleset **`@Symfony`** — c'est le style que Symfony utilise en interne, idiomatique de l'écosystème, et il gère déjà property hooks / asymmetric visibility. Y ajouter le migration set de la version PHP cible : **`@PHP85Migration`** (dispo en stable depuis CS-Fixer 3.91 ; le runtime est en 8.5), à placer **après** `@Symfony`. Il ne touche pas à `concat_space` — mais si tu empiles un autre set ensuite, réimpose explicitement `concat_space: { spacing: 'none' }` pour garder le style Symfony.
+Applique automatiquement les conventions de formatage. Sur un projet **Symfony**, utiliser le ruleset **`@Symfony`**, c'est le style que Symfony utilise en interne, idiomatique de l'écosystème, et il gère déjà property hooks / asymmetric visibility. Y ajouter le migration set de la version PHP cible : **`@PHP85Migration`** (dispo en stable depuis CS-Fixer 3.91 ; le runtime est en 8.5), à placer **après** `@Symfony`. Il ne touche pas à `concat_space`, mais si tu empiles un autre set ensuite, réimpose explicitement `concat_space: { spacing: 'none' }` pour garder le style Symfony.
 
 ⚠️ **Ne pas empiler `@PER-CS3x0` par-dessus `@Symfony`** : les deux se contredisent sur `concat_space` (`@Symfony` = `'none'` → `'a'.'b'` ; `@PER-CS3x0` = `'one'` → `'a' . 'b'`). Empilé après `@Symfony`, `@PER-CS3x0` gagne et reformate tout le repo dans un style non-Symfony. `@PER-CS3x0` (le standard PHP-FIG, successeur de PSR-12, sorti juillet 2025) est pertinent pour les **librairies framework-agnostiques**, pas pour un projet Symfony.
 
@@ -1496,16 +1496,16 @@ php bin/console doctrine:schema:validate --skip-sync
 php -d memory_limit=256M bin/console lint:container
 ```
 
-### Psalm — taint analysis (optionnel, en CI)
+### Psalm : taint analysis (optionnel, en CI)
 
-Psalm détecte les vulnérabilités de sécurité (SQL injection, XSS, command injection) par analyse statique du flux de données — une capacité que PHPStan n'a pas. Recommandé en CI pour les projets qui gèrent de l'input utilisateur.
+Psalm détecte les vulnérabilités de sécurité (SQL injection, XSS, command injection) par analyse statique du flux de données : une capacité que PHPStan n'a pas. Recommandé en CI pour les projets qui gèrent de l'input utilisateur.
 
 ```bash
 composer require --dev vimeo/psalm
 vendor/bin/psalm --taint-analysis
 ```
 
-### Composer audit — vulnérabilités
+### Composer audit : vulnérabilités
 
 Vérifie les vulnérabilités connues dans les dépendances PHP.
 
@@ -1526,7 +1526,7 @@ composer audit
 
 > Tous ces checks (sauf Psalm) sont regroupés dans la skill globale `/quality` qui auto-détecte le type de projet (Symfony, Next.js, ou les deux). Pour les outils de qualité frontend (ESLint, TypeScript), voir `docs/reactony.md` section Quality Assurance.
 
-### Pre-commit — husky + lint-staged
+### Pre-commit : husky + lint-staged
 
 Le garde-fou universel : **aucun commit ne passe s'il ne respecte pas les règles**, qu'il vienne d'un humain ou d'un agent.
 
@@ -1561,7 +1561,7 @@ lint-staged ne tourne que sur les fichiers **stagés**, donc c'est rapide même 
 
 ### Checks project-wide dans le pre-commit
 
-lint-staged tourne au niveau fichier. Mais les checks qui ont besoin du projet entier (analyse statique, validation DI, drift des types générés) sont **assez rapides pour pre-commit** sur un projet Symfony moyen — pas d'excuse pour les reléguer en CI uniquement. Mesurer le coût réel avant de décider.
+lint-staged tourne au niveau fichier. Mais les checks qui ont besoin du projet entier (analyse statique, validation DI, drift des types générés) sont **assez rapides pour pre-commit** sur un projet Symfony moyen : pas d'excuse pour les reléguer en CI uniquement. Mesurer le coût réel avant de décider.
 
 Exemple `.husky/pre-commit` :
 
@@ -1593,17 +1593,17 @@ Ordres de grandeur observés (projet Symfony + React de taille moyenne) :
 | `make types` + drift | ~2s |
 | `tsc --noEmit` | ~8s |
 | PHPStan level 9/10 (full) | ~8s |
-| **Total pre-commit** | **~15–20s** |
+| **Total pre-commit** | **~15-20s** |
 
-Pas tolérable pour un projet où tu commits 10 fois par heure, mais pour un rythme feature normal (2–5 commits / feature), c'est le prix de la garantie "zéro régression silencieuse au commit". Si le projet grossit et que ça dépasse ~30s, dégrader vers "PHPStan + tsc en CI uniquement, le reste en pre-commit".
+Pas tolérable pour un projet où tu commits 10 fois par heure, mais pour un rythme feature normal (2-5 commits / feature), c'est le prix de la garantie "zéro régression silencieuse au commit". Si le projet grossit et que ça dépasse ~30s, dégrader vers "PHPStan + tsc en CI uniquement, le reste en pre-commit".
 
 > **TypeScript 7** (port natif Go) est GA depuis juillet 2026, publié sous le paquet npm `typescript` standard, binaire `tsc` inchangé : `tsc --noEmit` passe de ~8s à ~1s. Migration en deux temps depuis ^5.9 : 5.9 → 6.0 (absorber les nouveaux défauts) → 7.0. Détails dans reactony §8.
 
-**Seuls les tests (unit + functional) ne vont PAS en pre-commit** — ils peuvent monter à plusieurs minutes. Eux restent en CI.
+**Seuls les tests (unit + functional) ne vont PAS en pre-commit** : ils peuvent monter à plusieurs minutes. Eux restent en CI.
 
 ### Quand lancer `/quality` en session
 
-Lors d'une session de dev assistée par IA, lancer `/quality` **avant de déclarer une tâche terminée** si du code a été modifié. Ça rattrape les erreurs pendant la session (feedback immédiat) et évite qu'elles apparaissent seulement au pre-commit (feedback différé, coûteux à debugger). Le pre-commit reste le filet final — pas le premier recours.
+Lors d'une session de dev assistée par IA, lancer `/quality` **avant de déclarer une tâche terminée** si du code a été modifié. Ça rattrape les erreurs pendant la session (feedback immédiat) et évite qu'elles apparaissent seulement au pre-commit (feedback différé, coûteux à debugger). Le pre-commit reste le filet final : pas le premier recours.
 
 ---
 
@@ -1636,7 +1636,7 @@ Lors d'une session de dev assistée par IA, lancer `/quality` **avant de déclar
 
 ---
 
-## 16. Messenger — Appels externes async
+## 16. Messenger : Appels externes async
 
 Les appels vers des services externes (Hubspot, Discord, Slack, emails) sont dispatchés en async via Symfony Messenger. Le controller dispatch un message DTO, le worker le consomme en arrière-plan.
 
@@ -1646,9 +1646,9 @@ Doctrine (PostgreSQL, table `messenger_messages`). Les messages `SendEmailMessag
 
 Version PostgreSQL cible : **≥ 17** (défaut CleverCloud ; 18.3 dispo, avec io_uring et UUIDv7). Un add-on encore en 15/16 est un écart à remonter en gap-analysis, la montée de version chez Clever est peu coûteuse.
 
-### Message — le DTO
+### Message : le DTO
 
-`final readonly class` avec uniquement des **scalaires** (int, string, bool). Pas d'entité, pas d'objet complexe — le message doit être sérialisable.
+`final readonly class` avec uniquement des **scalaires** (int, string, bool). Pas d'entité, pas d'objet complexe : le message doit être sérialisable.
 
 ```php
 namespace App\Message;
@@ -1661,7 +1661,7 @@ final readonly class SyncProfileToHubspot
 }
 ```
 
-### Handler — l'exécution
+### Handler : l'exécution
 
 `#[AsMessageHandler]` + `final readonly class`. Le handler recharge l'entité depuis la DB par son ID, **vérifie qu'elle existe encore** (elle a pu être supprimée entre le dispatch et le traitement), puis appelle les services existants.
 
@@ -1723,7 +1723,7 @@ routing:
 
 ---
 
-## 17. Scheduler — Crons observables
+## 17. Scheduler : Crons observables
 
 Les crons sont déclarés directement sur les commandes avec `#[AsCronTask]`. Pas de scripts shell, pas de `cron.json` (sauf `cleanup-chrome.sh`).
 
@@ -1749,54 +1749,54 @@ Pour les commandes gourmandes en mémoire, utiliser `ini_set('memory_limit', ...
 
 ## 18. Anti-patterns interdits
 
-Règles noires, valables partout. Si tu les vois dans le code existant, c'est à refactorer — pas à copier.
+Règles noires, valables partout. Si tu les vois dans le code existant, c'est à refactorer : pas à copier.
 
 **Controller / Route**
-- Route `/api/` sans `format: 'json'` — les 422 partent en HTML, le front ne peut pas les parser
+- Route `/api/` sans `format: 'json'` : les 422 partent en HTML, le front ne peut pas les parser
 - Route `/api/` sans `#[IsGranted]` sur la méthode ou la classe
-- `$request->get()` — supprimé en Symfony 8. Utiliser `$request->query`, `$request->request`, `$request->attributes`, ou les attributs de mapping
-- Controllers qui étendent `AbstractController` directement et typent `getUser()` comme `UserInterface` — créer un `AbstractAppController` qui retourne l'entité `User` typée et en hériter partout
+- `$request->get()` : supprimé en Symfony 8. Utiliser `$request->query`, `$request->request`, `$request->attributes`, ou les attributs de mapping
+- Controllers qui étendent `AbstractController` directement et typent `getUser()` comme `UserInterface` : créer un `AbstractAppController` qui retourne l'entité `User` typée et en hériter partout
 
 **Domain / Service**
-- Classe `Domain/` qui **injecte (constructor)** un Repository, EntityManager, HttpClient, Logger, Filesystem, autre Service, classe `Api/` ou `UrlGeneratorInterface` — Domain reçoit ses données en paramètre. Les attributs framework (`Assert`, `OA`, `Groups`) restent autorisés.
-- Calculator qui accède à un repository — extraire le fetch dans `Service/`, Calculator reste pur
-- Service qui contient uniquement une règle métier pure — déplacer dans `Domain/`
-- Interface sur un service qui n'a qu'une implémentation — pas d'abstraction préventive
+- Classe `Domain/` qui **injecte (constructor)** un Repository, EntityManager, HttpClient, Logger, Filesystem, autre Service, classe `Api/` ou `UrlGeneratorInterface` : Domain reçoit ses données en paramètre. Les attributs framework (`Assert`, `OA`, `Groups`) restent autorisés.
+- Calculator qui accède à un repository : extraire le fetch dans `Service/`, Calculator reste pur
+- Service qui contient uniquement une règle métier pure : déplacer dans `Domain/`
+- Interface sur un service qui n'a qu'une implémentation : pas d'abstraction préventive
 - ValueObject, Aggregate, ou autre cérémonie DDD sans justification concrète
 
 **DTO / Payload**
-- DTO allowlist (`ObjectMapper`) avec `constructor`, `= null`, ou `readonly` sur les propriétés — casse le mapping partiel (les champs absents du JSON doivent rester **non initialisés**)
+- DTO allowlist (`ObjectMapper`) avec `constructor`, `= null`, ou `readonly` sur les propriétés : casse le mapping partiel (les champs absents du JSON doivent rester **non initialisés**)
 - Filtre GET lu via `$request->query->get()` au lieu d'un DTO + `#[MapQueryString]`
-- Upload fichier via `$request->files->get()` — utiliser `UploadedFile` dans le DTO `#[MapRequestPayload]` (SF 8.1, DTO plat) ou `#[MapUploadedFile]` avec les contraintes `Assert`
+- Upload fichier via `$request->files->get()` : utiliser `UploadedFile` dans le DTO `#[MapRequestPayload]` (SF 8.1, DTO plat) ou `#[MapUploadedFile]` avec les contraintes `Assert`
 
 **HttpClient / API externe**
-- `new RetryableHttpClient($client)` dans un service — retry se configure au niveau DI (`scoped_clients` + `retry_failed`)
-- Boucle `while ($attempts < $max)` autour d'un `$client->request()` — idem, c'est le job du DI
+- `new RetryableHttpClient($client)` dans un service : retry se configure au niveau DI (`scoped_clients` + `retry_failed`)
+- Boucle `while ($attempts < $max)` autour d'un `$client->request()` : idem, c'est le job du DI
 - Endpoint public (login, autocomplete, upload, reset password) sans `#[RateLimit]` (`RateLimiterFactory` manuel uniquement pour clé custom complexe)
 
 **Command**
-- `extends Command` + `protected function execute()` — pattern invokable obligatoire : pas d'`extends`, `#[AsCommand]`, logique dans `__invoke()`, paramètres typés avec `#[Argument]` / `#[Option]`
-- `getDefaultName()` / `getDefaultDescription()` — supprimés en SF 8, utiliser les arguments nommés de `#[AsCommand]`
-- Cron déclaré dans un shell script ou `cron.json` — utiliser `#[AsCronTask]` sur la commande
+- `extends Command` + `protected function execute()`, pattern invokable obligatoire : pas d'`extends`, `#[AsCommand]`, logique dans `__invoke()`, paramètres typés avec `#[Argument]` / `#[Option]`
+- `getDefaultName()` / `getDefaultDescription()` : supprimés en SF 8, utiliser les arguments nommés de `#[AsCommand]`
+- Cron déclaré dans un shell script ou `cron.json` : utiliser `#[AsCronTask]` sur la commande
 
 **Entity / Doctrine**
-- PHPDoc `@var` / `@param` / `@return` qui duplique un type PHP natif déjà présent — PHP-CS-Fixer supprime
-- Propriété `Collection` sans generic (`Collection<int, Entity>`) — PHPStan ne peut pas inférer le type en boucle
-- `DateTime` mutable — utiliser `DateTimeImmutable`
-- `#[ORM\Column(type: 'string')]` sur une propriété typée `string` — redondant depuis Doctrine ORM 3 (TypedFieldMapper). Type explicite uniquement quand PHP ne suffit pas (`text` vs `string`)
+- PHPDoc `@var` / `@param` / `@return` qui duplique un type PHP natif déjà présent : PHP-CS-Fixer supprime
+- Propriété `Collection` sans generic (`Collection<int, Entity>`) : PHPStan ne peut pas inférer le type en boucle
+- `DateTime` mutable : utiliser `DateTimeImmutable`
+- `#[ORM\Column(type: 'string')]` sur une propriété typée `string` : redondant depuis Doctrine ORM 3 (TypedFieldMapper). Type explicite uniquement quand PHP ne suffit pas (`text` vs `string`)
 
 **Logging / Sentry**
-- `logger->error()` pour une anomalie non bloquante (upstream flaky, retry réussi) — utiliser `warning` (Sentry ne remonte qu'à partir d'`ERROR`)
-- `ignore_exceptions` trop large (ex. `HttpException` entier) — ignorer la classe précise
+- `logger->error()` pour une anomalie non bloquante (upstream flaky, retry réussi) : utiliser `warning` (Sentry ne remonte qu'à partir d'`ERROR`)
+- `ignore_exceptions` trop large (ex. `HttpException` entier) : ignorer la classe précise
 - Catch + re-throw d'une `RuntimeException` qui ne fait qu'envelopper l'originale sans ajouter d'info
 
 **Messenger**
-- Message qui contient une entité Doctrine, un `UploadedFile`, ou un callable — sérialisation fragile, garder des scalaires (ID + reload dans le handler)
-- Handler qui suppose que l'entité existe encore — recharger via repo et `if (!$entity) return`
-- Dispatch **avant** le `flush()` de l'entité concernée — le handler re-lira avant que la DB soit à jour
+- Message qui contient une entité Doctrine, un `UploadedFile`, ou un callable : sérialisation fragile, garder des scalaires (ID + reload dans le handler)
+- Handler qui suppose que l'entité existe encore : recharger via repo et `if (!$entity) return`
+- Dispatch **avant** le `flush()` de l'entité concernée : le handler re-lira avant que la DB soit à jour
 
 **Tests**
-- Test qui pointe sur une DB prod/préprod — `tests/bootstrap.php` doit refuser via pattern matching sur `DATABASE_URL`
-- Test qui hit une API externe réelle — mocker au niveau DI via `MockHttpClient`
-- Refactor > 500 lignes sans test d'existants — écrire le safety-net **avant** de toucher
-- Test snapshot sur un rendu complet — casse au moindre changement de classe, zéro signal utile
+- Test qui pointe sur une DB prod/préprod : `tests/bootstrap.php` doit refuser via pattern matching sur `DATABASE_URL`
+- Test qui hit une API externe réelle : mocker au niveau DI via `MockHttpClient`
+- Refactor > 500 lignes sans test d'existants : écrire le safety-net **avant** de toucher
+- Test snapshot sur un rendu complet : casse au moindre changement de classe, zéro signal utile

@@ -4,18 +4,18 @@ Coding guidelines organized by stack, plus the Claude Code skills that enforce t
 
 ## Stacks
 
-### `symfony-react/` — pro (lagrange, fabacee, legrenier)
+### `symfony-react/` : pro (lagrange, fabacee, legrenier)
 
-- **`symfony-guidelines.md`** — Backend architecture: Domain/Service/Controller, enums, repositories, commands, DTOs, Doctrine patterns
-- **`reactony.md`** — Symfony + React integration: forms, mutations, type pipeline, error handling, SDK usage
+- **`symfony-guidelines.md`** : Backend architecture: Domain/Service/Controller, enums, repositories, commands, DTOs, Doctrine patterns
+- **`reactony.md`** : Symfony + React integration: forms, mutations, type pipeline, error handling, SDK usage
 
-### `next/` — perso (portfolio, climatelab, wealth, ui kit…)
+### `next/` : perso (portfolio, climatelab, wealth, ui kit…)
 
-- **`next-guidelines.md`** — Static-first Next.js sites: App Router, aria-nova kit, baked data pipeline, SEO, Vercel
+- **`next-guidelines.md`** : Static-first Next.js sites: App Router, aria-nova kit, baked data pipeline, SEO, Vercel
 
 ### Transverse
 
-- **`design-system-page.md`** — The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
+- **`design-system-page.md`** : The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
 ## Usage
 
@@ -78,7 +78,7 @@ Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
 
 - **`/ticket`** digests the PM ticket: investigates, maps the impact radius,
   decides everything the code can decide, surfaces only what truly blocks.
-- **`/feature-start`** cuts the branch once the plan is clear — not before.
+- **`/feature-start`** cuts the branch once the plan is clear : not before.
 - **Implement** follows the Feature playbook and the guidelines;
   `/check-implementation` on demand when touching an API you don't use often.
 - **`/quality`** before declaring done, **`/commit`** per coherent step,
@@ -87,7 +87,7 @@ Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
   diff (`main...HEAD`) vs the original ticket (everything asked, nothing more)
   and vs the guidelines, then it runs `/quality` and, only when the diff uses
   unfamiliar APIs, `/check-implementation`. It runs **twice**: pass 1 before
-  `/preprod` (full review — don't make the PM test a diff the review would
+  `/preprod` (full review : don't make the PM test a diff the review would
   send back), pass 2 before `/deploy` (delta since pass 1 + fresh `/quality`,
   fast by design). Commits are save points, the merge is the irreversible act:
   nothing lands on main unreviewed, recette fixes included.
@@ -104,7 +104,7 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 ~/dev/dev-standards/skills/install.sh
 ```
 
-The `install.sh` script is idempotent — safe to re-run when skills are added or renamed. It creates (or refreshes) symlinks from `~/.claude/skills/<name>/` to `~/dev/dev-standards/skills/<name>/`.
+The `install.sh` script is idempotent : safe to re-run when skills are added or renamed. It creates (or refreshes) symlinks from `~/.claude/skills/<name>/` to `~/dev/dev-standards/skills/<name>/`.
 
 ### Adding a new skill
 
