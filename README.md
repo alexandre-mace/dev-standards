@@ -84,15 +84,11 @@ Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
   `/check-implementation` on demand when touching an API you don't use often.
 - **`/quality`** before declaring done, **`/commit`** per coherent step,
   **`/preprod`** for the recette.
-- **`/review-diff`** is the review a no-PR flow doesn't have: full **branch**
-  diff (`main...HEAD`) vs the original ticket (everything asked, nothing more)
-  and vs the guidelines, then it runs `/quality` and, only when the diff uses
-  unfamiliar APIs, `/check-implementation`. It runs **twice**: pass 1 before
-  `/preprod` (full review : don't make the PM test a diff the review would
-  send back), pass 2 before `/deploy` (delta since pass 1 + fresh `/quality`,
-  fast by design). Commits are save points, the merge is the irreversible act:
-  nothing lands on main unreviewed, recette fixes included.
-  **`/deploy`** merges to main and cleans up.
+- **`/review-diff`** is the review a no-PR flow doesn't have: the branch diff
+  against the ticket and the guidelines. It runs twice, before `/preprod` and
+  before `/deploy`. The skill carries the detail.
+- **`/deploy`** merges to main and cleans up. Commits are save points, the merge
+  is the irreversible act: nothing lands on main unreviewed, recette fixes included.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod,
 `/gap-analysis` after a big delivery, `/sota-gap` as tech watch.
