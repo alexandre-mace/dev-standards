@@ -1,0 +1,29 @@
+# agent/ : comment je veux que l'agent travaille
+
+Ce dossier ne contient **aucune recette de stack**. Les recettes techniques vivent
+dans `symfony-react/` et `next/`, et l'état d'un projet ne vit nulle part ici
+(c'est le job de `/gap-analysis`).
+
+Ici vivent les règles **comportementales** : valables sur tous les projets, quelle
+que soit la stack, quel que soit le langage. Rédaction, registre, façon de
+travailler.
+
+## Chargement
+
+Ces fichiers sont symlinkés dans `~/.claude/rules/`, qui est chargé à chaque
+session de chaque projet. Même mécanique que les skills de ce dépôt, symlinkés
+dans `~/.claude/skills/`.
+
+```bash
+ln -s ~/dev/dev-standards/agent/redaction.md ~/.claude/rules/redaction.md
+```
+
+## Où va quoi
+
+| Nature de la règle | Destination |
+|---|---|
+| Comportement, rédaction, registre, sur tous les projets | **ici**, `agent/` |
+| Recette technique liée à une stack | `symfony-react/` ou `next/` |
+| Vrai pour un seul dépôt | l'`AGENTS.md` de ce dépôt |
+| Procédure outillée, déclenchée à la demande | `skills/` |
+| État d'avancement d'un projet | nulle part : `/gap-analysis` le mesure |
