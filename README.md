@@ -39,32 +39,6 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 - **`agent/`** : how the agent should work, whatever the stack: writing rules, register, how to research. Symlinked into `~/.claude/rules/`, loaded in every session. See its own README for what belongs there.
 - **`design-system-page.md`** : The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
-## Using it from a project
-
-This repo is the source and has no `docs/` of its own. Everything here happens in a
-consumer project, with dev-standards cloned as a sibling.
-
-Link the stack's file into the project's `docs/`, with a **relative** path: an absolute
-one carries your username and breaks on any other machine, and in CI. `ln -s` does not
-check its target, so confirm with `cat`.
-
-```bash
-mkdir -p docs
-ln -s ../../dev-standards/next/next-guidelines.md docs/next-guidelines.md
-cat docs/next-guidelines.md
-```
-
-Then name it in the project's `AGENTS.md` (`CLAUDE.md` stays a one-line `@AGENTS.md`):
-
-```markdown
-## Conventions de la stack
-
-Les conventions communes à mes projets Next vivent dans `docs/next-guidelines.md`,
-un lien vers le dépôt partagé [dev-standards](https://github.com/alexandre-mace/dev-standards)
-(fichier `next/next-guidelines.md`). Si ce lien est cassé, c'est que le dépôt n'est
-pas cloné à côté de celui-ci : lire la version en ligne.
-```
-
 ## Claude Code Skills
 
 Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so they're discoverable by Claude Code globally. Same mechanic for `agent/`, symlinked into `~/.claude/rules/`.
@@ -119,7 +93,9 @@ Out of band, the hygiene loop: `/check-logs` monthly on prod,
 `/gap-analysis` after a big delivery, `/sota-gap` as tech watch.
 Each feeds the next cycle's `/ticket` with a healthier baseline.
 
-### Setup on a new machine
+## Setup
+
+### On a new machine
 
 ```bash
 git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
@@ -130,6 +106,34 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 `~/.claude/skills/`, and `agent/` into `~/.claude/rules/`. Re-run it whenever a skill or
 a rule is added or renamed.
 
-### Adding a new skill or rule
+### In a project
+
+This repo is the source and has no `docs/` of its own. Clone it as a sibling of your
+projects, then link the stack's files into the project's `docs/`, with a **relative**
+path: an absolute one carries your username and breaks on any other machine, and in CI.
+`ln -s` does not check its target, so confirm with `cat`.
+
+```bash
+mkdir -p docs
+
+# Symfony app, React islands: two files
+ln -s ../../dev-standards/symfony-react/symfony-guidelines.md docs/symfony-guidelines.md
+ln -s ../../dev-standards/symfony-react/reactony.md docs/reactony.md
+
+# Next site
+ln -s ../../dev-standards/next/next-guidelines.md docs/next-guidelines.md
+
+# TanStack Start app
+ln -s ../../dev-standards/tanstack-start/tanstack-start-guidelines.md docs/tanstack-start-guidelines.md
+```
+
+Then point at it from the project's `AGENTS.md`, so the file gets found
+(`CLAUDE.md` stays a one-line `@AGENTS.md`):
+
+```markdown
+Conventions de la stack : `docs/next-guidelines.md`, lien vers [dev-standards](https://github.com/alexandre-mace/dev-standards).
+```
+
+### Adding a skill or rule
 
 Create `skills/<name>/SKILL.md` or `agent/<name>.md`, run `./skills/install.sh`, commit.
