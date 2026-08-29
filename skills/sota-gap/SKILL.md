@@ -66,7 +66,7 @@ C'est une **veille techno** : les guidelines sont le point de référence, le we
 - **Jamais d'état par projet dans les guidelines.** Ces docs sont partagés entre plusieurs projets : une phrase comme « le projet est en ^12.5 » ou « montée pas encore faite ici » est vraie pour l'un et ment chez les voisins. Constater les écarts projet ↔ guidelines, c'est le job de `/gap-analysis`. Les leçons tirées de l'historique (réf. ticket qui motive une règle) restent légitimes : c'est de la justification, pas de l'état. (Erreur commise puis corrigée le 24/08/2026.)
 - Keep the same tone and structure : pragmatic, concise, with code examples.
 - French for prose, English for code and technical terms.
-- **Hiérarchie des sources** : voir `agent/recherche.md`. Une veille faite sur des blogs de seconde main ne vaut rien.
+- **Hiérarchie des sources** : le dépôt (changelog, release notes, avis de sécurité), puis la doc officielle, puis le paquet publié (`npm view`, `composer show`). Un blog ne suffit jamais à établir un fait, il sert à repérer le sujet. Une veille faite sur du contenu de seconde main ne vaut rien.
 - Don't add patterns the project doesn't use or plan to use : ask the user if unsure.
 - Don't remove existing patterns that are correct : only update, add, or clarify.
 - Within a stack, files must be self-contained but consistent where they overlap (ex. symfony-react : DTO patterns, upload patterns, format:'json').

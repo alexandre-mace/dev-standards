@@ -21,7 +21,10 @@ For each piece of code, identify:
 - The specific feature used (e.g., form validation, routing, hooks, etc.)
 - The current version used in the project (check `composer.json`, `package.json`, etc.)
 
-> Go to primary sources: changelog, official docs, advisories. See `agent/recherche.md`.
+> **Sources, in order**: the repo (changelog, release notes, advisories, code), then
+> the official docs, then the published package (`npm view`, `composer show`). A blog
+> never establishes a fact, it only points at one. And check against the version in the
+> lockfile, not the latest one.
 
 ### 3. Search the official documentation
 
