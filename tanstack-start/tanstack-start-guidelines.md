@@ -1,7 +1,6 @@
 # TanStack Start Guidelines: apps where the interface is the product
 
-> Conventions for TypeScript apps whose value is what the user does, not what a
-> visitor reads: dashboards, internal tools, simulators, products. Pragmatic, not dogmatic.
+> Dashboards, internal tools, simulators, products.
 >
 > **Last watch: 29 August 2026** (`/sota-gap`), start from this date on the next run.
 > Reference versions verified on npm that day: TanStack Start 1.168, TanStack Router 1.170,

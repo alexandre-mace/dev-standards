@@ -1,7 +1,5 @@
 # Symfony Guidelines
 
-> Conventions Symfony réutilisables entre projets. Pragmatique, pas dogmatique.
->
 > **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud).
 
 ## Routage : quoi lire pour quelle tâche

@@ -1,7 +1,5 @@
 # Next Guidelines : sites statiques perso
 
-> Conventions des sites Next perso. Pragmatique, pas dogmatique.
->
 > **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run.
 
 | Outil | Version | À savoir |
