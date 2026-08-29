@@ -1,23 +1,38 @@
 # Next Guidelines : sites statiques perso
 
-> Conventions de la stack perso (portfolio, climatelab, wealth, taste, culture, state…). Pragmatique, pas dogmatique.
+> Conventions des sites Next perso. Pragmatique, pas dogmatique.
 > Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais où en est un projet particulier. Mesurer l'écart entre un code et ces guidelines, c'est le job de `/gap-analysis`, qui produit une liste d'écarts et non un état d'avancement.
 >
-> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : Next.js 16.3 (App Router ; Active LTS avec security releases préannoncées : **patcher sous une semaine**, ex. 16.3.3 critique le 26/08/2026) · React 19.2 · TypeScript 5.9 (TS 7 natif GA : migration 5.9 → 6.0 → 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3) · Tailwind 4 (PostCSS, zéro `tailwind.config`) · shadcn **base Base UI** (le défaut de l'écosystème depuis juillet 2026), style Nova · Biome 2.5 (lint + format) · kit `@alexandremace` (ui.alexandremace.fr) · lucide-react 1.x · Geist (paquet npm) · Vercel Hobby.
+> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run.
+
+| Outil | Version | À savoir |
+|---|---|---|
+| Next.js | 16.3 | App Router, Active LTS. Releases de sécurité préannoncées : patcher sous une semaine (ex. 16.3.3, critique le 26/08/2026) |
+| React | 19.2 | |
+| TypeScript | 5.9 | TS 7 natif est GA. Migration 5.9 vers 6.0 puis 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3 |
+| Tailwind | 4 | PostCSS, zéro `tailwind.config` |
+| shadcn | base Base UI, style Nova | Le défaut de l'écosystème depuis juillet 2026 |
+| Biome | 2.5 | Lint et format |
+| Kit | `@alexandremace` | ui.alexandremace.fr |
+| lucide-react | 1.x | Plus d'icônes de marque |
+| Geist | paquet npm | |
+| Hébergement | Vercel Hobby | |
 
 ## Portée : un socle, deux couches
 
 Trois niveaux, à ne pas confondre :
 
 - **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn base Base UI style Nova, Biome, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
-- **La couche site statique d'écosystème** (portfolio, climatelab, wealth, taste, culture…) ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
-- **La couche application full-stack** (ex. symbl) remplace le « statique d'abord » par des choix eux aussi gravés : backend **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe), auth **Clerk** (`@clerk/nextjs`). Et là, les tests redeviennent obligatoires : Vitest + `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Côté Next 16.3 : `catchError`/`retry()` stables pour les error boundaries, et `middleware.ts` est déprécié au profit de `proxy.ts`. Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>` (View Transitions typées) : à regarder, pas encore des normes.
+- **La couche site d'écosystème** ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
+- **La couche full-stack** ajoute un backend quand le site a besoin de comptes ou de données stockées : **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe) et auth **Clerk** (`@clerk/nextjs`). Les tests deviennent alors obligatoires : Vitest et `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Côté Next 16.3 : `catchError`/`retry()` stables pour les error boundaries, et `middleware.ts` est déprécié au profit de `proxy.ts`.
 
-Un projet full-stack garde donc tout le socle, prend Convex + Clerk plutôt que d'inventer, et documente le reste de ses conventions propres dans son CLAUDE.md ; elles deviendront des sections de ce doc le jour où un deuxième projet les répète (doctrine des récurrences). Dans les principes ci-dessous, le 1 (statique), le 3 (kit), le 5 (mono-thème) et le « pas de tests » du §6 relèvent de la couche statique ; tout le reste est socle.
+> Avoir un backend ne change pas de stack. Ce qui décide, c'est le modèle de rendu : si rendre côté serveur n'économise pas de JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Symbl est ici pour des raisons historiques.
+
+Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>` (View Transitions typées) : à regarder, pas encore des normes.
 
 ## Principes
 
-1. **Statique d'abord.** Pas de backend : pas de route handlers, pas de server actions, pas de DB. Tout ce que la page affiche existe au build, dans des constantes typées sous `lib/`.
+1. **Statique d'abord.** Par défaut, tout ce que la page affiche existe au build, dans des constantes typées sous `lib/` : pas de route handlers, pas de server actions, pas de DB. Un backend n'arrive qu'avec la couche full-stack, quand des comptes ou des données stockées l'exigent.
 2. **Server Components par défaut.** `"use client"` est réservé aux composants qui portent de l'état ou de l'interaction (filtre, simulateur, dialog). Ratio sain : une poignée de fichiers client par projet, pas la moitié.
 3. **Le kit est la source.** `components/ui/` vient du registry `@alexandremace` et ne se modifie jamais dans un consommateur : le changement vit dans le kit, puis se propage (`/propagate-kit`). `components/*.tsx` à la racine = composants spécifiques au projet.
 4. **pnpm**, lockfile `pnpm-lock.yaml` commité et `packageManager` épinglé dans `package.json`. Même convention que la stack pro : store partagé, installs rapides, un seul outil partout.
@@ -40,7 +55,7 @@ scripts/        # pipeline data éventuel (*.mjs)
 ```
 
 - `next.config.ts` typé `NextConfig`, vide par défaut ; on n'y ajoute que le nécessaire (`images.remotePatterns` si images distantes : jamais `hostname: "**"`, lister les hôtes réels ; `images.domains` est déprécié). Nouveaux défauts `next/image` en 16 à connaître : `qualities` réduit à `[75]`, cache TTL passé à 4 h, et une src locale avec query string exige `images.localPatterns`.
-- **`AGENTS.md` est commité** : depuis 16.3, `next dev` crée et maintient ce fichier (bloc auto-géré pointant la doc de la version installée). On le versionne tel quel et on n'édite pas le bloc auto-géré ; le CLAUDE.md du projet reste la source des conventions.
+- **`AGENTS.md` est commité** : depuis 16.3, `next dev` crée et maintient ce fichier (bloc auto-géré pointant la doc de la version installée). On le versionne tel quel et on n'édite pas le bloc auto-géré. C'est aussi le fichier qui porte les conventions du projet, `CLAUDE.md` se réduisant à une ligne `@AGENTS.md`.
 - `tsconfig` : alias `@/*` vers la racine ; target ES2017 minimum.
 - Scripts minimaux : `dev`, `build`, `start`, `lint` (+ `data` si pipeline). `dev` avec `--turbopack`.
 - **Biome pour le lint et le format** (un binaire, `biome.json`) : `next lint` a disparu en Next 16, Biome est une option officielle de `create-next-app` (moteur de types financé par Vercel), et son domaine `next` s'active tout seul dès `next >= 14` en couvrant l'essentiel d'eslint-config-next. Scripts : `"lint": "biome check"`, `"lint:fix": "biome check --write"`. Les sites existants en ESLint flat + eslint-config-next migrent à l'occasion, pas en big-bang.
@@ -57,7 +72,7 @@ scripts/        # pipeline data éventuel (*.mjs)
 
 - Installation d'un composant : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`…) passent par le registry aussi, jamais par copier-coller entre projets.
 - **Projet hors kit** (application, identité propre) : base Base UI stock via le CLI shadcn officiel, sans le registry.
-- **Transition depuis la base React Aria** : le kit et ses consommateurs historiques sont partis d'`aria-nova` ; la cible est Base UI, la migration se fait **kit d'abord** (branche, primitives re-basées, démos comparées) puis propagation projet par projet, jamais en mélangeant les deux bases dans un même projet. Tant qu'un projet est encore sur la base aria, ses idiomes restent sa règle locale : pas d'`asChild`, liens stylés bouton via l'export `LinkButton`, interaction `onPress`/`isDisabled`, sélection via `data-selected`. Côté Base UI, la composition passe par la prop `render` (pas d'`asChild` non plus) et les handlers DOM standards (`onClick`).
+- **Base UI, jamais React Aria ni Radix.** Le kit et ses consommateurs ont migré d'`aria-nova` vers Base UI en août 2026. La composition passe par la prop `render` (il n'y a d'`asChild` dans aucune des deux bases) et par les handlers DOM standards (`onClick`). Un projet resté sur l'ancienne base est un écart que `/gap-analysis` doit sortir, et il se migre en entier : jamais deux bases dans un même projet.
 - **lucide-react 1.x n'a plus d'icônes de marque** (GitHub, X…) : SVG local dans `components/icons.tsx`.
 - Variantes de composants projet : CVA, comme dans le kit.
 
@@ -129,9 +144,9 @@ Le contenu vit dans `lib/` en TypeScript typé, jamais en fetch runtime pour l'a
 ## 7. Anti-patterns
 
 - Éditer un fichier de `components/ui/` dans un consommateur : le changement vit dans le kit, puis `/propagate-kit`.
-- Mélanger les idiomes de deux bases dans un même projet : un projet encore en base aria garde `onPress`/`LinkButton`/`data-selected` partout ; un projet Base UI compose via `render` et `onClick`. `asChild` n'existe dans aucune des deux (c'est du Radix recopié d'un projet pro).
+- Mélanger les idiomes de deux bases dans un même projet. `asChild` n'existe ni en Base UI ni en React Aria : c'est du Radix recopié d'un projet pro.
 - `tailwind.config.js` : Tailwind 4 se configure en CSS (`@theme`).
-- pnpm, yarn, ou un lockfile mixte : npm seul.
+- npm, yarn, ou un lockfile mixte : pnpm seul.
 - `useEffect + fetch` pour du contenu affichable au build : cuire dans `lib/` via `pnpm data`.
 - Fichier généré édité à la main (l'entête dit de ne pas le faire ; la modif part au prochain run).
 - `metadataBase` absent ou pointant un `*.vercel.app` : le domaine canonique fait foi partout (metadata, OG, redirects).
