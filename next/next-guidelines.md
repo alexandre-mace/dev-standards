@@ -22,7 +22,7 @@
 | Couche | Quand | Ce qu'elle ajoute |
 |---|---|---|
 | **Socle** | tout projet Next perso | Next 16 App Router, TypeScript strict, pnpm, Tailwind 4, shadcn Base UI Nova, Biome, Geist, français, Server Components par défaut, `metadataBase` |
-| **Site d'écosystème** | le site rejoint le réseau | le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, pas de suite de tests |
+| **Site d'écosystème** | le site porte l'identité commune plutôt que la sienne | le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, pas de suite de tests |
 | **Full-stack** | il faut des comptes ou des données stockées | **Convex** et ses composants `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), auth **Clerk**, et des tests qui deviennent obligatoires : Vitest et `convex-test` pour le backend, Playwright pour les parcours critiques |
 
 Avoir un backend ne fait pas changer de stack. Ce qui décide, c'est le modèle de rendu. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Symbl est ici pour des raisons historiques.
