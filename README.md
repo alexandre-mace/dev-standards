@@ -41,25 +41,20 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 ## Using it from a project
 
-Everything below happens **in a consumer project**, not in this repo. This repo has no
-`docs/` directory of its own: it is the source, not a consumer.
+This repo is the source and has no `docs/` of its own. Everything here happens in a
+consumer project, with dev-standards cloned as a sibling.
 
-Clone this repo as a sibling of your projects, then link the stack's files into the
-project's `docs/`. Use a **relative** path: an absolute one carries your username and
-breaks on anyone else's machine, and in CI.
+Link the stack's file into the project's `docs/`, with a **relative** path: an absolute
+one carries your username and breaks on any other machine, and in CI. `ln -s` does not
+check its target, so confirm with `cat`.
 
 ```bash
-# from the project root, with dev-standards cloned as a sibling
 mkdir -p docs
 ln -s ../../dev-standards/next/next-guidelines.md docs/next-guidelines.md
+cat docs/next-guidelines.md
 ```
 
-Adjust the number of `../` to the project's depth: a project one level deeper needs one
-more. `ln -s` does not check the target, so confirm the link resolves with
-`cat docs/next-guidelines.md`.
-
-Then name it in the project's `AGENTS.md`, so the link is explained rather than just
-present (`CLAUDE.md` stays a one-line `@AGENTS.md` import):
+Then name it in the project's `AGENTS.md` (`CLAUDE.md` stays a one-line `@AGENTS.md`):
 
 ```markdown
 ## Conventions de la stack
@@ -69,8 +64,6 @@ un lien vers le dépôt partagé [dev-standards](https://github.com/alexandre-ma
 (fichier `next/next-guidelines.md`). Si ce lien est cassé, c'est que le dépôt n'est
 pas cloné à côté de celui-ci : lire la version en ligne.
 ```
-
-Naming the canonical URL matters: it is what someone reads when the symlink dangles.
 
 ## Claude Code Skills
 
@@ -133,12 +126,10 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 ~/dev/dev-standards/skills/install.sh
 ```
 
-The `install.sh` script is idempotent : safe to re-run when skills are added or renamed. It creates (or refreshes) symlinks from `~/.claude/skills/<name>/` to `~/dev/dev-standards/skills/<name>/`.
+`install.sh` links both halves of what Claude Code reads: `skills/` into
+`~/.claude/skills/`, and `agent/` into `~/.claude/rules/`. Re-run it whenever a skill or
+a rule is added or renamed.
 
-### Adding a new skill
+### Adding a new skill or rule
 
-1. Create `skills/<skill-name>/SKILL.md`
-2. Run `./skills/install.sh` to register it
-3. Commit + push
-
-All machines that `git pull` and rerun `install.sh` will get the new skill.
+Create `skills/<name>/SKILL.md` or `agent/<name>.md`, run `./skills/install.sh`, commit.

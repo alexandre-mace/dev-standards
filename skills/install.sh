@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Install (or refresh) symlinks from ~/.claude/skills/ → this directory.
+# Install (or refresh) the symlinks Claude Code reads:
+#   ~/.claude/skills/<name>  ->  dev-standards/skills/<name>
+#   ~/.claude/rules/<file>   ->  dev-standards/agent/<file>
 # Idempotent: safe to re-run.
 #
 # Usage:
@@ -33,6 +35,38 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   echo "LINKED   $skill_name"
 done
 
+# Behavioural rules: agent/*.md -> ~/.claude/rules/
+RULES_SRC="$(dirname "$SKILLS_DIR")/agent"
+RULES_DIR="$HOME/.claude/rules"
+
+if [ -d "$RULES_SRC" ]; then
+  mkdir -p "$RULES_DIR"
+  for rule in "$RULES_SRC"/*.md; do
+    [ -e "$rule" ] || continue
+    rule_name="$(basename "$rule")"
+    [ "$rule_name" = "README.md" ] && continue
+    link_path="$RULES_DIR/$rule_name"
+
+    if [ -L "$link_path" ]; then
+      if [ "$(readlink "$link_path")" = "$rule" ]; then
+        echo "OK       rules/$rule_name (symlink already correct)"
+        continue
+      fi
+      rm "$link_path"
+    elif [ -e "$link_path" ]; then
+      echo "CONFLICT rules/$rule_name — exists and is not a symlink. Skipping."
+      continue
+    fi
+
+    ln -s "$rule" "$link_path"
+    echo "LINKED   rules/$rule_name"
+  done
+fi
+
 echo
 echo "Done. Skills available:"
 ls -1 "$TARGET_DIR" | grep -vE '^\.' | sed 's/^/  - /'
+if [ -d "$RULES_DIR" ]; then
+  echo "Rules loaded in every session:"
+  ls -1 "$RULES_DIR" | sed 's/^/  - /'
+fi
