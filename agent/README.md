@@ -1,30 +1,18 @@
-# agent/ : comment je veux que l'agent travaille
+# agent/: how the agent should work
 
-Ce dossier ne contient **aucune convention de stack**. Les règles techniques vivent
-dans `symfony-react/` et `next/`, et l'état d'un projet ne vit nulle part ici
-L'écart entre un code et les guidelines se mesure avec `/gap-analysis`.
+Behavioural rules, true on every project whatever the stack and whatever the
+language. Nothing about a framework belongs here.
 
-Ici vivent les règles **comportementales** : valables sur tous les projets, quelle
-que soit la stack, quel que soit le langage. Rédaction, registre, façon de
-travailler.
-
-## Chargement
-
-Ces fichiers sont symlinkés dans `~/.claude/rules/`, qui est chargé à chaque
-session de chaque projet. Même mécanique que les skills de ce dépôt, symlinkés
-dans `~/.claude/skills/`.
-
-```bash
-ln -s ~/dev/dev-standards/agent/redaction.md ~/.claude/rules/redaction.md
-ln -s ~/dev/dev-standards/agent/recherche.md ~/.claude/rules/recherche.md
-```
-
-## Où va quoi
-
-| Nature de la règle | Destination |
+| Kind of rule | Where it lives |
 |---|---|
-| Comportement, rédaction, registre, sur tous les projets | **ici**, `agent/` |
-| Règle technique liée à une stack | `symfony-react/`, `next/` ou `tanstack-start/` |
-| Vrai pour un seul dépôt | l'`AGENTS.md` de ce dépôt |
-| Procédure outillée, déclenchée à la demande | `skills/` |
-| Où en est un projet | nulle part : ce n'est pas de la doc. `/gap-analysis` liste les écarts au code, pas l'avancement |
+| Behaviour, writing, register, research | **here**, `agent/` |
+| Technical, tied to a stack | `symfony-react/`, `next/` or `tanstack-start/` |
+| True of one repository only | that repo's `AGENTS.md` |
+| A procedure run on demand | `skills/` |
+| Where a project currently stands | nowhere: that is not documentation. `/gap-analysis` lists deviations from the guidelines, not progress |
+
+`install.sh` symlinks every file here into `~/.claude/rules/`, which Claude Code
+loads at the start of every session. A new rule is a new file plus a re-run.
+
+`redaction.md` stays in French on purpose: it governs French prose, and its
+examples have to be French to mean anything.
