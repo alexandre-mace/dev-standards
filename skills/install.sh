@@ -2,6 +2,7 @@
 # Install (or refresh) the symlinks Claude Code reads:
 #   ~/.claude/skills/<name>  ->  dev-standards/skills/<name>
 #   ~/.claude/rules/<file>   ->  dev-standards/agent/<file>
+#   ~/.claude/output-styles/  ->  dev-standards/agent/output-styles/<file>
 # Idempotent: safe to re-run.
 #
 # Usage:
@@ -60,6 +61,33 @@ if [ -d "$RULES_SRC" ]; then
 
     ln -s "$rule" "$link_path"
     echo "LINKED   rules/$rule_name"
+  done
+fi
+
+# Output styles: agent/output-styles/*.md -> ~/.claude/output-styles/
+STYLES_SRC="$RULES_SRC/output-styles"
+STYLES_DIR="$HOME/.claude/output-styles"
+
+if [ -d "$STYLES_SRC" ]; then
+  mkdir -p "$STYLES_DIR"
+  for style in "$STYLES_SRC"/*.md; do
+    [ -e "$style" ] || continue
+    style_name="$(basename "$style")"
+    link_path="$STYLES_DIR/$style_name"
+
+    if [ -L "$link_path" ]; then
+      if [ "$(readlink "$link_path")" = "$style" ]; then
+        echo "OK       output-styles/$style_name (symlink already correct)"
+        continue
+      fi
+      rm "$link_path"
+    elif [ -e "$link_path" ]; then
+      echo "CONFLICT output-styles/$style_name — exists and is not a symlink. Skipping."
+      continue
+    fi
+
+    ln -s "$style" "$link_path"
+    echo "LINKED   output-styles/$style_name"
   done
 fi
 

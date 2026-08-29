@@ -11,8 +11,13 @@ language. Nothing about a framework belongs here.
 | A procedure run on demand | `skills/` |
 | Where a project currently stands | nowhere: that is not documentation. `/gap-analysis` lists deviations from the guidelines, not progress |
 
-`install.sh` symlinks every file here into `~/.claude/rules/`, which Claude Code
-loads at the start of every session. A new rule is a new file plus a re-run.
+`install.sh` symlinks the rules here into `~/.claude/rules/`, loaded at the start of
+every session, and `output-styles/` into `~/.claude/output-styles/`. A new rule or style
+is a new file plus a re-run.
+
+Rules are context: Claude reads them and follows them, without a guarantee. An output
+style changes the system prompt itself, so tone and format belong there rather than in
+a rule.
 
 `redaction.md` stays in French on purpose: it governs French prose, and its
 examples have to be French to mean anything.
