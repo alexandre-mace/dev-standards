@@ -5,9 +5,9 @@ description: Mesure l'écart entre les guidelines dev-standards (stacks symfony-
 
 # sota-gap
 
-L'écart entre la recette et l'écosystème. Le pendant de `/gap-analysis`, qui mesure
-l'écart entre le code et la recette : ici l'autorité est inversée, c'est
-l'écosystème qui a raison et la recette qu'on corrige.
+L'écart entre les guidelines et l'écosystème. Le pendant de `/gap-analysis`, qui
+mesure l'écart entre le code et les guidelines : ici l'autorité est inversée, c'est
+l'écosystème qui a raison et les guidelines qu'on corrige.
 
 Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`), stack perso `next/` (`next-guidelines.md`) et stack applicative `tanstack-start/` (`tanstack-start-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les trois stacks ; l'utilisateur peut en cibler une.
 

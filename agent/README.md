@@ -1,8 +1,8 @@
 # agent/ : comment je veux que l'agent travaille
 
-Ce dossier ne contient **aucune recette de stack**. Les recettes techniques vivent
+Ce dossier ne contient **aucune convention de stack**. Les règles techniques vivent
 dans `symfony-react/` et `next/`, et l'état d'un projet ne vit nulle part ici
-L'écart entre un code et la recette se mesure avec `/gap-analysis`.
+L'écart entre un code et les guidelines se mesure avec `/gap-analysis`.
 
 Ici vivent les règles **comportementales** : valables sur tous les projets, quelle
 que soit la stack, quel que soit le langage. Rédaction, registre, façon de
@@ -24,7 +24,7 @@ ln -s ~/dev/dev-standards/agent/recherche.md ~/.claude/rules/recherche.md
 | Nature de la règle | Destination |
 |---|---|
 | Comportement, rédaction, registre, sur tous les projets | **ici**, `agent/` |
-| Recette technique liée à une stack | `symfony-react/` ou `next/` |
+| Règle technique liée à une stack | `symfony-react/`, `next/` ou `tanstack-start/` |
 | Vrai pour un seul dépôt | l'`AGENTS.md` de ce dépôt |
 | Procédure outillée, déclenchée à la demande | `skills/` |
 | Où en est un projet | nulle part : ce n'est pas de la doc. `/gap-analysis` liste les écarts au code, pas l'avancement |
