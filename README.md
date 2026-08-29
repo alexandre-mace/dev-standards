@@ -1,6 +1,6 @@
 # Dev Standards
 
-The recipe for each stack Alexandre Macé builds on, in the version he and the `/sota-gap` watch agree is state of the art, plus the Claude Code skills that go with them.
+The recipe for each stack Alexandre Macé builds on, in the version he and the `/sota-gap` tech watch agree is state of the art, plus the Claude Code skills that go with them.
 
 ## Stacks
 
@@ -36,14 +36,10 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 ### Transverse
 
-- **`agent/`** : how the agent should work, whatever the stack: writing rules, register, how to research. Symlinked into `~/.claude/rules/`, loaded in every session. See its own README for what belongs there.
-- **`design-system-page.md`** : The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
+- **`agent/`** — how the agent should work, whatever the stack: writing rules, register, how to research
+- **`design-system-page.md`** — how to present a design system: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
 ## Claude Code Skills
-
-Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so they're discoverable by Claude Code globally. Same mechanic for `agent/`, symlinked into `~/.claude/rules/`.
-
-**Installed skills:**
 
 | Skill | Purpose |
 |---|---|
@@ -63,35 +59,26 @@ Custom skills live in `skills/` and are symlinked from `~/.claude/skills/` so th
 
 ### The thread of a feature
 
-The skills chain in a fixed order. Following it is what makes a feature
-land coherent on the first pass:
+The skills chain in a fixed order:
 
 ```
 /ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /review-diff¹  →  /preprod  →  recette  →  /review-diff²  →  /deploy
    │                              │                                        │                                         │
-   │                              │                                        └─ passage 1 : revue complète             └─ passage 2 : delta + /quality frais
+   │                              │                                        └─ pass 1: full review                   └─ pass 2: delta + fresh /quality
    │                              └─ Feature playbook (symfony-guidelines §one-shot)
    └─ investigation + blast radius + assumed decisions
 
-Bug ?  /diagnosing-bugs remplace /ticket, le reste du fil est identique.
+Bug?  /diagnosing-bugs replaces /ticket, the rest of the thread is identical.
 ```
 
-- **`/ticket`** digests the PM ticket: investigates, maps the impact radius,
-  decides everything the code can decide, surfaces only what truly blocks.
-- **`/feature-start`** cuts the branch once the plan is clear : not before.
-- **Implement** follows the Feature playbook and the guidelines;
-  `/check-implementation` on demand when touching an API you don't use often.
-- **`/quality`** before declaring done, **`/commit`** per coherent step,
-  **`/preprod`** for the recette.
-- **`/review-diff`** is the review a no-PR flow doesn't have: the branch diff
-  against the ticket and the guidelines. It runs twice, before `/preprod` and
-  before `/deploy`. The skill carries the detail.
-- **`/deploy`** merges to main and cleans up. Commits are save points, the merge
-  is the irreversible act: nothing lands on main unreviewed, recette fixes included.
+Two rules the diagram cannot show:
 
-Out of band, the hygiene loop: `/check-logs` monthly on prod,
-`/gap-analysis` after a big delivery, `/sota-gap` as tech watch.
-Each feeds the next cycle's `/ticket` with a healthier baseline.
+- `/feature-start` cuts the branch once the plan is clear, not before.
+- Commits are save points, the merge is the irreversible act: nothing lands on
+  main unreviewed, recette fixes included.
+
+Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-analysis`
+after a big delivery, `/sota-gap` as tech watch.
 
 ## Setup
 
