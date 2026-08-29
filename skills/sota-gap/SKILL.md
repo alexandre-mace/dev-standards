@@ -1,6 +1,6 @@
 ---
 name: sota-gap
-description: Mesure l'écart entre les guidelines dev-standards (stack symfony-react et stack next) et l'état de l'art, en confrontant leurs recommandations aux sources officielles du web. Déclencheurs - sota gap, veille, update guidelines, "les guidelines sont-elles à jour", "on est encore au sota ?", état de l'art.
+description: Mesure l'écart entre les guidelines dev-standards (stacks symfony-react, next et tanstack-start) et l'état de l'art, en confrontant leurs recommandations aux sources officielles du web. Déclencheurs - sota gap, veille, update guidelines, "les guidelines sont-elles à jour", "on est encore au sota ?", état de l'art.
 ---
 
 # sota-gap
@@ -9,14 +9,14 @@ L'écart entre la recette et l'écosystème. Le pendant de `/gap-analysis`, qui 
 l'écart entre le code et la recette : ici l'autorité est inversée, c'est
 l'écosystème qui a raison et la recette qu'on corrige.
 
-Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`) et stack perso `next/` (`next-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les deux stacks ; l'utilisateur peut en cibler une.
+Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`), stack perso `next/` (`next-guidelines.md`) et stack applicative `tanstack-start/` (`tanstack-start-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les trois stacks ; l'utilisateur peut en cibler une.
 
 C'est une **veille techno** : les guidelines sont le point de référence, le web est le juge de paix, le repo du projet n'est **pas** une source (il peut contenir du legacy).
 
 ## Steps
 
 1. **Read current state**
-   - Read the stack's guidelines: `symfony-react/symfony-guidelines.md` + `symfony-react/reactony.md` (pro) and/or `next/next-guidelines.md` (perso)
+   - Read the stack's guidelines: `symfony-react/symfony-guidelines.md` + `symfony-react/reactony.md` (pro), `next/next-guidelines.md` (perso), `tanstack-start/tanstack-start-guidelines.md` (apps)
    - Read `composer.json` / `package.json` of a representative project per stack to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind : et côté next : Next.js, kit @alexandremace, etc.)
 
 2. **Research web-first : sources autoritaires uniquement**

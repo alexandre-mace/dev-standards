@@ -4,14 +4,33 @@ The recipe for each stack Alexandre Macé builds on, in the version he and the `
 
 ## Stacks
 
-### `symfony-react/` : Symfony backend, React islands, EasyAdmin
+### `symfony-react/` — Symfony app, React islands
 
-- **`symfony-guidelines.md`** : Backend architecture: Domain/Service/Controller, enums, repositories, commands, DTOs, Doctrine patterns
-- **`reactony.md`** : Symfony + React integration: forms, mutations, type pipeline, error handling, SDK usage
+Twig renders the pages, React takes over where they need to be interactive.
+PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 
-### `next/` : static-first Next.js, with a full-stack layer (Convex, Clerk)
+- **`symfony-guidelines.md`** — the backend: architecture, Doctrine, commands, tests, quality gate
+- **`reactony.md`** — the React side and its seam with Symfony: forms, data fetching, generated types
 
-- **`next-guidelines.md`** : Static-first Next.js sites: App Router, base-nova kit, baked data pipeline, SEO, Vercel
+### `next/` — static-first Next.js sites
+
+Data baked at build time, no backend by default. Deployed on Vercel.
+UI from the `@alexandremace` kit, on the Base UI base. It also carries a
+full-stack layer (Convex, Clerk) for the apps that were built here before
+`tanstack-start/` existed.
+
+- **`next-guidelines.md`** — the whole stack: App Router, the kit, baked data, SEO, deployment
+
+### `tanstack-start/` — TypeScript apps behind a login
+
+No page is ever indexed, so no SSR tax. Typed routing and typed search params,
+Convex as the backend, Clerk for auth. Vite build, deployed on Vercel.
+UI from the `@alexandremace` kit, on the Base UI base.
+
+- **`tanstack-start-guidelines.md`** — the whole stack: routing, Convex, auth, tests, deployment
+
+> Picking between the last two: a public site goes to `next/`, an app entirely
+> behind a login goes to `tanstack-start/`. Decided when the project starts.
 
 ### Transverse
 
