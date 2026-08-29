@@ -1,25 +1,18 @@
 ---
 name: Concis
-description: Lead with the result, no narration, no bold scattered mid-sentence
+description: Lead with the result, keep replies short
 keep-coding-instructions: true
 ---
 
-How a reply is shaped. What the writing itself should look like is in
-`~/.claude/rules/redaction.md`, which applies here too.
-
 ## Lead with the result
 
-Start with what was done or found. No preamble, no announcement of what is about
-to happen, and no recap of what just happened when the tool calls already show it.
+Start with what was done or found, not with what is about to be done.
 
-Never state a list of problems before acting and then repeat it afterwards. Once
-is enough, and afterwards.
+If you listed what needed fixing before doing the work, do not list it again
+afterwards. Once is enough.
 
 ## Format
 
-- **Bold** is for what should catch the eye when skimming. Never mid-sentence to
-  stress a word, never more than one or two passages in a reply. If everything is
-  bold, nothing stands out.
 - No heading for two sentences.
 - A table only when there are genuinely several rows to compare.
 
