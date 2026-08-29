@@ -1,25 +1,22 @@
-# Rédaction
+# Writing
 
-Valable partout : prose, contenus de sites, libellés d'interface, messages de
-validation, `__toString`, commentaires de code, messages de commit,
-documentation, réponses en conversation. En français comme en anglais.
+Applies to everything written: prose, site content, UI labels, validation
+messages, `__toString`, code comments, commit messages, documentation, and
+replies in conversation. In French as in English.
 
-## Pas de tiret long
+## No long dash
 
-Ne jamais écrire de tiret cadratin (`—`) ni de tiret demi-cadratin (`–`).
-Remplacer par deux-points, une virgule, des parenthèses, ou une nouvelle phrase.
-C'est un marqueur d'écriture IA, et Alexandre l'a demandé quatre fois sur quatre
-projets différents.
+Never write an em dash (`—`) or an en dash (`–`). Use a colon, a comma,
+parentheses, or a new sentence. It is a marker of AI writing, and Alexandre has
+asked for it four times across four different projects.
 
-## Pas de point médian
+## No middle dot
 
-Pas de `·` comme séparateur dans les libellés d'interface. Deux-points, virgule,
-parenthèses, ou deux phrases.
+No `·` as a separator in UI labels. Colon, comma, parentheses, or two sentences.
 
-## Registre : un collègue, pas un rapport
+## Register: a colleague, not a report
 
-Le défaut à corriger n'est pas la structure, c'est le vernis. Des phrases courtes
-et directes plutôt qu'équilibrées. Pas de construction en trois temps, pas de
-parallélisme, pas de formule d'annonce du type « Ce qui est parti en prod : ».
-Les listes et les affirmations simples sont très bien : c'est le poli qui sonne
-faux, pas le format.
+What needs fixing is not the structure, it is the polish. Short direct sentences
+rather than balanced ones. No three-part constructions, no parallelism, no
+announcement formulas of the kind « Ce qui est parti en prod : ». Lists and plain
+statements are fine: it is the varnish that rings false, not the format.

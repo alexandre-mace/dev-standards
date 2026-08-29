@@ -19,5 +19,5 @@ Rules are context: Claude reads them and follows them, without a guarantee. An o
 style changes the system prompt itself, so tone and format belong there rather than in
 a rule.
 
-`redaction.md` stays in French on purpose: it governs French prose, and its
-examples have to be French to mean anything.
+`redaction.md` governs what gets written, anywhere. The `Concis` output style
+governs the shape of a reply. Both stay out of each other's way.
