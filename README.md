@@ -86,7 +86,7 @@ after a big delivery, `/sota-gap` as tech watch.
 
 ```bash
 git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
-~/dev/dev-standards/skills/install.sh
+~/dev/dev-standards/install.sh
 ```
 
 `install.sh` links both halves of what Claude Code reads: `skills/` into
@@ -123,4 +123,4 @@ Conventions de la stack : `docs/next-guidelines.md`, lien vers [dev-standards](h
 
 ### Adding a skill or rule
 
-Create `skills/<name>/SKILL.md` or `agent/<name>.md`, run `./skills/install.sh`, commit.
+Create `skills/<name>/SKILL.md` or `agent/<name>.md`, run `./install.sh`, commit.

@@ -6,11 +6,12 @@
 # Idempotent: safe to re-run.
 #
 # Usage:
-#   cd ~/dev/dev-standards/skills && ./install.sh
+#   ~/dev/dev-standards/install.sh
 
 set -euo pipefail
 
-SKILLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_DIR="$ROOT_DIR/skills"
 TARGET_DIR="$HOME/.claude/skills"
 
 mkdir -p "$TARGET_DIR"
@@ -37,7 +38,7 @@ for skill_dir in "$SKILLS_DIR"/*/; do
 done
 
 # Behavioural rules: agent/*.md -> ~/.claude/rules/
-RULES_SRC="$(dirname "$SKILLS_DIR")/agent"
+RULES_SRC="$ROOT_DIR/agent"
 RULES_DIR="$HOME/.claude/rules"
 
 if [ -d "$RULES_SRC" ]; then
