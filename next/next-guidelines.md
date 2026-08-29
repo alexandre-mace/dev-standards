@@ -1,7 +1,6 @@
 # Next Guidelines : sites statiques perso
 
 > Conventions des sites Next perso. Pragmatique, pas dogmatique.
-> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais où en est un projet particulier. Mesurer l'écart entre un code et ces guidelines, c'est le job de `/gap-analysis`, qui produit une liste d'écarts et non un état d'avancement.
 >
 > **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run.
 

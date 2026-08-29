@@ -1,7 +1,6 @@
 # Reactony : Convention Symfony + React
 
 > Source de vérité unique, pas de duplication, un seul pattern.
-> Prescriptif et partagé : ce doc dit ce qui **doit** être, jamais où en est un projet particulier. Mesurer l'écart entre un code et ces guidelines, c'est le job de `/gap-analysis`, qui produit une liste d'écarts et non un état d'avancement.
 >
 > **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
 
