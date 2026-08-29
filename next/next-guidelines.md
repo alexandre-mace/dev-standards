@@ -2,9 +2,11 @@
 
 > **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run.
 
+> Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>`. À regarder, pas encore des normes.
+
 | Outil | Version | À savoir |
 |---|---|---|
-| Next.js | 16.3 | App Router, Active LTS. Releases de sécurité préannoncées : patcher sous une semaine (ex. 16.3.3, critique le 26/08/2026) |
+| Next.js | 16.3 | App Router, Active LTS. Releases de sécurité préannoncées : patcher sous une semaine (ex. 16.3.3, critique le 26/08/2026). `catchError`/`retry()` stables pour les error boundaries ; `middleware.ts` déprécié au profit de `proxy.ts` |
 | React | 19.2 | |
 | TypeScript | 5.9 | TS 7 natif est GA. Migration 5.9 vers 6.0 puis 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3 |
 | Tailwind | 4 | PostCSS, zéro `tailwind.config` |
@@ -17,15 +19,13 @@
 
 ## Portée : un socle, deux couches
 
-Trois niveaux, à ne pas confondre :
+| Couche | Quand | Ce qu'elle ajoute |
+|---|---|---|
+| **Socle** | tout projet Next perso | Next 16 App Router, TypeScript strict, pnpm, Tailwind 4, shadcn Base UI Nova, Biome, Geist, français, Server Components par défaut, `metadataBase` |
+| **Site d'écosystème** | le site rejoint le réseau | le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, pas de suite de tests |
+| **Full-stack** | il faut des comptes ou des données stockées | **Convex** et ses composants `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), auth **Clerk**, et des tests qui deviennent obligatoires : Vitest et `convex-test` pour le backend, Playwright pour les parcours critiques |
 
-- **Le socle** vaut pour tout projet Next perso, site vitrine ou vraie application : Next.js 16 App Router, TypeScript strict, pnpm, Tailwind 4 (PostCSS), shadcn base Base UI style Nova, Biome, Geist, français, Server Components par défaut, domaine canonique en `metadataBase`.
-- **La couche site d'écosystème** ajoute : le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, l'absence de suite de tests.
-- **La couche full-stack** ajoute un backend quand le site a besoin de comptes ou de données stockées : **Convex** (avec ses composants officiels `@convex-dev/*` : rate limiting, emails Resend, paiements Stripe) et auth **Clerk** (`@clerk/nextjs`). Les tests deviennent alors obligatoires : Vitest et `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Côté Next 16.3 : `catchError`/`retry()` stables pour les error boundaries, et `middleware.ts` est déprécié au profit de `proxy.ts`.
-
-> Avoir un backend ne change pas de stack. Ce qui décide, c'est le modèle de rendu : si rendre côté serveur n'économise pas de JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Symbl est ici pour des raisons historiques.
-
-Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>` (View Transitions typées) : à regarder, pas encore des normes.
+Avoir un backend ne fait pas changer de stack. Ce qui décide, c'est le modèle de rendu. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Symbl est ici pour des raisons historiques.
 
 ## Principes
 
