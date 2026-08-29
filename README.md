@@ -62,11 +62,11 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 The skills chain in a fixed order:
 
 ```
-/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /review-diff¹  →  /preprod  →  recette  →  /review-diff²  →  /deploy
-   │                              │                                        │                                         │
-   │                              │                                        └─ pass 1: full review                   └─ pass 2: delta + fresh /quality
-   │                              └─ Feature playbook (symfony-guidelines §one-shot)
-   └─ investigation + blast radius + assumed decisions
+/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /review-diff¹  →  /preprod  →  acceptance  →  /review-diff²  →  /deploy
+  │                               │                                        │                                             │
+  │                               │                                        └─ pass 1: full review                        └─ pass 2: delta + fresh /quality
+  │                               └─ Feature playbook (symfony-guidelines §one-shot)
+  └─ investigation + blast radius + assumed decisions
 
 Bug?  /diagnosing-bugs replaces /ticket, the rest of the thread is identical.
 ```
@@ -75,7 +75,7 @@ Two rules the diagram cannot show:
 
 - `/feature-start` cuts the branch once the plan is clear, not before.
 - Commits are save points, the merge is the irreversible act: nothing lands on
-  main unreviewed, recette fixes included.
+  main unreviewed, acceptance fixes included.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-analysis`
 after a big delivery, `/sota-gap` as tech watch.
