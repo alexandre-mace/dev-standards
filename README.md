@@ -29,9 +29,10 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 - **`tanstack-start-guidelines.md`** — the whole stack: routing, Convex, auth, tests, deployment
 
-> Picking between the last two: if the content is the product it goes to `next/`,
-> if the interface is the product it goes to `tanstack-start/`. A login is a common
-> sign of the second, not the rule. Decided when the project starts.
+> Picking between the last two, one testable question: would rendering on the server
+> ship less JavaScript to the browser? Yes means the pages are content, and Server
+> Components earn their keep, so `next/`. No means it is all interactive anyway, so
+> `tanstack-start/` and typed URLs instead. Decided when the project starts.
 
 ### Transverse
 
