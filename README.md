@@ -39,27 +39,38 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 - **`agent/`** : how the agent should work, whatever the stack: writing rules, register, how to research. Symlinked into `~/.claude/rules/`, loaded in every session. See its own README for what belongs there.
 - **`design-system-page.md`** : The living design-system page: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
-## Usage
+## Using it from a project
 
-Clone this repo and symlink the relevant stack's files into your project's `docs/` directory:
+Everything below happens **in a consumer project**, not in this repo. This repo has no
+`docs/` directory of its own: it is the source, not a consumer.
+
+Clone this repo as a sibling of your projects, then link the stack's files into the
+project's `docs/`. Use a **relative** path: an absolute one carries your username and
+breaks on anyone else's machine, and in CI.
 
 ```bash
-# Symfony + React project
-ln -s ~/dev/dev-standards/symfony-react/symfony-guidelines.md docs/symfony-guidelines.md
-ln -s ~/dev/dev-standards/symfony-react/reactony.md docs/reactony.md
-
-# Next.js project
-ln -s ~/dev/dev-standards/next/next-guidelines.md docs/next-guidelines.md
+# from the project root, with dev-standards cloned as a sibling
+mkdir -p docs
+ln -s ../../dev-standards/next/next-guidelines.md docs/next-guidelines.md
 ```
 
-Then reference them from your project's `AGENTS.md` (`CLAUDE.md` is a one-line `@AGENTS.md` import):
+Adjust the number of `../` to the project's depth: a project one level deeper needs one
+more. `ln -s` does not check the target, so confirm the link resolves with
+`cat docs/next-guidelines.md`.
+
+Then name it in the project's `AGENTS.md`, so the link is explained rather than just
+present (`CLAUDE.md` stays a one-line `@AGENTS.md` import):
 
 ```markdown
-## Architecture & Guidelines
+## Conventions de la stack
 
-Detailed conventions are in `docs/` (symlinked from dev-standards).
-These docs are the source of truth for code conventions.
+Les conventions communes à mes projets Next vivent dans `docs/next-guidelines.md`,
+un lien vers le dépôt partagé [dev-standards](https://github.com/alexandre-mace/dev-standards)
+(fichier `next/next-guidelines.md`). Si ce lien est cassé, c'est que le dépôt n'est
+pas cloné à côté de celui-ci : lire la version en ligne.
 ```
+
+Naming the canonical URL matters: it is what someone reads when the symlink dangles.
 
 ## Claude Code Skills
 
