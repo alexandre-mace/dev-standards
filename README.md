@@ -14,10 +14,9 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 
 ### `next/`: static-first Next.js sites
 
-Data baked at build time, no backend by default. Deployed on Vercel.
-UI from the `@alexandremace` kit, on the Base UI base. It also carries a
-full-stack layer (Convex, Clerk) for the apps that were built here before
-`tanstack-start/` existed.
+Data baked at build time. Deployed on Vercel. UI from the `@alexandremace` kit,
+on the Base UI base. A site that needs accounts or stored data adds Convex and
+Clerk and stays here: having a backend is not what decides the stack.
 
 - **`next-guidelines.md`**, the whole stack: App Router, the kit, baked data, SEO, deployment
 
