@@ -26,6 +26,8 @@ follows is what `/run` does not know.
   route that `debug:router` lists is a dead server, not a routing bug.
 - **The Browser pane refuses the local self-signed certificate.** Drive through Playwright
   instead, which trusts it.
+- **`scrollIntoView({behavior: 'smooth'})` does not scroll a headless browser.** Use
+  `'instant'` when a check depends on the element being in view.
 - Next and TanStack Start: one `pnpm dev`.
 - A server that will not start is the finding. Report it and stop, never work around it.
 

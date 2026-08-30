@@ -972,6 +972,14 @@ class StepRepository extends ServiceEntityRepository
 }
 ```
 
+### A query without `ORDER BY` has no order
+
+Postgres returns rows in physical order, which changes as soon as a row is updated. Code
+that folds a result set into a map keyed by something non-unique, where the last row wins,
+therefore returns a different answer after an unrelated update, with nothing in the diff
+to explain it. Whenever "the last one wins" is the intent, say which one is last: order
+the query explicitly.
+
 ### KnpPaginator puts its sort in front of yours
 
 `OrderByWalker` does an `array_unshift` of the requested sort onto the query's existing
@@ -1693,6 +1701,18 @@ var/cache/dev var/cache/test`, then `cache:clear` (raise `memory_limit`, the def
 `tests/` sails through the hook. A new method on `KernelTestCase` colliding with a test
 helper of the same name is a fatal error at suite load, not a failing assertion.
 
+### Two local failures that are never the code
+
+Both cost an hour every time they recur, and neither leaves a useful error message.
+
+- **The test database still carries another branch's schema.** After switching branches,
+  the leftover tables and their foreign keys make the bootstrap's drop fail quietly and
+  the create fail loudly. `APP_ENV=test bin/console doctrine:database:drop --force` then
+  `:create`, and let the bootstrap rebuild.
+- **128M is not enough.** `cache:clear`, `lint:container`, PHPStan and PHPUnit all die on
+  it, and the husky hook fails on the symptom rather than the cause. `--memory-limit=1G`
+  for PHPStan, `php -d memory_limit=512M` for the console and the test runner.
+
 ### Summary
 
 | Tool | Role | When |
@@ -2022,6 +2042,13 @@ schema-update line when the data has to be fixed while the columns still have th
 type. Each one carries a comment saying when it becomes a no-op and can be removed.
 
 Idempotent, always: the hook runs on every deploy.
+
+The hook's commands are chained, so a failing one **fails the deploy**. The classic case
+is making a column non-nullable while production still holds NULL rows: the schema update
+refuses, and the deploy stops. Back-fill first, in the same hook, above the schema line.
+
+Reading `clever activity`: the `OK` appears **before** the commit hash on the line, so a
+shell pattern written as `*<sha>*OK*` never matches. Match the sha, then the status.
 
 ### An environment variable set on the app wins over `.env`
 
