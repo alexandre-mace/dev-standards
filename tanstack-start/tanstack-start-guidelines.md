@@ -88,7 +88,11 @@ TypeScript strict, pnpm with `packageManager` pinned, Biome for lint and format.
 
 ## 3. UI
 
-The `@alexandremace` kit, shadcn on the Base UI base in Nova style, Tailwind 4 through PostCSS. A component fixed once is fixed everywhere, so never modify `components/ui/` in a consumer: the change belongs in the kit, then propagates with `/propagate-kit`.
+**Base UI in Nova style**, whatever the project, with Tailwind 4 through PostCSS.
+
+A product with its own identity stops there: official shadcn CLI, no registry. That is the common case for an app.
+
+A project that carries the shared identity adds the `@alexandremace` kit instead. A component fixed once is then fixed everywhere, so never modify `components/ui/` in a consumer: the change belongs in the kit, then propagates with `/propagate-kit`.
 
 ## 4. Quality and deployment
 
