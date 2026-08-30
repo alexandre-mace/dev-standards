@@ -6,8 +6,7 @@ description: Audit a whole codebase against its stack's guidelines and write eve
 Audit a full codebase against its stack's guidelines.
 
 **The guidelines are right, the code gets corrected.** The mirror skill is `/sota-gap`,
-where the ecosystem is right and the guidelines get corrected. Never fix a guideline
-from here.
+where the ecosystem is right and the guidelines get corrected.
 
 ## 1. Identify the stack, read its guidelines in full
 
@@ -25,34 +24,29 @@ from here.
 
 ## 2. Scan the code
 
-**The guidelines are the checklist. Do not carry a second copy of them here.** Their
-forbidden anti-patterns section lists, rule by rule, exactly what a scan looks for, and
-the rest of the file gives the patterns those rules protect. Turn each one into a search
-and run it across every file.
+The guidelines are the checklist. Their forbidden anti-patterns section lists, rule by
+rule, exactly what a scan looks for, and the rest of the file gives the patterns those
+rules protect. Turn each one into a search and run it across every file.
 
 - Agents in parallel, one per area of the codebase. Every file, not a sample.
 - `Glob` and `Grep` systematically: most rules become one pattern each.
 - A rule that cannot be turned into a search still gets read for: architecture
   boundaries, business logic in the wrong layer, a pattern that diverges between two
   files that should match.
-- **Beyond the guidelines**: flag what is incoherent, fragile, surprising or plainly
-  broken even when no rule covers it. Suspicious logic, security smells, dead code,
-  hardcoded URLs that belong in the environment.
-
-Why no axis list lives here: it would be a copy of the guidelines that drifts the day
-they change, and this skill would then audit against a stale version of the rules it
-exists to enforce.
+- Beyond the guidelines, flag what is incoherent, fragile, surprising or plainly broken
+  even when no rule covers it: suspicious logic, security smells, dead code, hardcoded
+  URLs that belong in the environment.
 
 ## 3. Scan config, tooling and the quality gate
 
-The axis agents never open a config file, so **the code can be pristine while the config
-silently lags**. Real case: PHPStan stuck at `level: 8` against a guideline mandating
+A scan of `src/` never opens a config file, so the code can be pristine while the config
+silently lags. Real case: PHPStan stuck at `level: 8` against a guideline mandating
 `max`, invisible to a code-only scan, build green throughout.
 
 - **PHPStan level** in `phpstan.dist.neon` against what the guideline mandates. A
   lower level is a real gap even with a green build. Check a baseline is used to climb.
-- **Quality gate completeness**: does the pre-commit hook (`.husky/pre-commit`) **and**
-  the CI (`.github/workflows/*.yml`) each run every mandated check? Name any that is
+- **Quality gate completeness**: does the pre-commit hook (`.husky/pre-commit`) and the
+  CI (`.github/workflows/*.yml`) each run every mandated check? Name any that is
   missing from either. A mandated test suite that does not exist is a gap, not a skip.
 - **TS and lint config**: `tsconfig.json` strict flags, and the linter the stack
   prescribes (Biome on Next and TanStack, ESLint plus `eslint-plugin-react-hooks` >= 7
@@ -123,17 +117,14 @@ Findings per priority, then the most critical items, then one line on what to do
 
 ## Rules
 
-- **Exhaustive, not sampled.** Every file. `Glob` and `Grep` systematically.
-- **Preserve ticked items.** Anything `[x]` in the previous file was fixed: keep it so
+- **Fix nothing.** This skill diagnoses, it does not touch source code.
+- Exhaustive, not sampled. Every file, with `Glob` and `Grep`.
+- Preserve ticked items: anything `[x]` in the previous file was fixed, keep it so
   progress stays visible.
-- **Concrete, not vague.** Every finding names a file and a line or a method. "Some
-  controllers are too big" is worthless; "`AdvertController.php:245` maps icons inline"
-  is actionable.
-- **A project not applying a rule does not make the rule wrong.** This skill corrects
-  the code, never the guidelines. Something that looks wrong in the guidelines goes to
-  `/sota-gap`.
-- **Do not invent problems.** Flag what genuinely deviates, or what is plainly a bug or
-  a security issue. Silence on everything else.
-- **Group by theme, not by file**, so the result is a work plan.
-- **French for the prose** of `gap-analysis.md`, matching the existing file.
-- **Fix nothing.** This skill diagnoses. It does not touch source code.
+- Every finding names a file and a line or a method. "Some controllers are too big" is
+  worthless, "`AdvertController.php:245` maps icons inline" is actionable.
+- Something that looks wrong in the guidelines themselves goes to `/sota-gap`.
+- Do not invent problems. Flag what genuinely deviates, or what is plainly a bug or a
+  security issue.
+- Group by theme, not by file, so the result is a work plan.
+- French for the prose of `gap-analysis.md`, matching the existing file.
