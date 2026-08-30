@@ -61,12 +61,10 @@ It is a checklist, so check it rather than trusting it was followed:
 ## 5. Delegate the mechanical checks
 
 - Run **`/quality`**. Mandatory, and run now rather than remembered. A FAIL blocks the verdict.
-- **When the diff uses something the guidelines do not cover** (a new library, an API
-  not yet used in the repo), check it against the official docs. Two rules that are not
-  obvious: check the version **in the lockfile**, not the latest release, and follow the
-  source hierarchy (the repo's changelog and advisories, then the official docs, then
-  the published package). A blog never establishes a fact. On patterns already proven in
-  the repo, skip this and say so.
+- **Backstop on unfamiliar APIs**: `/plan` should have read the docs for anything the
+  guidelines do not cover. If the diff uses such an API and the plan shows no sign of it,
+  check it now against the official docs for the version in the lockfile. An invented
+  signature that compiles is exactly what a green build does not catch.
 - Do **not** run `/verify` from here. It belongs before the review. If it never ran,
   that is a finding: send it back rather than absorbing the step.
 

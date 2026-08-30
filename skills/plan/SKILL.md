@@ -29,6 +29,13 @@ $ARGUMENTS
   shared across pages, components or product lines. A small change in shared code is
   not a small change.
 - Read the stack's guidelines and `AGENTS.md`.
+- **Anything the guidelines do not already cover, read its docs before planning around
+  it.** A library new to the repo, an API never used here, a framework feature you have
+  not seen in this codebase: your training memory has a cutoff and will happily invent a
+  plausible signature. Check the version **in the lockfile**, not the latest release, and
+  follow the source hierarchy: the repo (changelog, release notes, advisories), then the
+  official docs, then the published package. A blog never establishes a fact. Costly to
+  discover at review time, cheap to settle now.
 
 ## 3. Settle what can be settled
 
