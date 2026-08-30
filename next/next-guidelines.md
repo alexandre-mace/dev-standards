@@ -50,7 +50,7 @@ Un **site d'écosystème** ajoute le kit `@alexandremace`, déclaré dans `compo
 "registries": { "@alexandremace": "https://ui.alexandremace.fr/r/{name}.json" }
 ```
 
-Installer un item avec `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`) passent par le registry aussi, jamais par copier-coller entre projets.
+Tout ce qui vient du kit s'installe par le registry, y compris les composants d'écosystème. Jamais de copier-coller entre projets.
 
 **Le kit est la source.** Ne jamais modifier `components/ui/` dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
 
