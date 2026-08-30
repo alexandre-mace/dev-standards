@@ -32,19 +32,17 @@ alike.
 
 ## Substance
 
-- Cut what nobody asked for: a frequency, a justification, a caveat you added on your
-  own.
+- Cut what nobody asked for: a frequency, a caveat, a reason you made up.
 - Cut slogans and aphorisms. "Pragmatic, not dogmatic" says nothing.
 - Explain a term the first time it appears, or do not use it.
 
 ## Two tests before returning the text
 
-- Cut before polishing. A sentence that should not be there is not improved by rewriting
-  it.
-- Would the reader have to reformulate a sentence to understand it? Then their
-  reformulation is the version to write.
+- Cut before polishing.
+- If the reader would reformulate a sentence to understand it, their reformulation is
+  the version to write.
 
 ## Output
 
-Return the rewritten text, then one or two lines on what was cut, by category. If the
-text is already clean, say so and change nothing.
+Return the rewritten text, then name the rules that did the cutting. If the text is
+already clean, say so and change nothing.
