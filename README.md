@@ -42,6 +42,7 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 | Skill | Purpose |
 |---|---|
+| `feature` | Run a ticket through the whole chain, in order, stopping at the gates that need a human |
 | `ticket` | Investigate a ticket, settle what the code can settle, write the plan to `docs/ticket.md` |
 | `feature-start` | Start a new feature branch from an up-to-date main |
 | `verify` | Exercise the feature in a real browser: golden path, one edge case, console and network |
@@ -61,6 +62,9 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 The skills chain in a fixed order. Each one hands the next something it can check,
 so that "done" is a verified fact rather than a claim.
+
+`/feature` runs this whole chain on one ticket, stopping at the gates. The steps stay
+callable on their own.
 
 ```
 /ticket → /feature-start → implement → /verify → /quality → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy

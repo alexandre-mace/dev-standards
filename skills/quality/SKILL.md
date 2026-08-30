@@ -5,23 +5,21 @@ description: Run every mechanical check the stack's guidelines mandate. Auto-det
 
 # Quality gate
 
-Run the checks that a machine can settle on its own. Detect the stack first, then
-run only what applies to it.
+Everything a machine can settle on its own, fast and headless.
 
-**Where the line falls.** This skill runs everything that is fast and headless. What
-needs a browser belongs to `/verify`; the full E2E suite belongs to CI. Keep this
-gate under roughly 30 seconds so it can be run often, and never make it the reason
-someone stops running it.
+- What needs a browser is `/verify`. The full E2E suite is CI.
+- Keep this under ~30 seconds, so it gets run often.
 
-## Stack detection
+## Detect the stack
 
-- **Symfony + React**: `composer.json` contains `symfony/framework-bundle` (plus a
-  `package.json`, almost always)
-- **Next**: a `next.config.{js,ts,mjs}` exists
-- **TanStack Start**: `package.json` depends on `@tanstack/react-start`
-- **Standalone React**: a `package.json` with `react` and none of the above
+| Stack | Detected by |
+|---|---|
+| Symfony + React | `symfony/framework-bundle` in `composer.json` |
+| Next | a `next.config.{js,ts,mjs}` |
+| TanStack Start | `@tanstack/react-start` in `package.json` |
+| Standalone React | `react` in `package.json`, none of the above |
 
-A project can be more than one thing. Run every branch that matches.
+A project can match several. Run every branch that does.
 
 ## Symfony
 
@@ -34,67 +32,53 @@ composer audit
 bin/phpunit
 ```
 
-- Never run PHP-CS-Fixer without `--dry-run`: show violations, don't silently rewrite
-  the working tree under the user.
-- A tool that is not installed is SKIPPED, with the `composer require --dev` line to
-  install it. Not a FAIL: a project that never had PHPStan isn't failing PHPStan.
-- `bin/phpunit` absent is SKIPPED. But note it: the guidelines mandate a test suite,
-  so its absence is a gap, not a neutral fact.
+- Never run PHP-CS-Fixer without `--dry-run`: report, do not rewrite the tree under the
+  user.
+- A tool not installed is SKIPPED, with the `composer require --dev` line. Not a FAIL.
+- No `bin/phpunit` is SKIPPED, but say it: the guidelines mandate a suite, so its
+  absence is a gap.
 
-### Contract drift (Symfony + React)
+### Contract drift, when the SDK is generated from OpenAPI
 
-If the project generates its frontend SDK from OpenAPI (a `types` target in the
-`Makefile`, or an `openapi.yaml` at the root):
+A `types` target in the `Makefile`, or an `openapi.yaml` at the root:
 
 ```bash
 make types
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
-A non-empty diff is a FAIL: the backend contract moved and the generated SDK was not
-regenerated, so the frontend is about to break silently. This is in the Definition of
-Done, and it is the cheapest gate in the whole stack. Leave the regenerated files in
-place, staged or not, and say so.
+A non-empty diff is a FAIL: the backend contract moved, the SDK did not follow, the
+frontend is about to break silently. Leave the regenerated files in place and say so.
 
-## Next
+## Next, TanStack Start
 
 ```bash
 pnpm build
 ```
 
-The build **is** the check: it type-checks and fails on compile errors. Do not use
-`next lint` (removed in Next 16).
+The build **is** the check: it type-checks and fails on compile errors. Never `next lint`
+(removed in Next 16). On TanStack, the build surfaces route-tree and typed-router errors
+that `tsc` alone misses.
 
-## TanStack Start
-
-```bash
-pnpm build
-```
-
-Same reasoning. Vite's build surfaces the route-tree and typed-router errors that
-`tsc` alone can miss.
-
-## Every project with a `package.json`
+## Any project with a `package.json`
 
 ```bash
-pnpm tsc --noEmit      # skip if no tsconfig.json
-pnpm lint              # skip if no lint script
-pnpm format:check      # skip if no format:check script
-pnpm test              # skip if no test script
+pnpm tsc --noEmit      # skip: no tsconfig.json
+pnpm lint              # skip: no lint script
+pnpm format:check      # skip: no format:check script
+pnpm test              # skip: no test script
 ```
 
-`pnpm test` is Vitest, and the guidelines mandate it on all three stacks. Running it
-here is what makes "the tests pass" a fact rather than an assumption. Pass whatever
-flag the project needs for a single non-watch run.
+`pnpm test` is Vitest, mandated on all three stacks. Running it is what turns "the tests
+pass" into a fact. Use whatever flag the project needs for a single non-watch run.
 
-**Not run here**: Playwright (`pnpm test:e2e`), which needs a browser and minutes,
-and Psalm's taint analysis, which is a CI job. Say they were not run rather than
-letting the report imply everything was covered.
+**Not run here**: Playwright (needs a browser and minutes) and Psalm taint analysis (a CI
+job). Say so rather than letting the report imply full coverage.
 
 ## Report
 
 ```
-Quality : <detected stack>
+Quality : <stack>
 ------------------------------------------------
 PHPStan:              PASS / FAIL / SKIPPED (not installed)
 PHP-CS-Fixer:         PASS / FAIL / SKIPPED (not installed)
@@ -111,8 +95,7 @@ Vitest:               PASS / FAIL / SKIPPED (no script)
 Not run here:         Playwright (CI), Psalm (CI)
 ```
 
-Only show the rows that apply. For each FAIL, show the real error output and the fix,
-never a paraphrase.
-
-A SKIPPED row that the guidelines mandate (no test suite, no PHPStan) is worth one
-line at the end: it is a gap for `/gap-analysis`, not something to fix inside this run.
+- Only the rows that apply.
+- Every FAIL shows the real error output and the fix, never a paraphrase.
+- A SKIPPED row the guidelines mandate gets one closing line: it is a `/gap-analysis`
+  finding, not something to fix inside this run.

@@ -3,16 +3,13 @@ name: gap-analysis
 description: Audit a whole codebase against its stack's guidelines and write every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
-Audit the full codebase against the guidelines of the stack it belongs to, and produce
-an exhaustive gap analysis.
+Audit a full codebase against its stack's guidelines.
 
-The authority runs one way here: **the guidelines are right, the code is what gets
-corrected**. The mirror skill is `/sota-gap`, where the ecosystem is right and the
-guidelines get corrected. Do not fix guidelines from this skill.
+**The guidelines are right, the code gets corrected.** The mirror skill is `/sota-gap`,
+where the ecosystem is right and the guidelines get corrected. Never fix a guideline
+from here.
 
-## 1. Identify the stack and read its guidelines
-
-Detect it, then read the matching files **in full**: they are the source of truth.
+## 1. Identify the stack, read its guidelines in full
 
 | Stack | Detected by | Guidelines |
 |---|---|---|
@@ -20,19 +17,15 @@ Detect it, then read the matching files **in full**: they are the source of trut
 | Next | a `next.config.{js,ts,mjs}` | `docs/next-guidelines.md` |
 | TanStack Start | `@tanstack/react-start` in `package.json` | `docs/tanstack-start-guidelines.md` |
 
-If the files are missing, the project has no symlink into `dev-standards`: that is the
-first gap to report, and the audit stops there.
-
-Then read the existing `docs/gap-analysis.md`, to know what has already been found and
-what has been ticked off.
-
-**Skip an archived repository.** A last commit saying "archive", a redirect to a
-successor, an archived flag on the remote: report it and stop rather than auditing a
-corpse.
+- Files missing: the project has no symlink into `dev-standards`. That is the first gap,
+  and the audit stops there.
+- Then read the existing `docs/gap-analysis.md`: what was already found, what is ticked.
+- **Archived repository: stop.** A last commit saying "archive", a redirect to a
+  successor, an archived flag on the remote. Report it rather than auditing a corpse.
 
 ## 2. Scan the code
 
-Use agents in parallel across the axes. Be exhaustive: every file, not a sample.
+Agents in parallel across the axes. Every file, not a sample.
 
 ### Symfony backend (`src/`)
 
@@ -127,10 +120,9 @@ Use agents in parallel across the axes. Be exhaustive: every file, not a sample.
 
 ## 3. Scan config, tooling and the quality gate
 
-The axis agents reading `src/` never open a config file, so **the code can be pristine
-while the config silently lags the guideline**. A real case: PHPStan stuck at
-`level: 8` while the guideline mandated `max`, invisible to a code-only scan, build
-green throughout.
+The axis agents never open a config file, so **the code can be pristine while the config
+silently lags**. Real case: PHPStan stuck at `level: 8` against a guideline mandating
+`max`, invisible to a code-only scan, build green throughout.
 
 - **PHPStan level** in `phpstan.dist.neon` against what the guideline mandates. A
   lower level is a real gap even with a green build. Check a baseline is used to climb.
@@ -149,17 +141,17 @@ green throughout.
 
 ## 4. Scan the agent instruction files
 
-The files that steer every future agent session are code too, and they rot silently.
+They steer every future agent session, and they rot silently.
 
-Run the checker shipped with this skill, which confronts the verifiable claims of
-`AGENTS.md` / `CLAUDE.md` against the real repository (package manager against the
-lockfile, scripts that do not exist, paths that do not exist):
+Run the checker shipped with this skill: it confronts the verifiable claims of
+`AGENTS.md` / `CLAUDE.md` against the repository (package manager vs lockfile, scripts
+that do not exist, paths that do not exist).
 
 ```bash
 python3 ~/.claude/skills/gap-analysis/check-agent-files.py .
 ```
 
-Then read the files yourself for what a script cannot see:
+Then read them for what a script cannot see:
 
 - **One instruction file, not two.** `CLAUDE.md` should be the single line `@AGENTS.md`
   and `AGENTS.md` should carry the content. Two files with independent content is a
