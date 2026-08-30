@@ -1,6 +1,7 @@
 ---
 name: redaction
-description: Rewrites a text to Alexandre's writing rules. Use when reviewing or cleaning any text before it ships - documentation, a skill, a guideline, a message, site copy, a commit message.
+description: Rewrites a text into Alexandre's own writing voice - documentation, guidelines, skills, commit messages, a note to a colleague.
+disable-model-invocation: true
 ---
 
 # Redaction
@@ -18,19 +19,18 @@ French and English alike.
 
 ## Sentences
 
-- Short and simple. An advanced construction blurs the reading, it does not elevate it.
+- Short and simple. An advanced construction blurs the reading.
 - One idea per sentence.
 - Bullets whenever the content is a list. Prose only when it carries an argument.
 
 ## Say it once
 
-- Cut the reinforcement sentence. Stating a rule then restating it in negative or in
-  stronger form adds nothing.
+- Cut a sentence that restates the one before it in negative or in stronger form.
 - One strong example beats three average ones.
 
 ## Order
 
-- The rule first, the circumstance after. Never open with a condition.
+- The rule first, the circumstance after.
 - Lead with the result, not with the approach that produced it.
 
 ## Substance
@@ -44,8 +44,8 @@ French and English alike.
 
 - No project names, no company names, no ticket references, code examples included.
 - No project state. "X has migrated" is true in one repo and a lie in its neighbours.
-- Cut what the tool already documents, and what lives elsewhere in the repo. A copy
-  drifts, and then it lies.
+- Cut what the tool already documents, and what lives elsewhere in the repo: the copy
+  drifts out of date.
 
 ## Two tests before returning the text
 
