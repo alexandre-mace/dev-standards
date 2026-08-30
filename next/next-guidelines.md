@@ -8,6 +8,7 @@
 |---|---|---|
 | Next.js | 16.3 | App Router, Active LTS. Releases de sécurité préannoncées : patcher sous une semaine (ex. 16.3.3, critique le 26/08/2026). `catchError`/`retry()` stables pour les error boundaries ; `middleware.ts` déprécié au profit de `proxy.ts` |
 | React | 19.2 | |
+| `next/image` | 16 | Defaults : `qualities` reduit a `[75]`, cache TTL a 4 h, et une src locale avec query string exige `images.localPatterns` |
 | TypeScript | 5.9 | TS 7 natif est GA. Migration 5.9 vers 6.0 puis 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3 |
 | Tailwind | 4 | PostCSS, zéro `tailwind.config` |
 | shadcn | base Base UI, style Nova | Le défaut de l'écosystème depuis juillet 2026 |
@@ -35,7 +36,7 @@ Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 **Commiter le bloc auto-géré d'`AGENTS.md`** sans l'éditer : `next dev` le maintient et il pointe la doc de la version installée.
 
-**`images.remotePatterns`** si le site charge des images distantes. Lister les hôtes réels, jamais `hostname: "**"`. Trois défauts de `next/image` en 16 valent d'être connus : `qualities` réduit à `[75]`, cache TTL à 4 h, et une src locale avec query string exige `images.localPatterns`.
+**Lister les hôtes réels dans `images.remotePatterns`**, jamais `hostname: "**"` : un joker laisse n'importe qui faire transiter ses images par l'optimiseur du site.
 
 ## 2. Composants
 
