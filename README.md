@@ -124,6 +124,10 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 `~/.claude/skills/`, and `agent/` into `~/.claude/rules/`. Re-run it whenever a skill or
 a rule is added or renamed.
 
+It also links `local/skills/`, which is gitignored. This repository is public, so a
+procedure whose publication is itself the problem lives there instead: it is installed
+like any other skill, and it does not leave the machine.
+
 ### In a project
 
 This repo is the source and has no `docs/` of its own. Clone it as a sibling of your

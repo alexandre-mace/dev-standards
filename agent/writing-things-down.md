@@ -11,6 +11,7 @@ goes stale without telling anyone.
 | True on every project, about behaviour or writing | `dev-standards/agent/` |
 | Technical, tied to one stack | that stack's file in `dev-standards/` |
 | A procedure run on demand | a skill in `dev-standards/skills/` |
+| The same, but nobody outside should read it | `dev-standards/local/skills/`, gitignored. `install.sh` links it like any other skill. This repository is public: an infrastructure access path, an internal address, anything whose publication is itself the problem, goes here. It will not survive a clone, and that is the trade being made |
 | Working state for the feature in progress | `.claude/plan.md`, deleted by `/deploy` |
 | Where a project currently stands against its guidelines | nowhere: `/gap-code` measures it |
 

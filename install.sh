@@ -16,7 +16,8 @@ TARGET_DIR="$HOME/.claude/skills"
 
 mkdir -p "$TARGET_DIR"
 
-for skill_dir in "$SKILLS_DIR"/*/; do
+for skill_dir in "$SKILLS_DIR"/*/ "$ROOT_DIR"/local/skills/*/; do
+  [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
   link_path="$TARGET_DIR/$skill_name"
 

@@ -27,6 +27,18 @@ Copy this checklist into your reply and tick as you go.
 After the UAT: fix, `/quality`, `/live-test`, `/commit`, `/review-diff` on the delta, then
 **the user** runs `/deploy`.
 
+## Minor changes do not run the chain
+
+A wording fix, a colour, a label, a one-line correction with no logic behind it: eleven
+steps cost more than the change. `/quality`, look at the result, `/commit`, then ship it
+by whatever the repository's own flow is, in its `AGENTS.md`. No plan, no gate, and
+**no question before shipping**. Asking "shall I deploy?" on a two-line change is
+friction, not safety, and it trains the habit of not reading the ones that matter.
+
+It stops being minor the moment it touches money, permissions or personal data, changes a
+schema, adds a dependency, alters a shared component, or leaves you unsure. Then the full
+chain applies, gates included. Unsure counts as not minor.
+
 ## The two gates
 
 - **Step 2, the plan.** Announce the assumed decisions and the tests owed, a few lines,
