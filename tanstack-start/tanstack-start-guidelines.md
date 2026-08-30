@@ -13,7 +13,7 @@
 | Convex | 1.45 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query` |
 | Clerk | `@clerk/tanstack-react-start` 1.5 | Optional. First-class support when the app has accounts |
 | Zod | 4.5 | |
-| Vite | 8.2 | |
+| Vite | 8.2 | With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
 | Biome | 2.5 | Lint and format |
 | Vitest / Playwright | 4.1 / 1.62 | |
@@ -63,6 +63,14 @@ export const getUser = createServerFn({ method: 'GET' })
 ```
 
 Call them directly in a `loader`, or through `useServerFn()` in a component.
+
+**React Compiler enabled**, so no hand-written `useMemo`, `useCallback` or `React.memo`. On Vite the native Rust path is roughly ten times faster than the Babel plugin, and needs `oxc-transform-react` as an optional peer:
+
+```ts
+plugins: [react({ compiler: true })]
+```
+
+The plugin still marks it experimental, so the Babel path (`reactCompilerPreset()` through `@rolldown/plugin-babel`) remains the stable fallback. Compiler lint rules ship with `eslint-plugin-react-hooks` >= 7; the standalone `eslint-plugin-react-compiler` package is frozen, do not install it.
 
 **Loaders feed the Query cache** rather than fetching in a component. A route then renders from cache and revalidates, instead of blocking on a waterfall.
 

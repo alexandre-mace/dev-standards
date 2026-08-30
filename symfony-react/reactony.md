@@ -869,7 +869,7 @@ Le `queryClient` partagé (`assets/lib/queryClient.ts`) a des defaults sensibles
 
 ### Performance : React Compiler
 
-Le [React Compiler](https://react.dev/learn/react-compiler) est **activé dans ce projet**. ⚠️ Depuis `@vitejs/plugin-react` v6 (Vite 8), l'option `react({ babel: {...} })` n'existe plus (transforms Oxc) et est **ignorée silencieusement**. Deux configs exécutent réellement le compiler :
+Le [React Compiler](https://react.dev/learn/react-compiler) est **activé**. ⚠️ Depuis `@vitejs/plugin-react` v6 (Vite 8), l'option `react({ babel: {...} })` n'existe plus (transforms Oxc) et est **ignorée silencieusement**. Deux configs exécutent réellement le compiler :
 
 **Voie native (plugin-react ≥ 6.1, août 2026)** : le port Rust du compiler, plus de 10× plus rapide que le plugin Babel (~100 ms → ~10 ms par fichier) :
 
