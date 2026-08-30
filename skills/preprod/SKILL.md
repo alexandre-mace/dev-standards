@@ -9,6 +9,11 @@ allowed-tools: Bash(git *)
 
 Merge the current feature branch into `preprod` for testing, then return to the feature branch.
 
+**Applies to**: the Symfony + React stack, which has a long-lived `preprod` branch
+deployed on CleverCloud. On Next and TanStack Start there is nothing to merge: Vercel
+builds a preview per branch, so pushing the feature branch is the UAT deploy. Use
+`/verify` plus that preview URL instead, and skip this skill.
+
 ## Pre-checks
 
 1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).

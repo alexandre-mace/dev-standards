@@ -1,75 +1,72 @@
 ---
 name: diagnosing-bugs
-description: Boucle disciplinée de correction de bug - reproduire, hypothèse, instrumenter, cause racine, test de régression. Déclencheurs - bug, régression, "ça marche plus", erreur en prod, issue Sentry, 500.
+description: Disciplined bug-fix loop - reproduce, one hypothesis, instrument, root cause, regression test. Triggers - bug, regression, "it stopped working", production error, Sentry issue, 500.
 ---
 
 # Diagnosing bugs
 
-Prend la place de `/ticket` quand la tâche est « répare ce comportement » et
-non « construis cette chose ». Entrées typiques : ticket bug de la PM, issue
-Sentry, trouvaille de `/check-logs`, comportement cassé en préprod. La suite
-du fil ne change pas : `/quality` → `/commit` → `/preprod` → `/deploy`.
+Takes the place of `/ticket` when the task is "fix this behaviour" rather than "build
+this thing". Typical inputs: a bug ticket from the PM, a Sentry issue, a finding from
+`/check-logs`, something broken in UAT. The rest of the thread is unchanged:
+`/verify` → `/quality` → `/commit` → `/review-diff` → `/preprod` → `/deploy`.
 
-La boucle a cinq crans. **Dans cet ordre, sans en sauter.**
+Five steps. **In this order, none skipped.**
 
-## 1. Reproduire avant tout
+## 1. Reproduce, before anything else
 
-Écrire la reproduction qui échoue **avant** de réfléchir au correctif :
+Write the failing reproduction **before** thinking about the fix:
 
-- un test PHPUnit ou Vitest si le bug est atteignable en test (le meilleur cas,
-  il resservira au cran 5) ;
-- sinon un script, un `curl` sur la route, un scénario Playwright ;
-- pour un bug Sentry : partir de l'événement réel (payload, stack, breadcrumbs
-  via le MCP Sentry), pas d'une reconstitution imaginée. Le skill
-  `sentry-fix-issues` connaît cette plomberie (recherche d'issues, lecture
-  d'événements, analyse Seer) : s'appuyer dessus pour ce cran et pour la
-  résolution au cran 5 : la discipline de la boucle reste celle d'ici.
+- a PHPUnit or Vitest test if the bug is reachable from a test, which is the best case
+  because it becomes step 5;
+- otherwise a script, a `curl` against the route, a Playwright scenario, or the browser
+  itself through `/verify` when the bug only shows in the interface;
+- for a Sentry bug: start from the real event (payload, stack, breadcrumbs through the
+  Sentry MCP), never from an imagined reconstruction. The `sentry-fix-issues` skill
+  knows that plumbing; lean on it here and for resolving the issue at step 5, while the
+  discipline of this loop stays the one described here.
 
-**Pas de repro = pas de fix.** Un correctif non reproduit est une hypothèse
-déguisée. Si la reproduction est réellement impossible (bug dépendant d'un état
-prod inaccessible), le dire explicitement et compenser au cran 3 par de
-l'instrumentation en prod.
+**No reproduction, no fix.** An unreproduced fix is a hypothesis in disguise. If
+reproducing is genuinely impossible (a bug depending on inaccessible production state),
+say so explicitly and compensate at step 3 with instrumentation in production.
 
-## 2. Localiser et formuler UNE hypothèse
+## 2. Locate, and state ONE hypothesis
 
-- Lire l'erreur **en entier** : le vrai message, la vraie ligne, pas le résumé.
-- `git log -- <zone>` : les changements récents d'abord, la moitié des bugs
-  sont dans le dernier commit qui a touché la zone.
-- Énoncer l'hypothèse **en une phrase** dans la conversation. Une hypothèse
-  non formulée ne peut pas être réfutée.
+- Read the error **in full**: the real message, the real line, not the summary.
+- `git log -- <area>`: recent changes first. Half of all bugs are in the last commit
+  that touched the area.
+- State the hypothesis **in one sentence**, out loud in the conversation. An unstated
+  hypothesis cannot be refuted.
 
-## 3. Vérifier l'hypothèse par l'instrument, jamais par le correctif
+## 3. Test the hypothesis with an instrument, never with the fix
 
-Log ciblé, `dump()`, test unitaire de la fonction suspecte, requête SQL à la
-main. L'hypothèse est confirmée ou tombe. Si elle tombe : retour au cran 2,
-hypothèse suivante. **Interdiction de « corriger pour voir »** : chaque
-correctif spéculatif pollue la zone et détruit la valeur de la repro.
+A targeted log, a `dump()`, a unit test of the suspect function, a SQL query by hand.
+The hypothesis is confirmed or it falls. If it falls: back to step 2, next hypothesis.
+**No fixing to see what happens**: every speculative fix pollutes the area and destroys
+the value of the reproduction.
 
-## 4. Corriger la cause racine, pas le symptôme
+## 4. Fix the root cause, not the symptom
 
-- Si le symptôme est dans A mais la cause dans B, on corrige B. Rembourrer A
-  (null-check, try/catch, valeur par défaut) laisse le bug vivant pour le
-  prochain appelant.
-- Rayon d'impact sur B : lister les appelants (Grep), lancer les tests de la
-  zone (`bin/phpunit --filter`, `pnpm test`). Un fix de cause racine touche du
-  code partagé plus souvent qu'un pansement.
+- If the symptom is in A but the cause is in B, fix B. Padding A with a null check, a
+  try/catch or a default value leaves the bug alive for the next caller.
+- Blast radius on B: list the callers (Grep), run the tests covering the area
+  (`bin/phpunit --filter`, `pnpm test`). A root-cause fix touches shared code far more
+  often than a patch does.
 
-## 5. La repro devient le test de régression
+## 5. The reproduction becomes the regression test
 
-- Le test du cran 1 (ou sa version propre) entre dans la suite. Il doit avoir
-  **échoué avant le fix et passer après** : c'est la preuve dans les deux
-  directions. La montrer : sortie avant, sortie après.
-- Fermer la boucle d'origine : issue Sentry → la résoudre ; trouvaille de
-  `/check-logs` → la noter ; ticket PM → signaler ce qui a été corrigé et la
-  cause en une phrase.
+- The test from step 1, or a clean version of it, joins the suite. It must have
+  **failed before the fix and pass after**: that is proof in both directions. Show it,
+  output before and output after.
+- Close the original loop: a Sentry issue gets resolved; a `/check-logs` finding gets
+  noted; a PM ticket gets a one-sentence answer on what was fixed and why it happened.
 
-## Règles
+## Rules
 
-- Ne jamais annoncer « corrigé » sur la seule disparition du symptôme : c'est
-  le test de régression qui fait foi.
-- Un bug qui révèle un pattern fragile répété ailleurs : le **signaler** (une
-  ligne, candidat pour `/gap-analysis`), ne pas partir le corriger partout :
-  le périmètre du fix reste le bug.
-- Si deux hypothèses tombent d'affilée, s'arrêter et présenter l'état : ce qui
-  est exclu, ce qui reste possible, ce qui manque pour trancher. Trois fixes
-  spéculatifs valent moins qu'un point d'étape honnête.
+- Never announce "fixed" on the disappearance of the symptom alone: the regression test
+  is what settles it.
+- A bug revealing a fragile pattern repeated elsewhere: **flag it** in one line, as a
+  candidate for `/gap-analysis`. Do not go and fix it everywhere: the scope of the fix
+  stays the bug.
+- If two hypotheses fall in a row, stop and present the state: what is ruled out, what
+  remains possible, what is missing to decide. Three speculative fixes are worth less
+  than one honest checkpoint.

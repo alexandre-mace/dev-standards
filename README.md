@@ -42,36 +42,49 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 | Skill | Purpose |
 |---|---|
-| `commit` | Conventional Commits message generator for staged changes |
+| `ticket` | Investigate a ticket, settle what the code can settle, write the plan to `docs/ticket.md` |
 | `feature-start` | Start a new feature branch from an up-to-date main |
-| `preprod` | Push current feature branch to the `preprod` branch for testing |
-| `deploy` | Merge current feature branch into `main` and push |
-| `quality` | Run all quality checks (PHPStan, PHP-CS-Fixer, tsc, ESLint, Prettier) |
-| `ticket` | Deep-analyze a product ticket before coding (forces questions, prevents premature implementation) |
-| `gap-analysis` | Audit a codebase against the guidelines, produce `docs/gap-analysis.md` |
+| `verify` | Exercise the feature in a real browser: golden path, one edge case, console and network |
+| `quality` | Run every mechanical check the stack mandates, tests and contract drift included |
+| `commit` | Conventional Commits message generator for staged changes |
+| `review-diff` | Review the diff against the ticket, the guidelines and the Definition of Done |
+| `preprod` | Push the current feature branch to `preprod` (Symfony stack only) |
+| `deploy` | Merge the current feature branch into `main` and push |
+| `diagnosing-bugs` | Disciplined bug-fix loop: reproduce, hypothesis, instrument, root cause, regression test |
+| `gap-analysis` | Audit a codebase against its stack's guidelines, produce `docs/gap-analysis.md` |
 | `sota-gap` | Measure how far the guidelines sit from the state of the art, web sources being the judge |
-| `check-implementation` | Verify recent code against latest official docs of the techs used |
+| `check-implementation` | Verify recent code against the official docs of the versions actually used |
 | `check-logs` | Prod health audit: CleverCloud logs + Messenger DB + Sentry, prioritized report |
 | `unslop` | Strip AI writing tells from any text, French and English |
-| `review-diff` | Pre-deploy review: diff vs ticket + guidelines, then runs `/quality` (+ `/check-implementation` if relevant) |
-| `diagnosing-bugs` | Disciplined bug-fix loop: reproduce, hypothesis, instrument, root cause, regression test |
 
 ### The thread of a feature
 
-The skills chain in a fixed order:
+The skills chain in a fixed order. Each one hands the next something it can check,
+so that "done" is a verified fact rather than a claim.
 
 ```
-/ticket  →  /feature-start  →  implement  →  /quality  →  /commit  →  /review-diff¹  →  /preprod  →  UAT  →  /review-diff²  →  /deploy
-  │                               │                                        │                                      │
-  │                               │                                        └─ pass 1: full review                 └─ pass 2: delta + fresh /quality
-  │                               └─ Feature playbook (symfony-guidelines §one-shot)
-  └─ investigation + blast radius + assumed decisions
+/ticket → /feature-start → implement → /verify → /quality → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy
+   │                          │            │          │                  │                                  │
+   │                          │            │          │                  └─ full review                   └─ delta + fresh /quality
+   │                          │            │          └─ static analysis, tests, contract drift
+   │                          │            └─ the app, in a browser
+   │                          └─ the stack's feature playbook
+   └─ investigation, blast radius, assumed decisions, tests owed → docs/ticket.md
 
 Bug?  /diagnosing-bugs replaces /ticket, the rest of the thread is identical.
 ```
 
-Two rules the diagram cannot show:
+What the diagram cannot show:
 
+- **The plan is written down.** `/ticket` leaves `docs/ticket.md` behind: the
+  acceptance criteria, the assumed decisions, and the tests the work owes. It is what
+  survives a compacted context, and what `/review-diff` reads instead of trusting its
+  own memory of the conversation.
+- **Three different things have to be true**, and each has its own step: it does what
+  was asked (`/review-diff` against the ticket), it works (`/verify`), and it is
+  built the way the stack says (`/quality` plus `/review-diff` against the guidelines).
+  Green checks on a feature nobody ran is the failure mode this order exists to
+  prevent.
 - `/feature-start` cuts the branch once the plan is clear, not before.
 - Commits are save points, the merge is the irreversible act: nothing lands on
   main unreviewed, UAT fixes included.

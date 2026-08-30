@@ -1,133 +1,118 @@
 ---
 name: quality
-description: Run all quality checks on the codebase. Auto-detects project type (Symfony, Next.js, or both) and runs the appropriate checks. Use before committing or to verify code quality.
+description: Run every mechanical check the stack's guidelines mandate. Auto-detects the stack (Symfony+React, Next, TanStack Start) and runs what applies. Use before committing, or to check quality mid-work.
 ---
 
-# Quality Assurance Checks
+# Quality gate
 
-Run quality checks adapted to the current project. Detect the project type first, then run only the relevant checks.
+Run the checks that a machine can settle on its own. Detect the stack first, then
+run only what applies to it.
 
-## Project detection
+**Where the line falls.** This skill runs everything that is fast and headless. What
+needs a browser belongs to `/verify`; the full E2E suite belongs to CI. Keep this
+gate under roughly 30 seconds so it can be run often, and never make it the reason
+someone stops running it.
 
-Detect the project type by checking for these files in the working directory:
+## Stack detection
 
-- **Symfony**: `composer.json` contains `symfony/framework-bundle`
-- **Next.js**: `next.config.js`, `next.config.ts`, or `next.config.mjs` exists
-- **React (standalone)**: `package.json` contains `react` but no Next.js config
+- **Symfony + React**: `composer.json` contains `symfony/framework-bundle` (plus a
+  `package.json`, almost always)
+- **Next**: a `next.config.{js,ts,mjs}` exists
+- **TanStack Start**: `package.json` depends on `@tanstack/react-start`
+- **Standalone React**: a `package.json` with `react` and none of the above
 
-A project can be both (e.g. Symfony + React).
+A project can be more than one thing. Run every branch that matches.
 
-## Symfony checks
-
-Run these only if Symfony is detected:
-
-### PHPStan (static analysis)
+## Symfony
 
 ```bash
 vendor/bin/phpstan analyse --no-progress
-```
-
-If not installed, report as SKIPPED and suggest: `composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules`
-
-### PHP-CS-Fixer (code style)
-
-```bash
 vendor/bin/php-cs-fixer fix --dry-run --diff
-```
-
-If not installed, report as SKIPPED and suggest: `composer require --dev friendsofphp/php-cs-fixer`
-
-Do NOT run without `--dry-run` : show violations only, never auto-fix.
-
-### Doctrine schema validation
-
-```bash
 php bin/console doctrine:schema:validate --skip-sync
-```
-
-### Symfony container lint
-
-```bash
 php -d memory_limit=256M bin/console lint:container
-```
-
-### Composer security audit
-
-```bash
 composer audit
-```
-
-Reports known vulnerabilities in PHP dependencies.
-
-### PHPUnit tests
-
-```bash
 bin/phpunit
 ```
 
-If `bin/phpunit` does not exist, skip.
+- Never run PHP-CS-Fixer without `--dry-run`: show violations, don't silently rewrite
+  the working tree under the user.
+- A tool that is not installed is SKIPPED, with the `composer require --dev` line to
+  install it. Not a FAIL: a project that never had PHPStan isn't failing PHPStan.
+- `bin/phpunit` absent is SKIPPED. But note it: the guidelines mandate a test suite,
+  so its absence is a gap, not a neutral fact.
 
-## Next.js checks
+### Contract drift (Symfony + React)
 
-Run these only if Next.js is detected:
+If the project generates its frontend SDK from OpenAPI (a `types` target in the
+`Makefile`, or an `openapi.yaml` at the root):
 
-### Production build
+```bash
+make types
+git diff --exit-code openapi.yaml assets/lib/api/
+```
+
+A non-empty diff is a FAIL: the backend contract moved and the generated SDK was not
+regenerated, so the frontend is about to break silently. This is in the Definition of
+Done, and it is the cheapest gate in the whole stack. Leave the regenerated files in
+place, staged or not, and say so.
+
+## Next
 
 ```bash
 pnpm build
 ```
 
-The build IS the check: it type-checks and fails on compile errors. Do NOT use
-`next lint` (removed in Next 16) or `--dry-run` (never existed) : linting is
-covered by the shared ESLint check below.
+The build **is** the check: it type-checks and fails on compile errors. Do not use
+`next lint` (removed in Next 16).
 
-## Shared frontend checks (React, Next.js, or Symfony+React)
-
-Run these if `package.json` exists:
-
-### TypeScript type check
+## TanStack Start
 
 ```bash
-pnpm tsc --noEmit
+pnpm build
 ```
 
-If no `tsconfig.json` exists, skip.
+Same reasoning. Vite's build surfaces the route-tree and typed-router errors that
+`tsc` alone can miss.
 
-### ESLint
+## Every project with a `package.json`
 
 ```bash
-pnpm lint
+pnpm tsc --noEmit      # skip if no tsconfig.json
+pnpm lint              # skip if no lint script
+pnpm format:check      # skip if no format:check script
+pnpm test              # skip if no test script
 ```
 
-If no `lint` script in `package.json`, skip.
+`pnpm test` is Vitest, and the guidelines mandate it on all three stacks. Running it
+here is what makes "the tests pass" a fact rather than an assumption. Pass whatever
+flag the project needs for a single non-watch run.
 
-### Prettier
+**Not run here**: Playwright (`pnpm test:e2e`), which needs a browser and minutes,
+and Psalm's taint analysis, which is a CI job. Say they were not run rather than
+letting the report imply everything was covered.
 
-```bash
-pnpm format:check
-```
-
-If no `format:check` script in `package.json`, skip.
-
-## Reporting
-
-After all checks, show a summary table adapted to the detected project type:
+## Report
 
 ```
-Quality Report : [Symfony + React | Next.js | etc.]
-----------------------------------------------------
+Quality : <detected stack>
+------------------------------------------------
 PHPStan:              PASS / FAIL / SKIPPED (not installed)
 PHP-CS-Fixer:         PASS / FAIL / SKIPPED (not installed)
 Doctrine schema:      PASS / FAIL
 Container lint:       PASS / FAIL
 Composer audit:       PASS / FAIL (N vulnerabilities)
-PHPUnit:              PASS / FAIL / SKIPPED (no bin/phpunit)
-Next build:           PASS / FAIL
+PHPUnit:              PASS / FAIL / SKIPPED (no suite)
+Contract drift:       PASS / FAIL / n/a
+Build:                PASS / FAIL
 TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
-ESLint:               PASS / FAIL / SKIPPED (no lint script)
-Prettier:             PASS / FAIL / SKIPPED (no format:check script)
+ESLint:               PASS / FAIL / SKIPPED (no script)
+Prettier:             PASS / FAIL / SKIPPED (no script)
+Vitest:               PASS / FAIL / SKIPPED (no script)
+Not run here:         Playwright (CI), Psalm (CI)
 ```
 
-Only show rows for checks that apply to the detected project type.
+Only show the rows that apply. For each FAIL, show the real error output and the fix,
+never a paraphrase.
 
-For each FAIL, show the errors and suggest fixes.
+A SKIPPED row that the guidelines mandate (no test suite, no PHPStan) is worth one
+line at the end: it is a gap for `/gap-analysis`, not something to fix inside this run.

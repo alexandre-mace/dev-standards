@@ -1,60 +1,140 @@
 ---
 name: ticket
-description: Analyse en profondeur un ticket produit collé par l'utilisateur avant toute implémentation. L'agent investigue le code à fond, tranche lui-même tout ce que le code permet de trancher, et ne remonte que les points qui changeraient réellement le travail à faire.
+description: Investigate a product ticket in depth before any implementation, settle everything the code can settle, and write the plan down. Raises only what would genuinely change the work to do.
 ---
 
-L'utilisateur vient de coller un ticket (typiquement écrit par sa PM) dans `$ARGUMENTS`. Ton rôle est d'abord **d'investiguer**, pas de foncer dans l'implémentation. Mais investiguer sert à **décider**, pas à collectionner des questions.
+The user has pasted a ticket (typically written by their PM) into `$ARGUMENTS`. Your
+job is to **investigate** first, not to rush into implementation. But investigating
+serves to **decide**, not to collect questions.
 
 ## Ticket
 
 $ARGUMENTS
 
-## Processus à suivre
+## Process
 
-### 1. Comprendre le ticket
-- Relis attentivement le ticket ci-dessus.
-- Identifie le *quoi* (ce qui est demandé), le *pourquoi* (valeur métier, si explicitée), et les critères d'acceptation implicites ou explicites.
-- Note les zones floues, les contradictions potentielles, ou les hypothèses que tu ferais.
+### 1. Understand the ticket
 
-### 2. Investiguer le code en profondeur
-- Explore la codebase pour localiser les fichiers, modules, composants, routes, entités, services concernés.
-- Utilise les outils de recherche (Glob, Grep, Read) : lance plusieurs recherches en parallèle quand c'est pertinent.
-- Lis réellement le code impacté (pas juste les noms de fichiers) pour comprendre l'existant : architecture, conventions locales, dépendances, tests, effets de bord possibles.
-- Vérifie si des patterns similaires existent déjà dans le projet à réutiliser plutôt que réinventer.
-- **Cartographie le rayon d'impact de ce que tu vas modifier** : liste les appelants de chaque symbole touché (Grep), repère les tests qui couvrent la zone et prévois de les lancer (`bin/phpunit --filter`, `pnpm test`), et signale explicitement quand le code touché est partagé entre plusieurs pages, composants ou lignes de produit. Un petit changement dans du code partagé n'est pas un petit changement.
-- Consulte les guidelines du projet (ex. `docs/symfony-guidelines.md`, `docs/reactony.md`, `CLAUDE.md`) si elles existent.
+- Read it closely. Identify the *what* (what is being asked), the *why* (business
+  value, when stated), and the acceptance criteria, explicit or implicit.
+- Note the grey areas, the potential contradictions, the assumptions you would make.
 
-### 3. Trancher tout ce qui peut l'être
+### 2. Investigate the code in depth
 
-Reprends chaque zone d'ombre de l'étape 1 et essaie de la lever **toi-même** avant d'envisager de la remonter. Le plus souvent, la réponse est déjà dans le code :
+- Explore the codebase for the files, modules, components, routes, entities and
+  services involved.
+- Use the search tools (Glob, Grep, Read); run several searches in parallel when it
+  helps.
+- Actually read the impacted code, not just the file names: architecture, local
+  conventions, dependencies, tests, possible side effects.
+- Check whether a similar pattern already exists in the project, to reuse rather than
+  reinvent.
+- **Map the blast radius of what you are about to change**: list the callers of every
+  symbol touched (Grep), find the tests covering the area and plan to run them
+  (`bin/phpunit --filter`, `pnpm test`), and say explicitly when the code is shared
+  across several pages, components or product lines. A small change in shared code is
+  not a small change.
+- Read the project's guidelines (`docs/symfony-guidelines.md`, `docs/reactony.md`,
+  `docs/next-guidelines.md`, `docs/tanstack-start-guidelines.md`, `AGENTS.md`).
 
-- Le modèle impose-t-il la réponse ? (champ NOT NULL, contrainte, validateur existant qui bloquerait déjà)
-- Une seule lecture préserve-t-elle le sens de ce qui existe ? Alors c'est celle-là.
-- Le ticket lui-même donne-t-il la réponse en creux ? (« il faut pouvoir saisir » ≠ « la saisie est obligatoire », une colonne « proposé par défaut » décrit un défaut surchargeable…)
-- Existe-t-il un défaut conservateur qui ne peut pas produire de résultat faux ? (ne rien afficher plutôt qu'une valeur peut-être fausse, dégrader proprement plutôt que bloquer)
+### 3. Settle everything that can be settled
 
-Ce qui se tranche ainsi n'est pas une question : c'est une **hypothèse assumée**, que tu documentes dans le code et que tu annonces en une ligne.
+Take each grey area from step 1 and try to resolve it **yourself** before considering
+raising it. Most often the answer is already in the code:
 
-### 4. Faire le point avec l'utilisateur
+- Does the model force the answer? (a NOT NULL column, a constraint, an existing
+  validator that would already block it)
+- Does a single reading preserve the meaning of what exists? Then that is the one.
+- Does the ticket answer it in the negative space? ("it must be possible to enter" is
+  not "entering is mandatory"; a column "offered by default" describes an overridable
+  default)
+- Is there a conservative default that cannot produce a wrong result? (show nothing
+  rather than a possibly wrong value, degrade cleanly rather than block)
 
-Par défaut, tu **implémentes** avec tes hypothèses assumées, et tu les énonces clairement.
+What gets settled this way is not a question: it is an **assumed decision**, which you
+document in the code and announce in one line.
 
-Ne remonte que ce qui remplit les deux conditions à la fois :
-- ça change réellement le travail à faire (pas seulement la formulation d'un libellé) ;
-- **et** aucune hypothèse raisonnable ne permet d'avancer sans risque de livrer faux, ou le code ne contient tout simplement pas l'information (un champ qui n'existe nulle part, une donnée métier que seul le produit détient).
+### 4. Name the tests the work owes
 
-Distingue trois catégories, sans les mélanger :
-- **Ce que tu tranches** : la réponse et son raisonnement en une ou deux lignes.
-- **Ce que tu signales** : un vrai constat qui n'attend pas de réponse pour avancer (un référentiel trop pauvre, une décision antérieure que le ticket renverse, un périmètre qui grossit). Tu le dis, tu continues.
-- **Ce qui bloque vraiment** : idéalement zéro, souvent un. S'il y en a plus de deux ou trois, relis l'étape 3, tu n'as probablement pas assez cherché.
+Before writing a line, say which tests this ticket requires. The Definition of Done in
+the guidelines is the reference, and it is not negotiable per ticket:
 
-Quand un point bloque un seul lot, livre les autres et pose la question en parallèle plutôt que de tout arrêter.
+- a new non-trivial API route owes a functional test (HTTP contract plus DB state)
+- new money or tier arithmetic owes a property-based test
+- a new user journey owes a Playwright spec
+- a form component with validation owes a Vitest spec covering the 422s
+- a fragile component about to be refactored owes its safety net **first**
 
-Dans tous les cas, résume brièvement ta compréhension et ton plan avant de coder, puis implémente en suivant les conventions du projet. Prends le temps de bien faire, pas de raccourcis.
+If the ticket owes no test, say that too, and why. What is never named is never
+written.
 
-### 5. Règles générales
-- **Investigation d'abord, code ensuite.** Ne saute jamais directement à l'implémentation sans avoir lu le code pertinent.
-- **Une incohérence se prouve, elle ne se soupçonne pas.** Si tu crois en voir une, va vérifier dans le code avant de la remonter : la moitié se dissipent (« ça n'existe pas » devient « ça existe déjà », « c'est ambigu » devient « une seule lecture tient »). Ne remonte que ce que tu as constaté.
-- **Deviner et raisonner ne sont pas la même chose.** Ne bluffe jamais sur un fait : va le vérifier. Mais quand le code et le ticket permettent de conclure, conclure n'est pas bluffer, c'est ton travail.
-- **Le doute se paie en risque, pas en questions.** Avant de demander, estime ce qu'il en coûterait de se tromper. Si l'erreur est visible et rattrapable en une ligne, tranche et signale. Réserve la question à ce qui serait coûteux ou silencieux.
-- **Respecte les conventions locales.** Réutilise les patterns et composants existants plutôt que d'en créer de nouveaux.
+### 5. Write the plan down
+
+Write `docs/ticket.md`, overwriting it: it always holds the feature in progress. It is
+what survives a compacted context, and what `/review-diff` reads to check the work
+against the intent rather than against its own memory.
+
+```markdown
+# <ticket title>
+
+## What is asked
+<two or three lines, and the acceptance criteria as a list>
+
+## Blast radius
+<the files and symbols touched, and who calls them>
+
+## Assumed decisions
+- <the decision> : <the reason, one line>
+
+## Tests owed
+- [ ] <the test, and where it goes>
+
+## Raised, not blocking
+- <the finding>
+
+## Blocking
+- <the question, ideally none>
+```
+
+### 6. Check in with the user
+
+By default you **implement** with your assumed decisions, stating them clearly.
+
+Only raise what meets both conditions at once:
+
+- it genuinely changes the work to do (not just the wording of a label);
+- **and** no reasonable assumption lets you move forward without risking shipping the
+  wrong thing, or the code simply does not hold the information (a field that exists
+  nowhere, a business fact only the product owns).
+
+Keep the three categories separate:
+
+- **What you settle**: the answer and its reasoning, one or two lines.
+- **What you raise**: a real finding that needs no answer to move on (a reference
+  table too thin, an earlier decision this ticket reverses, a scope that is growing).
+  Say it, carry on.
+- **What genuinely blocks**: ideally zero, often one. More than two or three means
+  going back to step 3, because you have not looked hard enough.
+
+When a point blocks only one batch, ship the others and ask in parallel rather than
+stopping everything.
+
+Either way, summarise your understanding and your plan before coding, then implement
+following the project's conventions. Take the time to do it properly, no shortcuts.
+
+## Rules
+
+- **Investigation first, code second.** Never jump to implementation without having
+  read the relevant code.
+- **An inconsistency is proven, not suspected.** If you think you see one, go and check
+  in the code before raising it: half of them dissolve ("it doesn't exist" becomes "it
+  already does", "it's ambiguous" becomes "only one reading holds"). Raise only what
+  you have observed.
+- **Guessing and reasoning are not the same thing.** Never bluff about a fact: go and
+  check it. But when the code and the ticket let you conclude, concluding is not
+  bluffing, it is the job.
+- **Doubt is paid in risk, not in questions.** Before asking, estimate what being wrong
+  would cost. If the mistake is visible and fixable in one line, decide and flag it.
+  Save the question for what would be expensive or silent.
+- **Respect local conventions.** Reuse the existing patterns and components rather than
+  inventing new ones.

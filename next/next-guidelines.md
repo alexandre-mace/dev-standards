@@ -145,3 +145,14 @@ Tests then become mandatory: Vitest and `convex-test` for the backend functions,
 - Hobby retention is 30 days: never rely on an old deployment URL as an archive.
 
 A host being retired becomes a redirect to the canonical domain, never a live duplicate.
+
+### Definition of Done
+
+A page or a feature is only done when every one of these is green:
+
+- [ ] `/quality` passes, which here means `pnpm build` plus the linter
+- [ ] `/verify` run: the golden path exercised in a browser, console and network clean
+- [ ] A new page exports its `metadata`; a new dynamic route has its `generateStaticParams`
+- [ ] Anything reading baked data: `pnpm data` re-run, and its control logs actually read
+- [ ] Nothing new under `components/ui/`: a gap in the kit is fixed in the kit, then propagated
+- [ ] With a backend (§6): Vitest and `convex-test` on the new functions, a Playwright spec on a new journey

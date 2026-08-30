@@ -16,32 +16,34 @@ Create a git commit following Conventional Commits convention.
 ## Commit message format
 
 ```
-type(scope): description concise en minuscules
+type(scope): short description in lower case
 ```
 
 ### Types
 
-| Type | Usage |
+| Type | Use |
 |------|-------|
-| `feat` | Nouvelle fonctionnalité ou ajout significatif |
-| `fix` | Correction de bug |
-| `refactor` | Restructuration sans changement de comportement |
-| `docs` | Documentation uniquement |
-| `test` | Ajout ou modification de tests |
-| `chore` | Maintenance, dépendances, config |
-| `perf` | Amélioration de performance |
+| `feat` | A new feature or a significant addition |
+| `fix` | A bug fix |
+| `refactor` | Restructuring with no behaviour change |
+| `docs` | Documentation only |
+| `test` | Adding or changing tests |
+| `chore` | Maintenance, dependencies, config |
+| `perf` | A performance improvement |
 
 ### Scope
 
-Le scope est le domaine métier impacté, en kebab-case. Exemples : `farm-model`, `parcours`, `adverts`, `skills-assessment`, `search-farm`, `foncier`, `dashboard`, `auth`, `api`, `css`, `typescript`.
+The business domain touched, in kebab-case. Take the vocabulary from the project's own
+recent commits rather than inventing one: `git log --oneline -20` shows the scopes
+already in use, and consistency matters more than the choice itself.
 
-Si les changements touchent plusieurs domaines, utiliser le scope principal ou un scope englobant.
+When the changes span several domains, use the main one, or a scope that covers them.
 
 ### Description
 
-- Minuscules, pas de point final
-- En français ou en anglais (suivre le style des commits récents)
-- Concis mais descriptif
+- Lower case, no full stop
+- French or English, following the style of the recent commits
+- Short but descriptive
 
 ## Rules
 

@@ -1,73 +1,120 @@
 ---
 name: sota-gap
-description: Mesure l'écart entre les guidelines dev-standards (stacks symfony-react, next et tanstack-start) et l'état de l'art, en confrontant leurs recommandations aux sources officielles du web. Déclencheurs - sota gap, veille, update guidelines, "les guidelines sont-elles à jour", "on est encore au sota ?", état de l'art.
+description: Measure how far the dev-standards guidelines sit from the state of the art, judging them against the ecosystem's own sources. Triggers - sota gap, veille, update guidelines, "are the guidelines still current?", state of the art.
 ---
 
 # sota-gap
 
-L'écart entre les guidelines et l'écosystème. Le pendant de `/gap-analysis`, qui
-mesure l'écart entre le code et les guidelines : ici l'autorité est inversée, c'est
-l'écosystème qui a raison et les guidelines qu'on corrige.
+The distance between the guidelines and the ecosystem. The mirror of `/gap-analysis`,
+which measures the distance between the code and the guidelines: here the authority is
+reversed, the ecosystem is right and the **guidelines** are what get corrected.
 
-Relie les guidelines de `~/dev/dev-standards` : stack pro `symfony-react/` (`symfony-guidelines.md`, `reactony.md`), stack perso `next/` (`next-guidelines.md`) et stack applicative `tanstack-start/` (`tanstack-start-guidelines.md`), confronte leurs recommandations aux **sources autoritaires du web** (changelogs, blogs officiels, migration guides), et propose des modifs là où tes reco ne sont plus au niveau de l'état de l'art. Lancé depuis un projet, les mêmes fichiers sont accessibles via ses symlinks `docs/`. Par défaut la veille couvre les trois stacks ; l'utilisateur peut en cibler une.
+It reads the guidelines in `~/dev/dev-standards`, confronts their recommendations with
+**authoritative web sources**, and proposes edits wherever the advice has fallen behind
+the state of the art. Run from inside a project, the same files are reachable through
+its `docs/` symlinks. By default the watch covers all three stacks; the user can target
+one.
 
-C'est une **veille techno** : les guidelines sont le point de référence, le web est le juge de paix, le repo du projet n'est **pas** une source (il peut contenir du legacy).
+| Stack | Files |
+|---|---|
+| Symfony + React | `symfony-react/symfony-guidelines.md`, `symfony-react/reactony.md` |
+| Next | `next/next-guidelines.md` |
+| TanStack Start | `tanstack-start/tanstack-start-guidelines.md` |
 
-## Steps
+This is a **tech watch**: the guidelines are the subject, the web is the judge, and a
+project repository is **not a source**, because it can be full of legacy.
 
-1. **Read current state**
-   - Read the stack's guidelines: `symfony-react/symfony-guidelines.md` + `symfony-react/reactony.md` (pro), `next/next-guidelines.md` (perso), `tanstack-start/tanstack-start-guidelines.md` (apps)
-   - Read `composer.json` / `package.json` of a representative project per stack to know exact versions (Symfony, PHP, React, TanStack Query, hey-api, Vite, Tailwind : et côté next : Next.js, kit @alexandremace, etc.)
+## 1. Read the current state
 
-2. **Research web-first : sources autoritaires uniquement**
+- Read the target guidelines in full, starting with the "Last watch" header: it dates
+  the previous run and lists the reference versions verified then. Start from that date.
+- Note every version claim and every prescription. Those are what you are about to test.
 
-   Les guidelines sont **prescriptives** : elles reflètent ce que les mainteneurs et la communauté recommandent MAINTENANT, pas ce que le projet fait aujourd'hui. Le travail est fondamentalement une **veille techno web**, pas une introspection du repo.
+## 2. Research, web first, authoritative sources only
 
-   **Sources à consulter**, par ordre de priorité :
-   - Changelogs GitHub officiels de chaque version majeure+mineure récente de chaque lib (`composer.json`/`package.json`)
-   - Blogs officiels : `symfony.com/blog`, `react.dev/blog`, `vercel.com/blog`, `doctrine-project.org/blog`, `www.php.net/releases`
-   - Release notes + migration guides des libs (souvent dans `UPGRADE.md` ou `CHANGELOG.md` du repo)
-   - RFC / discussions GitHub labellisés "RFC" ou "roadmap"
-   - Annonces de conférences récentes (SymfonyCon, ReactConf) pour les patterns émergents validés
+The guidelines are **prescriptive**: they say what the maintainers and the ecosystem
+recommend now, not what any project happens to do. The work is a web tech watch, not
+an introspection of a repository.
 
-   **Couvrir** (liste non exhaustive, explorer tout le package.json/composer.json) :
-   - **Symfony** : changelog complet version actuelle + précédente, nouveaux attributs, composants, deprecations
-   - **PHP** : nouveautés de la version en `require`
-   - **Doctrine** ORM/DBAL
-   - **React & écosystème** : React, TanStack Query, React Hook Form, Zod, @hey-api/openapi-ts, Vite, vite-plugin-symfony, Tailwind, Shadcn/UI, React Compiler
-   - **Stack next (perso)** : Next.js (blog officiel + changelog), React, Tailwind, shadcn/registry + react-aria-components (aria-nova), Vercel (plateforme et limites), next/og, lucide
+**Source hierarchy**: the repository (changelog, release notes, security advisories,
+the code itself), then the official documentation, then the published package
+(`npm view`, `composer show`, the registry API). A blog never establishes a fact; it
+only points at one. A watch built on second-hand content is worthless.
 
-   **À NE PAS faire** :
-   - **Ne pas s'inspirer des commits récents du projet**. Ils peuvent refléter du legacy, des compromis de livraison, ou des patterns antérieurs aux recommandations actuelles. Le repo est ce qu'on veut *corriger*, pas la source.
-   - Ne pas se fier à un seul tuto : cross-checker avec ≥ 2 sources autoritaires avant d'adopter un pattern.
-   - Ne pas citer des tutos de > 18 mois sans vérifier qu'ils sont toujours à jour.
-   - Ne pas inventer : si le pattern n'apparaît pas dans une source officielle, le marquer "à valider avec l'utilisateur".
+Where to look, in order:
 
-3. **Critical analysis** : For each guideline file, check:
-   - **Version references** : do they match the project's actual versions? Remove or update stale version mentions
-   - **Factual accuracy** : are the patterns and APIs described correctly?
-   - **Completeness** : are important patterns missing? (breaking changes, security, new stable features)
-   - **Clarity** : are there ambiguities, duplications, or unclear sections?
-   - **Consistency** : do the two files agree where they overlap? (DTO patterns, upload patterns, format:'json')
-   - **Setup/dependencies** : are all required packages actually declared in package.json/composer.json?
+- Official GitHub changelogs for every recent major and minor of every library named
+  in the guidelines
+- Official blogs: `symfony.com/blog`, `react.dev/blog`, `vercel.com/blog`,
+  `doctrine-project.org/blog`, `php.net/releases`, `tanstack.com/blog`
+- Release notes and migration guides, often `UPGRADE.md` or `CHANGELOG.md`
+- RFCs and GitHub discussions labelled "RFC" or "roadmap"
+- Recent conference announcements for emerging patterns that have actually landed
 
-4. **Present findings** : Show the user a structured summary:
-   - Corrections factuelles (must fix)
-   - Ajouts importants (should add)
-   - Améliorations de clarté (nice to have)
-   - What's already good and should stay
-   - **Si aucun changement n'est nécessaire** : le dire clairement ("Les guidelines sont à jour, aucune modification nécessaire") avec un résumé de ce qui a été vérifié, pour que l'utilisateur sache que la review a bien été faite.
+Cover every dependency the guidelines name, not a sample. And check three things a
+version bump alone will not tell you:
 
-5. **Apply changes** : After user approval, edit both files with the corrections. If no changes are needed, skip this step.
+- **Security floors**: an advisory that raises a minimum version is the highest-value
+  finding this skill produces. Look for them explicitly.
+- **A watch item whose trigger has fired**: the guidelines say "revisit when X is
+  stable" in several places. Go and check whether X is now stable. This is the single
+  most common way guidelines go quietly stale.
+- **Deprecations already merged** on the next branch, worth anticipating.
+
+What not to do:
+
+- **Do not take inspiration from a project's recent commits.** They may be legacy,
+  delivery compromises, or patterns older than the current recommendation. The repo is
+  what we want to *correct*, not the source.
+- Do not trust a single tutorial: cross-check against at least two authoritative
+  sources before adopting a pattern.
+- Do not cite anything older than 18 months without confirming it still holds.
+- Do not invent: a pattern with no official source gets marked "to validate with the
+  user".
+
+## 3. Analyse critically
+
+For each file:
+
+- **Version references**: still accurate? A version that has moved on is a correction.
+- **Factual accuracy**: are the APIs and patterns described correctly? Check the
+  signature, not the memory of it.
+- **Completeness**: is an important pattern missing? Breaking change, security, a new
+  stable feature that changes the recommendation.
+- **Clarity**: ambiguities, duplication, sections that no longer read well.
+- **Consistency across the three stacks**: where two files cover the same ground (the
+  UI base, the React Compiler, the linter, the test stack), they must say the same
+  thing. Three files quietly disagreeing is worse than one being out of date, because
+  the reader cannot tell which one to trust.
+
+## 4. Present the findings
+
+- Factual corrections (must fix)
+- Important additions (should add)
+- Clarity improvements (nice to have)
+- What is already right and should stay
+- **If nothing needs changing, say so plainly**, with a summary of what was verified,
+  so the user knows the review actually happened.
+
+## 5. Apply, then re-date
+
+After approval, edit the files, and **update the "Last watch" header**: the date and
+any version that moved. A watch that does not move its own date will be redone from
+the wrong starting point next time.
 
 ## Rules
 
-- The guidelines are prescriptive (how code SHOULD be written), not descriptive (how code IS written). Don't weaken a guideline just because the current code doesn't follow it yet. Don't strengthen one just because the recent commits do follow it : the web sources win.
-- **Jamais d'état par projet dans les guidelines.** Ces docs sont partagés entre plusieurs projets : une phrase comme « le projet est en ^12.5 » ou « montée pas encore faite ici » est vraie pour l'un et ment chez les voisins. Constater les écarts projet ↔ guidelines, c'est le job de `/gap-analysis`. Les leçons tirées de l'historique (réf. ticket qui motive une règle) restent légitimes : c'est de la justification, pas de l'état. (Erreur commise puis corrigée le 24/08/2026.)
-- Keep the same tone and structure : pragmatic, concise, with code examples.
-- French for prose, English for code and technical terms.
-- **Hiérarchie des sources** : le dépôt (changelog, release notes, avis de sécurité), puis la doc officielle, puis le paquet publié (`npm view`, `composer show`). Un blog ne suffit jamais à établir un fait, il sert à repérer le sujet. Une veille faite sur du contenu de seconde main ne vaut rien.
-- Don't add patterns the project doesn't use or plan to use : ask the user if unsure.
-- Don't remove existing patterns that are correct : only update, add, or clarify.
-- Within a stack, files must be self-contained but consistent where they overlap (ex. symfony-react : DTO patterns, upload patterns, format:'json').
-- If the guidelines are already up-to-date and correct after thorough review, it's perfectly fine to conclude with "no changes needed". The goal is accuracy, not change for the sake of change.
+- The guidelines are prescriptive (how code SHOULD be written), not descriptive (how it
+  IS written). Never weaken a guideline because the current code does not follow it
+  yet, and never strengthen one because recent commits happen to: the web sources win.
+- **Never any per-project state in the guidelines.** These documents are shared: "the
+  project is on ^12.5" or "not migrated here yet" is true for one repo and a lie in its
+  neighbours. Observing project-to-guideline gaps is `/gap-analysis`'s job. Lessons
+  drawn from history stay legitimate: that is justification, not state.
+- **No project names, no company names, no ticket references** in a shared document,
+  code examples included.
+- Keep the tone and structure: prescriptive, dense, short code examples.
+- English throughout.
+- Do not remove a pattern that is still correct: update, add or clarify.
+- Concluding "no changes needed" after a thorough review is a perfectly good outcome.
+  The goal is accuracy, not change for its own sake.

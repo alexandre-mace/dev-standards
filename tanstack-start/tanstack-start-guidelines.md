@@ -107,3 +107,14 @@ A project that carries the shared identity adds the `@alexandremace` kit instead
 `pnpm build`, `pnpm test` and `tsc --noEmit` are the gate. Vitest for logic, Playwright for user journeys, and a new user-facing flow ships with its Playwright spec. This is an app, not a brochure: tests are not optional.
 
 Pushing is deploying, on the same Vercel account as everything else. Group your pushes: the Hobby plan caps at 100 deployments per rolling 24 h across all projects, and retention is 30 days, so never rely on an old deployment URL as an archive.
+
+### Definition of Done
+
+A screen or a feature is only done when every one of these is green:
+
+- [ ] `/quality` passes: `pnpm build`, `pnpm test`, `tsc --noEmit`, the linter
+- [ ] `/verify` run: the golden path exercised in a browser, console and network clean
+- [ ] A new user-facing flow ships with its Playwright spec
+- [ ] Screen state a user would share as a link lives in `validateSearch`, not in a `useState`
+- [ ] Every new server function validates its input with Zod at the boundary
+- [ ] Nothing new under `components/ui/` when the project consumes the kit

@@ -9,6 +9,10 @@ allowed-tools: Bash(git *)
 
 Merge the current feature branch into `main` and push.
 
+**Applies to**: all three stacks. On Vercel and on CleverCloud alike, `main` is what
+production tracks, so this merge is the irreversible act. Nothing reaches it without
+`/review-diff`.
+
 ## Pre-checks
 
 1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).

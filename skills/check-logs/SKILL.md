@@ -5,6 +5,9 @@ description: Prod health audit combining CleverCloud access logs, application lo
 
 # Check prod logs
 
+**Applies to**: apps deployed on CleverCloud with Sentry wired up, which today means
+the Symfony + React stack.
+
 End-to-end hygiene pass on a running prod app. Pulls signals from three places, correlates them against the current codebase, and produces an actionable report.
 
 Works on any app deployed to CleverCloud with Sentry wired up. Assumes the `clever` CLI is authenticated and the Sentry MCP is connected (via `claude mcp add --transport http sentry https://mcp.sentry.dev/mcp` + `/mcp` OAuth).
