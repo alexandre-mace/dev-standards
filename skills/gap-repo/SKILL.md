@@ -38,7 +38,23 @@ only reading catches it.
 - An artifact one skill writes and another reads (`.claude/plan.md`): does the writer
   produce every section the reader expects?
 
-## 3. Read the skills against `/redaction`
+## 3. Check what Claude Code has published since
+
+A skill goes obsolete from the outside too: a bundled command now does the job, a
+frontmatter field replaces a workaround, a name we chose is taken. Today's session found
+four such items in one afternoon.
+
+- The bundled commands: does one of them already cover a skill of ours? A skill that
+  restates a default adds context without adding value.
+- Name collisions: a personal skill silently replaces a bundled one of the same name.
+- Frontmatter: a field that would remove hand-written plumbing (`context: fork`,
+  `disable-model-invocation`, `allowed-tools`).
+- Deprecated mechanics: a path, a directory convention, an option that moved.
+
+Same source discipline as `/gap-sota`: the official docs and the release notes, never a
+blog post as the sole authority.
+
+## 4. Read the skills against `/redaction`
 
 The rules that need judgement, and that the checker leaves alone:
 
@@ -47,7 +63,7 @@ The rules that need judgement, and that the checker leaves alone:
 - A sentence addressed to whoever edits the skill rather than to whoever runs it.
 - A justification of a design decision, which belongs in the commit message.
 
-## 4. Report
+## 5. Report
 
 Group by what it costs to be wrong: a broken reference sends an agent to the wrong file,
 a disagreement between siblings makes it apply the wrong rule, a redaction defect only

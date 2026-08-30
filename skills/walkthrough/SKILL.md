@@ -1,6 +1,6 @@
 ---
-name: verify
-description: Does the feature actually work? Drives it in a real browser - golden path, one edge case, console and network - and reports proof. Triggers - verify, teste la feature, "ça marche vraiment ?", "montre-moi".
+name: walkthrough
+description: Does the feature actually work? Drives it in a real browser - golden path, one edge case, console and network - and reports proof. Triggers - walkthrough, teste la feature, "vérifie que ça marche", "ça marche vraiment ?", "montre-moi".
 ---
 
 # Does it work?
@@ -74,7 +74,7 @@ A screen that looks right and logs errors is not right.
 ## Report
 
 ```
-Verify : <feature> @ <target>
+Walkthrough : <feature> @ <target>
 Golden path :  OK | broken at <step>
 Edge case :    <which one> : OK | broken
 E2E suite :    N passed | N failed (which) | scope run
@@ -83,7 +83,7 @@ Network :      clean | <what is wrong>
 Proof :        <screenshot, or the trace that matters>
 ```
 
-Append that block to `.claude/plan.md`, under a `## Verify` heading. `/review-diff` runs
+Append that block to `.claude/plan.md`, under a `## Walkthrough` heading. `/review-diff` runs
 in a forked context with no access to this conversation: without the written report it
 cannot tell whether this step ever ran.
 

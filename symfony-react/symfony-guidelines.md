@@ -104,7 +104,7 @@ A feature is only "done" when **every** one of these is green:
 - [ ] A functional test written for every non-trivial new API route
 - [ ] A property-based test (Eris) added for any new money / fees / tier calculation
 - [ ] A Playwright spec added for every new user journey
-- [ ] `/verify` run: golden path plus at least one edge case exercised in a browser, console and network clean
+- [ ] `/walkthrough` run: golden path plus at least one edge case exercised in a browser, console and network clean
 - [ ] `#[IsGranted]` and `format: 'json'` present on the new `/api/` routes
 - [ ] No anti-pattern from the dedicated section (notably `useEffect+fetch`, `$request->get()`, `new RetryableHttpClient`, `any` outside the RHF `setError`)
 
