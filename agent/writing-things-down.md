@@ -6,7 +6,7 @@ goes stale without telling anyone.
 
 | What it is | Where it goes |
 |---|---|
-| True of this repository: architecture, conventions, a gotcha that cost an hour | its `AGENTS.md` |
+| True of this repository: architecture, conventions, a gotcha that cost an hour | its `AGENTS.md`, with `CLAUDE.md` reduced to the single line `@AGENTS.md` |
 | Long enough to deserve its own file: a design system, a runbook, an ADR | its `docs/` |
 | True on every project, about behaviour or writing | `dev-standards/agent/` |
 | Technical, tied to one stack | that stack's file in `dev-standards/` |
