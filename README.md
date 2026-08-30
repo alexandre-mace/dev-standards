@@ -54,7 +54,7 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
 | `sota-gap` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
 | `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
-| `unslop` | Strip AI writing tells from any text, French and English |
+| `redaction` | Rewrites a text into Alexandre's writing voice. Manual invocation only |
 
 ### The thread of a feature
 
