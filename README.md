@@ -53,6 +53,7 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | `deploy` | Merge into `main`. The irreversible act, and the user's call |
 | `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
 | `sota-gap` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
+| `check-standards` | This repo against itself: broken cross-references, siblings that disagree |
 | `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
 | `redaction` | Rewrites a text into Alexandre's writing voice |
 

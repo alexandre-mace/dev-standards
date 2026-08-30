@@ -17,8 +17,8 @@ looks at whether this repository still agrees with itself.
 python3 check-repo.py ~/dev/dev-standards
 ```
 
-It settles what needs no judgement: a `/skill` cited but absent, a README table out of
-step with the skills on disk, an installation path hardcoded into a skill, a cross-
+It settles what needs no judgement: a skill cited by name but absent, a README table out
+of step with the skills on disk, an installation path hardcoded into a skill, a cross-
 reference to a guideline section that does not exist, an em dash, CRLF line endings.
 
 It exits non-zero on findings, so it also works as a pre-commit hook.
@@ -30,7 +30,7 @@ meanings: a skill that kept its name and changed its job leaves every reference 
 at the right file and the wrong thing. This is the failure that actually happens, and
 only reading catches it.
 
-- Every `/skill` mentioned in another skill: does it still do what the sentence assumes?
+- Every skill named inside another one: does it still do what the sentence assumes?
 - Sibling skills must agree where they overlap. `deploy` and `preprod` are variants of
   one act, and a rule fixed in one has a twin in the other.
 - The chain in `ticket`, the one in `diagnosing-bugs` and the one in the README: same
