@@ -83,6 +83,10 @@ Network :      clean | <what is wrong>
 Proof :        <screenshot, or the trace that matters>
 ```
 
+Append that block to `.claude/plan.md`, under a `## Verify` heading. `/review-diff` runs
+in a forked context with no access to this conversation: without the written report it
+cannot tell whether this step ever ran.
+
 ## Rules
 
 - **Never hand the check back to the user.** "You can test it at localhost:3000" is the
