@@ -60,7 +60,9 @@ It is a checklist, so check it rather than trusting it was followed:
 
 ## 5. Delegate the mechanical checks
 
-- Run **`/quality`**. Mandatory, and run now rather than remembered. A FAIL blocks the verdict.
+- Run **`/quality`**, unless it already passed green **on this exact commit** and nothing
+  has moved since: then say which run you are relying on. In pass 2, after UAT fixes, it
+  always re-runs. A FAIL blocks the verdict either way.
 - **Backstop on unfamiliar APIs**: `/plan` should have read the docs for anything the
   guidelines do not cover. If the diff uses such an API and the plan shows no sign of it,
   check it now against the official docs for the version in the lockfile. An invented

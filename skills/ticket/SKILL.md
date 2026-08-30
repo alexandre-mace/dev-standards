@@ -12,7 +12,7 @@ Copy this checklist into your reply and tick as you go.
 
 ```
 - [ ] 1. Plan            /plan  (bug instead of a feature: /diagnosing-bugs)
-- [ ] 2. GATE            no blocking question left
+- [ ] 2. GATE            plan announced, no blocking question left
 - [ ] 3. Branch          feat/<scope>, cut from an up-to-date main
 - [ ] 4. Implement       playbook followed, tests named in step 1 written
 - [ ] 5. Clean           /quality
@@ -28,8 +28,13 @@ After the UAT: fix, `/quality`, `/verify`, `/commit`, `/review-diff` on the delt
 
 ## The two gates
 
-- **Step 2**: `/plan` raised something blocking. Stop, ask, wait.
-- **Step 10**: the UAT belongs to a human. Hand over the URL and stop.
+- **Step 2, the plan.** Announce the assumed decisions and the tests owed, a few lines,
+  before writing any code. Stop and wait only if `/plan` raised something blocking;
+  otherwise carry on without waiting for an answer. The point is that the user can
+  object cheaply: twenty lines of plan cost nothing to read, a five hundred line diff
+  built on a wrong premise costs the whole implementation. This is the only place a
+  wrong direction is cheap to catch.
+- **Step 10, the UAT.** It belongs to a human. Hand over the URL and stop.
 
 ## The three questions, in order
 
