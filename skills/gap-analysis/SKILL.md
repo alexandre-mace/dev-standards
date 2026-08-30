@@ -25,25 +25,23 @@ from here.
 
 ## 2. Scan the code
 
-Agents in parallel across the axes. Every file, not a sample.
+**The guidelines are the checklist. Do not carry a second copy of them here.** Their
+forbidden anti-patterns section lists, rule by rule, exactly what a scan looks for, and
+the rest of the file gives the patterns those rules protect. Turn each one into a search
+and run it across every file.
 
-### Per stack
+- Agents in parallel, one per area of the codebase. Every file, not a sample.
+- `Glob` and `Grep` systematically: most rules become one pattern each.
+- A rule that cannot be turned into a search still gets read for: architecture
+  boundaries, business logic in the wrong layer, a pattern that diverges between two
+  files that should match.
+- **Beyond the guidelines**: flag what is incoherent, fragile, surprising or plainly
+  broken even when no rule covers it. Suspicious logic, security smells, dead code,
+  hardcoded URLs that belong in the environment.
 
-Read only the axis file for the stack you detected. The others do not apply and cost
-context for nothing.
-
-| Stack | Axes |
-|---|---|
-| Symfony + React | [axes-symfony.md](axes-symfony.md) |
-| Next | [axes-next.md](axes-next.md) |
-| TanStack Start | [axes-tanstack.md](axes-tanstack.md) |
-
-### Every stack
-
-- **Anything else that is wrong.** The axes are a starting point, not a limit. Flag
-  what looks incoherent, fragile, surprising or plainly broken even when no guideline
-  covers it: suspicious logic, security smells, patterns that diverge between two
-  files that should match, dead code, hardcoded URLs that belong in the environment.
+Why no axis list lives here: it would be a copy of the guidelines that drifts the day
+they change, and this skill would then audit against a stale version of the rules it
+exists to enforce.
 
 ## 3. Scan config, tooling and the quality gate
 

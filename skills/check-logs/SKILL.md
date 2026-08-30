@@ -1,178 +1,85 @@
 ---
 name: check-logs
-description: Prod health audit combining CleverCloud access logs, application logs, Messenger DB state, and Sentry issues. Use monthly/quarterly to triage prod noise, spot real bugs, and keep Sentry clean. Produces a prioritized report with suggested actions (fix / ignore / bulk resolve).
+description: Prod health audit correlating CleverCloud access and application logs, Messenger DB state and Sentry issues, into a triaged report. Use monthly or quarterly to separate noise from real bugs and keep Sentry clean.
 ---
 
 # Check prod logs
 
-**Applies to**: apps deployed on CleverCloud with Sentry wired up, which today means
-the Symfony + React stack.
+**Applies to**: apps on CleverCloud with Sentry wired up, which today means the
+Symfony + React stack. Needs the `clever` CLI authenticated and the Sentry MCP connected.
 
-**Close the loop.** For every real bug the audit surfaces, ask one question in the
-report: *which step of the chain should have caught this, and why did it not?* A 500 on
-a payload nobody validated points at `/plan`; a regression on an untouched page points
-at a missing spec, so at `/verify`; a pattern repeated across files points at
-`/gap-analysis`. A workflow that never learns from what escapes it stays at the level of
-the day it was written.
+Ask for the period (default `7d`), the CleverCloud alias and the Sentry project if not
+given. Pull the three sources in parallel, correlate them against the current code, then
+triage.
 
-End-to-end hygiene pass on a running prod app. Pulls signals from three places, correlates them against the current codebase, and produces an actionable report.
-
-Works on any app deployed to CleverCloud with Sentry wired up. Assumes the `clever` CLI is authenticated and the Sentry MCP is connected (via `claude mcp add --transport http sentry https://mcp.sentry.dev/mcp` + `/mcp` OAuth).
-
-## Inputs
-
-Ask the user if not provided:
-- **Period** (default `7d`) : `1d`, `7d`, `14d`, `30d`, etc.
-- **CleverCloud app alias** (default: ask `clever applications` and pick the prod one)
-- **Sentry org / project** (default: ask `find_organizations` + `find_projects` and pick the matching one)
-
-## Pipeline
-
-Run steps in parallel where possible to stay fast.
-
-### 1. Access logs : HTTP status distribution
+## The two commands that do not behave as expected
 
 ```bash
-clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s 2>&1 \
-  | awk '{for(i=1;i<=NF;i++) if($i ~ /^[45][0-9][0-9]$/) {print $i; break}}' \
-  | sort | uniq -c | sort -rn
+# streaming by default: --before bounds the range and gives a finite tail
+clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s
+clever logs       --alias <ALIAS> --since <PERIOD> --before 30s
 ```
 
-Then drill into each non-trivial status:
-- Top **404** endpoints → separate bot noise (WordPress probes, `.env`, etc.) from real missing resources
-- Top **5xx** endpoints → these are always real app bugs worth investigating
-- 422 → usually user-input validation working as intended
+`clever accesslogs` is alpha and its columns are positional: pull the HTTP status with
+`awk` rather than assuming a field index.
 
-### 2. Application logs : deprecations + crashes
-
-```bash
-clever logs --alias <ALIAS> --since <PERIOD> --before 30s 2>&1 \
-  | grep -iE "deprecat" | sort | uniq -c | sort -rn
-```
-
-Filter out npm install deprecations (repeat on every deploy) from PHP runtime deprecations (real). Also check for messenger worker crash patterns (SSL eof, unexpected exit codes).
-
-### 3. Database : Messenger state (if Symfony + doctrine messenger)
-
-If the app uses Symfony Messenger with Doctrine transport and zenstruck/messenger-monitor:
+Messenger state, when the app uses the Doctrine transport, from the prod `DATABASE_URL`
+in `clever env`:
 
 ```sql
--- Recent failures
 SELECT message_type, failure_type, COUNT(*) AS n, MAX(received_at) AS last
 FROM processed_messages
 WHERE failure_type IS NOT NULL AND received_at > NOW() - INTERVAL '<PERIOD>'
 GROUP BY 1,2 ORDER BY n DESC;
-
--- Throughput sanity check
-SELECT DATE(received_at) AS day, COUNT(*) total,
-       COUNT(*) FILTER (WHERE failure_type IS NOT NULL) AS failed
-FROM processed_messages
-WHERE received_at > NOW() - INTERVAL '<PERIOD>'
-GROUP BY 1 ORDER BY 1 DESC;
 ```
 
-Get the prod `DATABASE_URL` via `clever env --alias <ALIAS>` and connect with `psql` (use `export PGPASSWORD=...` inline).
+Sentry comes from its MCP, which documents its own tools: search the unresolved issues
+for the period and read them.
 
-### 4. Sentry : unresolved issues
+## Correlate before judging
 
-Use the Sentry MCP:
+A raw list of issues is not an audit. Each signal gets crossed with the code as it is
+**now**:
 
-```
-search_issues(
-  organizationSlug=<ORG>, projectSlugOrId=<PROJECT>,
-  naturalLanguageQuery="all unresolved issues from the last <PERIOD>",
-  limit=30
-)
-```
+- a Sentry culprit file → `git log -- <file>`: a fix may already have landed since the
+  last event
+- a 500 endpoint in the access logs → find the controller, form a hypothesis
+- a Messenger failure → the same error should appear in Sentry; if it does not, the
+  logging is the finding
 
-For each issue, consider:
-- **Event count + last seen** : active vs stale
-- **Culprit file** : does it match what the code looks like NOW, or was it fixed in a recent commit?
-- **Category** : 404 noise / upstream flake / real app bug / infra blip
+## Triage
 
-### 5. Correlation pass
-
-Cross-reference the three sources with the current codebase:
-
-- Sentry issue's culprit file → `git log -- <file>` to see if a recent fix landed since the last event
-- Access log 500 endpoints → locate the controller + repro hypothesis
-- Messenger failures → correlate with Sentry (same error should be in both)
-
-### 6. Report
-
-Produce a markdown table organized by **ROI** (impact / effort):
-
-| Category | Example |
-|---|---|
-| 🔴 **Pollution massive** | High-volume noise drowning real signals (e.g. stale `/build/assets/*.js` 404s after deploy). Fix via Sentry `ignore_exceptions` or CSS-level drop. |
-| 🟠 **Real bugs to fix** | Actionable, low-volume, recent. Propose one-liner fix where possible. |
-| 🟠 **Upstream flaky** | External API 5xx that already retries. Resolve in Sentry (auto-reopen on regression = our safety net). |
-| 🟡 **Benign validation** | 422 / business-rule rejections working as intended. Resolve. |
-| 🟢 **Already fixed** | Issues whose culprit code has been rewritten since lastSeen. Resolve with confidence. |
-| 🗑️ **Stale** | lastSeen > 14d without recurrence. Bulk resolve : Sentry regression detection is the safety net. |
-
-## Decisions : fix / ignore / resolve
+The judgement this skill exists for. Volume is not severity.
 
 | Pattern | Decision |
 |---|---|
-| 404 on stale JS bundles after deploy | **Ignore** in sentry.yaml (`NotFoundHttpException` or path pattern). Users on cached HTML, not a bug. |
-| 404 on entities that no longer exist (deleted farm, removed page) | **Ignore** same family : legitimate 404s, belong in access logs not Sentry. |
-| 422 UnprocessableEntityHttpException | **Keep** : but investigate if empty message (see "MapUploadedFile gotcha" below). |
-| External API 5xx with retry already configured | **Resolve** : Sentry auto-reopens on regression. |
-| Empty-string enum values at DTO level | **Coerce to null** in controller before denormalize (pattern from `ProfileController::save`). |
-| Real app bug with < 10 events and code path clearly wrong | **Fix + commit referencing issue ID** (`Fixes LAGRANGE-XYZ`) : Sentry auto-resolves on deploy. |
+| 404 on stale JS bundles after a deploy | **Ignore** in `sentry.yaml`: users on cached HTML, not a bug |
+| 404 on entities that no longer exist | **Ignore**, same family: a legitimate 404 belongs in access logs, not Sentry |
+| 422 with a message | **Keep**: validation doing its job, but an *empty* message is a real bug |
+| Upstream 5xx with retry already configured | **Resolve**: Sentry reopens on regression, which is the safety net |
+| Real bug, few events, code path clearly wrong | **Fix**, commit referencing the issue id so Sentry auto-resolves on deploy |
+| Nothing seen for more than 14 days | **Bulk resolve**, same safety net |
 
-## Triage safety rules
+**Never auto-resolve without asking**, even though the OAuth scope allows it. And when
+fixing: `/quality`, push, wait for the deploy, *then* resolve. Resolving first loses the
+issue if the fix does not hold.
 
-- **NEVER auto-resolve without confirmation** unless the user explicitly said "bulk resolve". Our OAuth scope includes Triage but we ask first.
-- When fixing, follow up with: verify CI (`/quality`), push, wait deploy, then resolve the Sentry issue (not the other way around).
-- For bulk resolve of stale issues: sanity-check with `lastSeen < NOW() - 14d` filter, then fire in parallel.
+## Gotchas worth knowing
 
-## Known gotchas on this stack
+- **An empty-message exception in Sentry** usually means a resolver's default branch.
+  Read the event's Local Variables at the failing frame to see the input that caused it.
+  The oversize-upload case is documented in `reactony.md` §3.
+- **A Messenger worker exiting in a loop every few seconds**: `--keepalive` against the
+  Doctrine connection's `idle_connection_ttl`. Drop `--keepalive`.
 
-### CleverCloud
+## Report
 
-- `clever logs` is streaming by default : pair `--since` with `--before 30s` to bound the range and get a finite tail.
-- `clever accesslogs` is alpha; the column format is positional, use `awk` to grab the HTTP status robustly.
-- Messenger worker with `--keepalive` may interact badly with `idle_connection_ttl` on the Doctrine connection → 5s exit loop (observed 2026-04-17, fixed by removing `--keepalive`).
+Group by return on investment, not by volume: mass pollution first, then real bugs,
+then what can be resolved (upstream flake, already fixed, stale). Every line carries its
+event count and a decision, never just a description.
 
-### Symfony 8 `MapUploadedFile`
-
-- When PHP drops an oversize upload at the SAPI level (`upload_max_filesize`), the resolver sees null and throws `HttpException(422)` with **empty message** : not a structured violations response.
-- Front-side size guards in the component prevent this cleanly; a kernel.exception listener that unwraps `ValidationFailedException` from `HttpException::getPrevious()` is the systemic fix if needed.
-
-### Sentry empty-message events
-
-- An empty message `UnprocessableEntityHttpException` or similar usually indicates the resolver's default branch : always look at the Sentry event's **Local Variables** (Sentry prints them at the failing frame) to see the actual input that triggered it.
-
-## Output skeleton
-
-```markdown
-# Prod health audit : {date} ({period})
-
-## HTTP distribution
-- Total: X req, X% 2xx, X% 3xx, X% 4xx, X% 5xx
-
-## 🔴 Pollution massive
-- [ISSUE-123] X events : reason, suggested action
-
-## 🟠 Real bugs
-- [ISSUE-456] X events : reason, suggested fix (file:line)
-
-## 🟠 Upstream flaky
-- [ISSUE-789] : already retried, resolve?
-
-## 🟢 Already fixed since lastSeen
-- [ISSUE-…] : fixed by commit abc1234
-
-## 🗑️ Stale (lastSeen > 14d)
-- Bulk resolve: LAGRANGE-1, LAGRANGE-2, … (N issues)
-
-## Recommendations
-- P1: …
-- P2: …
-- P3: …
-
-## Backlog côté toi (non-code)
-- …
-```
+**Close the loop.** For each real bug, one question in the report: *which step of the
+chain should have caught this, and why did it not?* A 500 on an unvalidated payload
+points at `/plan`; a regression on an untouched page points at a missing spec, so at
+`/verify`; a pattern repeated across files points at `/gap-analysis`. A workflow that
+never learns from what escapes it stays at the level of the day it was written.
