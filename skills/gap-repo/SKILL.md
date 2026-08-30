@@ -54,7 +54,7 @@ four such items in one afternoon.
 Same source discipline as `/gap-sota`: the official docs and the release notes, never a
 blog post as the sole authority.
 
-## 4. Read the skills against `/redaction`
+## 4. Read the skills against `/technical-writing`
 
 The rules that need judgement, and that the checker leaves alone:
 

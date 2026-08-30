@@ -63,7 +63,7 @@ with how the compiler is enabled.
 | `gap-sota` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
 | `gap-repo` | This repo against itself: broken cross-references, siblings that disagree |
 | `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
-| `redaction` | Rewrites a text into Alexandre's writing voice |
+| `technical-writing` | Rewrites a text into Alexandre's writing voice |
 
 ### The thread of a feature
 

@@ -2,7 +2,7 @@
 """Confronte le depot dev-standards a lui-meme.
 
 Ne verifie que le mecanique : ce qu'un script tranche sans jugement. Le reste,
-coherence entre skills freres et qualite de redaction, est dans le SKILL.md.
+coherence entre skills freres et qualite d'ecriture, est dans le SKILL.md.
 
 Usage: python3 check-repo.py [racine]   (defaut: le parent du dossier du script)
 """
@@ -73,14 +73,16 @@ def check(root):
                 line = body[:m.start()].count('\n') + 1
                 out.append(f'{os.path.relpath(path, root)}:{line}: renvoie a {guide} §{num}, section absente')
 
-    # 5. regles de redaction verifiables mecaniquement. Le point median n'en est pas :
+    # 5. regles d'ecriture verifiables mecaniquement. Le point median n'en est pas :
     # la regle vise les libelles d'interface, et le separateur des en-tetes de veille
     # est un usage legitime qu'un script ne sait pas distinguer.
     for path in markdown_files(root):
         raw = read(path)
         rel = os.path.relpath(path, root)
         for i, line in enumerate(raw.split('\n'), 1):
-            if ('—' in line or '–' in line) and 'redaction' not in rel:
+            # les deux fichiers qui enoncent la regle doivent citer le caractere
+            if ('—' in line or '–' in line) and rel not in (
+                    'agent/redaction.md', 'skills/technical-writing/SKILL.md'):
                 out.append(f'{rel}:{i}: tiret cadratin ou demi-cadratin')
         if '\r\n' in raw:
             out.append(f'{rel}: fins de ligne CRLF')
