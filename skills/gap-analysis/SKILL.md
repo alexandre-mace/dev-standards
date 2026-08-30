@@ -16,9 +16,9 @@ where the ecosystem is right and the guidelines get corrected.
 
 - Report a missing guidelines file as the first gap and stop: without the symlink into
   `dev-standards` there is nothing to audit against.
-- Then read the existing `docs/gap-analysis.md`. Keep its ticked items, and **re-check
-  the unticked ones**: one fixed in passing since the last run, or no longer relevant,
-  turns the file into a list of ghosts nobody trusts.
+- Read the existing `docs/gap-analysis.md` for one thing only: the deviations that were
+  deliberately accepted. A fresh scan finds everything else on its own, and git holds the
+  history.
 - Stop on an archived repository, rather than auditing a corpse: a last commit saying
   "archive", a redirect to a successor, an archived flag on the remote.
 
@@ -76,7 +76,8 @@ Then read them for what a script cannot see:
 
 ## 5. Write the gap analysis
 
-Overwrite `docs/gap-analysis.md`:
+Overwrite `docs/gap-analysis.md` with the current state. Nothing is carried forward
+except the accepted deviations.
 
 ```markdown
 # Gap Analysis : Theorie vs Pratique
@@ -95,7 +96,10 @@ Overwrite `docs/gap-analysis.md`:
 
 - [ ] `chemin/vers/Fichier.php` : description de l'écart
   - Détail, ce qu'il faut extraire, déplacer ou renommer
-- [x] Éléments déjà corrigés (repris de la version précédente)
+
+## Écarts assumés
+
+- `chemin/vers/Fichier.php` : l'écart, et la raison de ne pas le corriger
 ```
 
 Priorities:
@@ -113,8 +117,6 @@ Findings per priority, then the most critical items, then one line on what to do
 
 - **Fix nothing.** This skill diagnoses, it does not touch source code.
 - Exhaustive, not sampled. Every file, with `Glob` and `Grep`.
-- Preserve ticked items: anything `[x]` in the previous file was fixed, keep it so
-  progress stays visible.
 - Every finding names a file and a line or a method. "Some controllers are too big" is
   worthless, "`AdvertController.php:245` maps icons inline" is actionable.
 - Something that looks wrong in the guidelines themselves goes to `/sota-gap`.
