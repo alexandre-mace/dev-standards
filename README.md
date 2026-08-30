@@ -46,9 +46,9 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
-| `verify` | Does it work? Drives the feature in a real browser, console and network included |
+| `verify` | Does it work? Drives the feature in a real browser, then runs the Playwright suite |
 | `commit` | Conventional Commits message for what is staged |
-| `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the Definition of Done |
+| `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the DoD, at arm's length in a forked context |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |
 | `deploy` | Merge into `main`. The irreversible act, and the user's call |
 | `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
@@ -86,6 +86,11 @@ What the diagram cannot show:
   a feature nobody ran is the failure mode this order prevents.
 - **`.claude/plan.md` is a single working file**, overwritten per feature, gitignored,
   deleted by `/deploy`. There is never more than one.
+- **The review runs at arm's length**, in a forked context with no access to the
+  conversation, so the written plan is the only intent it gets. Reviewing a diff with the
+  context that wrote it is the blind spot this closes.
+- **The chain is not proven.** Nothing here has been measured against evaluations, and a
+  prescription that has never been run is a hypothesis.
 - **Two gates belong to a human**: a blocking question from `/plan`, and the UAT.
   `/deploy` is never run by the agent.
 - Commits are save points, the merge is the irreversible act.

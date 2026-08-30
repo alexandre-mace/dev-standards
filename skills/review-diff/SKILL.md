@@ -1,6 +1,8 @@
 ---
 name: review-diff
 description: Is it what was asked? Reviews the branch diff against .claude/plan.md, the guidelines and the Definition of Done, then runs /quality. Two passes - before /preprod (full) and before /deploy (delta). Triggers - review, relis le diff, "ready for UAT?", "ready to deploy?".
+context: fork
+background: false
 ---
 
 # Review the diff
@@ -16,18 +18,21 @@ The PR review of a flow with no PR. Runs twice:
 A commit is a save point, the merge is irreversible. Nothing lands on `main` unreviewed,
 UAT fixes included.
 
-> **Arm's length.** You are reviewing a diff you probably wrote, with the context that
-> produced it. Two habits fight that: read the intent from `.claude/plan.md`, not from
-> memory, and run this in a subagent with fresh context on a substantial feature.
+> **Arm's length, enforced.** This skill runs in a forked subagent with **no access to
+> the conversation**, which is the point: reviewing a diff with the context that wrote it
+> is the definition of a blind spot. Anthropic's own `/code-review` forks for the same
+> reason. The consequence is that `.claude/plan.md` is the only intent you get, so a
+> feature with no written plan cannot be reviewed against its ticket, only against the
+> guidelines.
 
 ## 1. Gather both terms
 
 - **The diff**: `git diff main...HEAD`, plus `git log main..HEAD --oneline`. All of it,
   not a sample.
-- **The intent**: `.claude/plan.md`. **Check its `Branch:` line matches the current
-  branch**: one file holds one feature, so a mismatch means it belongs to another piece
-  of work and must not be used. The ticket pasted in the conversation is second best. No
-  written intent at all: the review is reduced to the guidelines, and says so.
+- **The intent**: `.claude/plan.md`, the only one available in a forked context.
+  **Check its `Branch:` line matches the current branch**: one file holds one feature, so
+  a mismatch means it belongs to other work and must not be used. Missing or mismatched:
+  the review is reduced to the guidelines, and says so in the verdict.
 
 ## 2. Diff against the ticket
 
@@ -52,9 +57,10 @@ It is a checklist, so check it rather than trusting it was followed:
 
 - `/quality` green, **run now**, not remembered
 - no drift in the generated types (covered by `/quality`)
-- **the tests owed exist**: take the "Tests owed" list from `.claude/plan.md` and confirm
-  each one is in the diff. A test planned and not written is caught here or nowhere.
-- `/verify` ran and the golden path passed
+- **the tests owed exist and pass**: take the "Tests owed" list from `.claude/plan.md`,
+  confirm each one is in the diff, and confirm `/verify` ran them green. A test planned
+  and not written, or written and never run, is caught here or nowhere.
+- `/verify` ran, the golden path passed, and the E2E suite is green
 - `#[IsGranted]` and `format: 'json'` on new `/api/` routes
 - no anti-pattern from the guidelines' forbidden list
 

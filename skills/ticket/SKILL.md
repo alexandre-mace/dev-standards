@@ -66,6 +66,10 @@ Uncommitted changes: stop and ask, never stash silently.
 - **Never skip a step.** A skipped step is a check nobody ran.
 - **A red step stops the chain.** Fix it, re-run that step, then move on. Never carry a
   FAIL forward hoping a later step catches it.
+- **Three attempts on the same red step, then stop and report.** Say what is ruled out,
+  what remains possible, and what is missing to decide. A fourth speculative fix is worth
+  less than an honest checkpoint, and an unbounded retry loop is how an hour disappears
+  into a flapping test.
 - **Step 4 is where the work is.** The chain does not make implementing easier, it makes
   the result checkable. Do not rush it because the surrounding steps are mechanical.
 - **Announce each step in one line**, so the user can interrupt and know where things

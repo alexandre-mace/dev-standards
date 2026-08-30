@@ -42,6 +42,25 @@ Not a smoke test of the page that was touched.
 - the empty list, the missing image, the file that is too large
 - mobile width, if the feature has any layout to it
 
+## Then run the specs
+
+The hand walk covers the new path. The Playwright suite covers everything the change
+could have broken without you noticing, and it is the only assertion that survives you.
+
+```bash
+pnpm test:e2e                       # whole suite
+pnpm test:e2e <spec>                # while iterating
+```
+
+- **A spec the plan owed must have been seen to fail before the fix, and pass after.**
+  A new spec that passes on the first run proves nothing: it may be asserting nothing.
+- A failure here is a finding, whether it belongs to this feature or not: a spec broken
+  by a neighbouring change is exactly what this step is for.
+- Suite too slow to run whole on each pass: run the specs touching the feature while
+  iterating, and the whole suite once before `/review-diff`. Say which one you ran.
+- No suite in the project at all: say so. The guidelines mandate one, so its absence is
+  a `/gap-analysis` finding, not a neutral fact.
+
 ## What to read
 
 A screen that looks right and logs errors is not right.
@@ -58,6 +77,7 @@ A screen that looks right and logs errors is not right.
 Verify : <feature> @ <target>
 Golden path :  OK | broken at <step>
 Edge case :    <which one> : OK | broken
+E2E suite :    N passed | N failed (which) | scope run
 Console :      clean | N errors, M new warnings
 Network :      clean | <what is wrong>
 Proof :        <screenshot, or the trace that matters>

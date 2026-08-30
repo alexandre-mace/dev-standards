@@ -8,6 +8,13 @@ description: Prod health audit combining CleverCloud access logs, application lo
 **Applies to**: apps deployed on CleverCloud with Sentry wired up, which today means
 the Symfony + React stack.
 
+**Close the loop.** For every real bug the audit surfaces, ask one question in the
+report: *which step of the chain should have caught this, and why did it not?* A 500 on
+a payload nobody validated points at `/plan`; a regression on an untouched page points
+at a missing spec, so at `/verify`; a pattern repeated across files points at
+`/gap-analysis`. A workflow that never learns from what escapes it stays at the level of
+the day it was written.
+
 End-to-end hygiene pass on a running prod app. Pulls signals from three places, correlates them against the current codebase, and produces an actionable report.
 
 Works on any app deployed to CleverCloud with Sentry wired up. Assumes the `clever` CLI is authenticated and the Sentry MCP is connected (via `claude mcp add --transport http sentry https://mcp.sentry.dev/mcp` + `/mcp` OAuth).

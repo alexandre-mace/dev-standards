@@ -1251,7 +1251,19 @@ That goes double for anything on a payment or subscription path: a silent regres
 
 ### CI: orchestrating the pyramid
 
-On **every PR** (GitHub Actions):
+**On every push, not only on pull requests.** A flow that merges branches directly, with
+no PR, never fires a `pull_request` trigger: the suite is then configured for an event
+that never happens. Trigger on `push` to the feature branches, `preprod` and `main`, and
+add `pull_request` on top if the project ever uses them.
+
+```yaml
+on:
+  push:
+    branches: ['**']
+  pull_request:
+```
+
+Jobs (GitHub Actions):
 
 ```yaml
 jobs:

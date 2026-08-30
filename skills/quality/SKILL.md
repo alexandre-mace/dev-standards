@@ -72,8 +72,9 @@ pnpm test              # skip: no test script
 `pnpm test` is Vitest, mandated on all three stacks. Running it is what turns "the tests
 pass" into a fact. Use whatever flag the project needs for a single non-watch run.
 
-**Not run here**: Playwright (needs a browser and minutes) and Psalm taint analysis (a CI
-job). Say so rather than letting the report imply full coverage.
+**Not run here**: Playwright, which needs a browser and minutes, and which `/verify`
+owns. Psalm taint analysis is a CI job. Say so rather than letting the report imply full
+coverage.
 
 ## Report
 
@@ -92,7 +93,7 @@ TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
 ESLint:               PASS / FAIL / SKIPPED (no script)
 Prettier:             PASS / FAIL / SKIPPED (no script)
 Vitest:               PASS / FAIL / SKIPPED (no script)
-Not run here:         Playwright (CI), Psalm (CI)
+Not run here:         Playwright (/verify), Psalm (CI)
 ```
 
 - Only the rows that apply.
