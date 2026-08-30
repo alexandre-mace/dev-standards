@@ -133,6 +133,8 @@ Content lives in `lib/` as typed TypeScript. Everything the page displays exists
 
 A site that needs accounts or stored data adds **Convex** and its official `@convex-dev/*` components (rate limiting, Resend emails, Stripe payments), with **Clerk** for auth.
 
+The seam itself, schema, query, mutation and the bridge to TanStack Query, is written once in `tanstack-start-guidelines.md` §3 and does not change here.
+
 Tests then become mandatory: Vitest and `convex-test` for the backend functions, Playwright for critical journeys. The control logs of the data scripts are no longer enough once a user can write.
 
 ## 7. Quality and deployment

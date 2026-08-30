@@ -76,6 +76,12 @@ The plugin still marks it experimental, so the Babel path (`reactCompilerPreset(
 
 **`useSuspenseQuery` for anything server-rendered.** The browser client resumes the live Convex subscription afterwards with no loading flash. Subscriptions stay alive 5 minutes after unmount (`gcTime`): lower it deliberately, not by accident.
 
+**React 19, same as everywhere else.** These are stable and apply here unchanged:
+`<Activity mode="visible|hidden">` to keep a hidden panel's state instead of unmounting
+it, `useOptimistic` for a mutation the user should see land instantly, `useEffectEvent`
+to read props inside an Effect without listing them as dependencies, and `use()` to read
+a promise or a context during render.
+
 ## 1. Scaffolding
 
 ```bash
@@ -94,7 +100,79 @@ TypeScript strict, pnpm with `packageManager` pinned, Biome for lint and format.
 - **If there are accounts, guard them in a layout route**, never leaf by leaf. Clerk by default, Better Auth when self-hosting is required, never both.
 - **One library per job.** One form library, one validation library, one auth provider.
 
-## 3. UI
+## 3. Convex, end to end
+
+Skip this section when the app stores nothing. When it does, the whole seam is four
+files, and nothing else touches the database.
+
+**The schema** declares the tables and their indexes:
+
+```ts
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  tasks: defineTable({
+    title: v.string(),
+    done: v.boolean(),
+    ownerId: v.id("users"),
+  }).index("by_owner", ["ownerId"]),
+});
+```
+
+**A query reads, a mutation writes**, both validating their arguments at the boundary:
+
+```ts
+// convex/tasks.ts
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const listByOwner = query({
+  args: { ownerId: v.id("users") },
+  handler: (ctx, args) =>
+    ctx.db.query("tasks").withIndex("by_owner", q => q.eq("ownerId", args.ownerId)).collect(),
+});
+
+export const setDone = mutation({
+  args: { id: v.id("tasks"), done: v.boolean() },
+  handler: (ctx, args) => ctx.db.patch(args.id, { done: args.done }),
+});
+```
+
+**The bridge to Query is wired once**, and every read then goes through the Query cache:
+
+```ts
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
+const convexQueryClient = new ConvexQueryClient(convex);
+const queryClient = new QueryClient({
+  defaultOptions: { queries: {
+    queryKeyHashFn: convexQueryClient.hashFn(),
+    queryFn: convexQueryClient.queryFn(),
+  }},
+});
+convexQueryClient.connect(queryClient);
+```
+
+The app sits inside both `ConvexProvider` and `QueryClientProvider`.
+
+**Reading and writing from a component:**
+
+```tsx
+const { data } = useSuspenseQuery(convexQuery(api.tasks.listByOwner, { ownerId }));
+
+const toggle = useMutation({ mutationFn: useConvexMutation(api.tasks.setDone) });
+```
+
+`useSuspenseQuery` so the fetch starts during SSR; the browser client then resumes the
+live subscription with no loading flash. `useConvexMutation` is Convex's own `useMutation`
+re-exported, passed as the `mutationFn`.
+
+**The rest of the seam**: an index for every query filter, since a `.collect()` without
+one scans the table. Data migrations through `@convex-dev/migrations`. Tests with
+`convex-test` on the functions, which is where the business logic lives.
+
+## 4. UI
 
 **Base UI in Nova style**, whatever the project, with Tailwind 4 through PostCSS.
 
@@ -102,7 +180,7 @@ A product with its own identity stops there: official shadcn CLI, no registry. T
 
 A project that carries the shared identity adds the `@alexandremace` kit instead. A component fixed once is then fixed everywhere, so never modify `components/ui/` in a consumer: the change belongs in the kit, then propagates with `/propagate-kit`.
 
-## 4. Quality and deployment
+## 5. Quality and deployment
 
 `pnpm build`, `pnpm test` and `tsc --noEmit` are the gate. Vitest for logic, Playwright for user journeys, and a new user-facing flow ships with its Playwright spec. This is an app, not a brochure: tests are not optional.
 
