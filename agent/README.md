@@ -1,8 +1,9 @@
 # agent/: how the agent should work
 
-Behaviour, true on every project whatever the stack. `redaction.md` governs what
-gets written anywhere, files included. `output-styles/` governs the shape of a
-reply, and modifies the system prompt rather than being read as context.
+Behaviour, true on every project whatever the stack. `redaction.md` governs how
+anything gets written, files included. `writing-things-down.md` governs where it
+goes. `output-styles/` governs the shape of a reply, and modifies the system prompt
+rather than being read as context.
 
 `install.sh` links both into `~/.claude/`. A new rule or style is a new file plus
 a re-run.
