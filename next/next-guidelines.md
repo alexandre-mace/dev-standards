@@ -24,6 +24,36 @@ Les sites Next perso. Si rendre côté serveur n'économise aucun JavaScript par
 
 Deux options se combinent librement, chacune décrite à sa place : le site prend le kit `@alexandremace` ou porte son identité propre (§2), et il ajoute un backend ou n'en a pas (§6).
 
+## Playbook
+
+Ce qu'on ajoute le plus souvent, et par où ça passe.
+
+**Une page** : un dossier sous `app/`, un `page.tsx` Server Component, ses `metadata` exportées. Une route dynamique préremplit ses valeurs avec `generateStaticParams`, sinon elle n'est pas statique.
+
+**Un jeu de données externe** : un `scripts/build-*.mjs` qui écrit du TypeScript typé dans `lib/`, un script `data` dans `package.json`, et des logs de contrôle en fin de run. La page importe la constante, elle ne fetche pas.
+
+**Un composant interactif** (simulateur, filtre, sélecteur) : un composant client, le plus bas possible dans l'arbre. Sa page reste Server Component et lui passe les données cuites en props.
+
+**Un graphique** : le composant de graphe est client, les données arrivent en props depuis le serveur. Les couleurs viennent des tokens `--chart-*` du kit, jamais de valeurs en dur.
+
+**Une donnée utilisateur** : voir §6, c'est le seul cas qui justifie un backend.
+
+## Patterns courants
+
+**Suspense pour ce qui est lent, pas pour ce qui est absent.** Un `loading.tsx` couvre le segment entier ; un `<Suspense>` local isole la seule partie lente. Sur un site statique, la plupart des pages n'ont besoin ni de l'un ni de l'autre.
+
+**`<Activity>` plutôt qu'un démontage** quand un panneau caché doit retrouver son état, ce qui est le cas de tout simulateur à onglets. Stable depuis React 19.2 : l'état, le DOM et la position de scroll survivent, les Effects sont nettoyés.
+
+```tsx
+<Activity mode={ongletActif === "transport" ? "visible" : "hidden"}>
+  <PanneauTransport />
+</Activity>
+```
+
+**`useEffectEvent`** pour extraire d'un Effect la logique qui lit props ou state sans les mettre en dépendances. Stable depuis 19.2, jamais appelé en dehors de l'Effect qui le possède.
+
+**Pas de `useMemo` ni de `useCallback` posés par réflexe**, seulement sur un coût mesuré. Le React Compiler les rendrait inutiles, mais il n'est activé sur aucun projet : à statuer à la prochaine veille.
+
 ## 1. Scaffolding
 
 ```bash
