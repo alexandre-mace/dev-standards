@@ -844,7 +844,7 @@ Use shadcn's `cn()` for conditional classes, no ternaries inside strings.
 
 - **Buttons and clickable elements**: pick by intent, the way the shadcn primitives do themselves (their own triggers and closes are styled `<button>` elements, not the `<Button>` component):
   - **Action** (submit, confirm, delete…) → `<Button variant=…>`.
-  - **Link** (navigation) → compose so a real `<a>` survives, `render={<a href=… />}` on Base UI, `asChild` on Radix, with the variant choosing the look (`link` for an inline link; `default`/`secondary`/`outline` for a solid button).
+  - **Link** (navigation) → `<Button render={<a href=… />} variant=…>`, so a real `<a>` survives, with the variant choosing the look (`link` for an inline link; `default`/`secondary`/`outline` for a solid button).
   - **Selectable / toggle** (filter pills, multi-select) → `Toggle` / `ToggleGroup`, not `<Button>`.
   - **Bespoke** (image tile, clickable card, absolutely positioned icon micro-control, dropzone) → a raw `<button>` is legitimate: `<Button>` would only add a variant you have to override.
   - Escape hatch `buttonVariants({variant})`: to give the button look to an element you cannot compose through `<Button>` (a third-party `Link` component, say).
@@ -854,9 +854,11 @@ Use shadcn's `cn()` for conditional classes, no ternaries inside strings.
 
 ### Staying on the latest shadcn (state of the art) and handling updates
 
-shadcn is **not an npm dependency**: the components are **vendored source** in `components/ui/`. So there is no `pnpm update`; you update component by component through the CLI, **preserving local customizations**. **The target base is Base UI** (shadcn's default since July 2026, style Vega or Nova), for new projects and existing ones alike: a project still on `new-york-v4` (Radix) is a gap **to close**, and `/gap-analysis` should raise it as work to schedule. Radix isn't deprecated, so the migration can be calm and staged, but it is due.
+shadcn is **not an npm dependency**: the components are **vendored source** in `components/ui/`. So there is no `pnpm update`; you update component by component through the CLI, **preserving local customizations**.
 
-> **Radix → Base UI migration**: shadcn's official path is component by component (a dedicated skill migrates one component and its call sites at a time; both bases coexist during the work and the project stays shippable throughout). Do it cold, re-grafting the in-house variants inventoried in the project's `DESIGN-SYSTEM.md`. Idioms: Radix composes through `asChild`, Base UI through the `render` prop; each component follows the idiom of its own base, coexistence included. A stale `style` makes the CLI resolve against the old registry, so new components (the chat primitives `message-scroller`/`message`/`bubble`, for instance) come back **404** even though they exist.
+**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. A project still on `new-york-v4` (Radix) is a gap **to close**, and `/gap-analysis` should raise it as work to schedule: migrate it in full, never two bases in one project.
+
+> **Migrating a project**: do it cold, on a branch, re-grafting the in-house variants inventoried in the project's `DESIGN-SYSTEM.md`. A stale `style` in `components.json` makes the CLI resolve against the old registry, so new components (the chat primitives `message-scroller`/`message`/`bubble`, for instance) come back **404** even though they exist.
 
 **The inventory of what is customized is PER PROJECT and lives in its `DESIGN-SYSTEM.md`** (provenance section, `variant`/`custom` entries): that file is authoritative, not this one. Reactony is shared across products, so it cannot carry a local inventory without lying to its neighbours. Before updating a component: read the project's inventory, run a full `--diff` to catch whatever it missed, and update it in the same PR.
 
@@ -873,9 +875,9 @@ Everything else must stay **as close to upstream as possible**: don't edit a `co
 2. `npx shadcn@latest add <component> --diff <file>`: the diff file by file.
 3. Decide per file: no local change → safe overwrite; local change (our brand variants) → read the local file, apply the upstream updates **re-grafting our additions**.
 4. **Never `--overwrite` blindly.** An `add` can pull a registry dependency (`message-scroller` depends on `button`) and try to crush a customized component: decline the overwrite, or re-graft our variants right after.
-5. After every `add`, re-read the file and fix the icon imports (the project's library, not necessarily `radix`) and the aliases (`@/`). Check the rendering **in the browser** (moving between styles changes shadows, focus rings and sizes).
+5. After every `add`, re-read the file and fix the icon imports (the project's own icon library) and the aliases (`@/`). Check the rendering **in the browser** (moving between styles changes shadows, focus rings and sizes).
 
-**CLI / registry news (summer 2026)**: **private** GitHub registries are supported (auth through `gh` credentials or `GH_TOKEN`: if you can read the repo, the CLI can install from it), relevant if a personal kit ever needs to go private. `npx shadcn migrate base-color` switches a project's base color: it rewrites the theme variables in the CSS pointed at by `components.json` plus the `baseColor` value (unrecognized custom tokens are listed at the end of the migration, to handle by hand; reversible by running it the other way or through git). New multi-step `Questionnaire` component, available in the React Aria flavour too. On the React Aria base: react-aria-components 1.20 (PreviewTrigger, TokenField in alpha, context menus through `trigger="contextMenu"`), no breaking changes.
+**CLI / registry news (summer 2026)**: **private** GitHub registries are supported (auth through `gh` credentials or `GH_TOKEN`: if you can read the repo, the CLI can install from it), relevant if a personal kit ever needs to go private. `npx shadcn migrate base-color` switches a project's base color: it rewrites the theme variables in the CSS pointed at by `components.json` plus the `baseColor` value (unrecognized custom tokens are listed at the end of the migration, to handle by hand; reversible by running it the other way or through git). New multi-step `Questionnaire` component.
 
 **Cadence**: at every `/sota-gap` watch, check the current style on ui.shadcn.com and reconcile the components that drifted most (a large `--diff` is a candidate for re-grafting). Target: a near-empty diff outside the documented brand variants.
 
@@ -1134,7 +1136,7 @@ Before migrating a large, fragile component (over 500 lines, `useState` → RHF 
 
 Each of these costs 30 minutes to an hour to diagnose the first time. Vitest + ESM removes several (lucide, the hey-api SDK), but the rest remain.
 
-**Portal-based primitives (Select, Dialog, Popover) are fragile in jsdom**, on Radix as on Base UI. Portals, pointer events and focus traps all misbehave without a real layout engine. Two options:
+**Portal-based primitives (Select, Dialog, Popover) are fragile in jsdom.** Portals, pointer events and focus traps all misbehave without a real layout engine. Two options:
 
 1. **Mock locally**, turning the shadcn Select into a native `<select>` when the test only needs the `onValueChange` contract:
     ```tsx
