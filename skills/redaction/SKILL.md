@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: Rewrites a text into Alexandre's own writing voice - documentation, guidelines, skills, commit messages, a note to a colleague.
+description: Rewrites a text into Alexandre's own writing voice: documentation, guidelines, skills, commit messages, a note to a colleague.
 disable-model-invocation: true
 ---
 
@@ -11,7 +11,8 @@ alike.
 
 ## Typography
 
-- No em dash and no en dash. Use a colon, a comma, parentheses, or a new sentence.
+- No dash as a separator, whatever its length. Use a colon, a comma, parentheses, or a
+  new sentence.
 - No middle dot as a separator.
 
 ## Sentences
@@ -19,6 +20,7 @@ alike.
 - Short and simple. An advanced construction blurs the reading.
 - One idea per sentence.
 - Bullets whenever the content is a list. Prose only when it carries an argument.
+- Explain a term the first time it appears, or do not use it.
 
 ## Say it once
 
@@ -30,11 +32,11 @@ alike.
 - The point first, the condition after.
 - Lead with the result, not with the approach that produced it.
 
-## Substance
+## Nothing invented
 
-- Cut what nobody asked for: a frequency, a caveat, a reason you made up.
-- Cut slogans and aphorisms. "Pragmatic, not dogmatic" says nothing.
-- Explain a term the first time it appears, or do not use it.
+- Cut what you cannot source: a number, a frequency, a limit that nobody stated and
+  nothing supports.
+- Cut a phrase that sounds good and says nothing. "Pragmatic, not dogmatic".
 
 ## Two tests before returning the text
 
