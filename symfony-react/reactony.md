@@ -753,6 +753,8 @@ const Input = forwardRef<HTMLInputElement>((props, ref) => (
 
 - **Files**: PascalCase (`SearchFarmAlert.tsx`)
 - **Folders**: snake_case (`search_farm/`, `skills_assessment/`)
+- **`packageManager` pinned** in `package.json`, with the lockfile committed. A
+  `package-lock.json` appearing means someone installed with the wrong tool.
 - **Imports**: always the `@/` alias, never relative `../../`
 - **No barrel files**, except for variant sets (`index.ts` exporting a set)
 
