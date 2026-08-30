@@ -24,6 +24,7 @@ files in the output.
 - Use the main domain when the change spans several, or a scope that covers them.
 - Never a `Co-Authored-By` line.
 - Never amend a commit.
+- Add a body only when the change needs explaining.
 
 Pass the message through a quoted heredoc, so backticks and `$` in the body are not
 expanded by the shell:
