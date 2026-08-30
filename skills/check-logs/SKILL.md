@@ -10,7 +10,7 @@ Pull the signals, correlate them against the current code, triage.
 The window differs by source, because they do not keep their data for the same time.
 CleverCloud retains logs for 7 days, so `--since 7d` is the ceiling and asking for more
 returns 7 days plus the illusion of a wider audit. Sentry keeps its issues far longer:
-run it from the date of the previous audit, so nothing falls between two passes.
+take the widest window it will give you.
 
 ## Where the signals live
 
