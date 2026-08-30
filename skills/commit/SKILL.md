@@ -8,11 +8,15 @@ allowed-tools: Bash(git *)
 
 Read the staged diff, write the message, commit.
 
-## Staging
+## What goes in the commit
 
-**Never stage silently.** Nothing staged: show `git status --short` and ask before
-`git add -A`. A scratch file, a `.env` or a debug artifact would ride in unseen. If the
-user named what to commit, stage exactly that.
+**Never commit a file the user has not seen.**
+
+- Something already staged: commit exactly that, nothing more. The user chose it.
+- Nothing staged: show `git status --short`, and ask before running `git add -A`. That
+  command sweeps in everything, and a scratch file, a `.env` or a forgotten `dump()`
+  would ride along unseen.
+- The user named what to commit, here or earlier: stage those paths and only those.
 
 ## The message
 
