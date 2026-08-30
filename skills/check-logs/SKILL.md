@@ -18,8 +18,8 @@ clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s
 clever logs       --alias <ALIAS> --since <PERIOD> --before 30s
 ```
 
-`clever accesslogs` is alpha and its columns are positional: pull the HTTP status with
-`awk` rather than assuming a field index.
+Pull the HTTP status with `awk` rather than a field index: `clever accesslogs` is alpha
+and its columns are positional.
 
 Messenger state, from the prod `DATABASE_URL` in `clever env`:
 
@@ -38,8 +38,7 @@ Sentry issues come from its MCP.
 own runtime logs per deployment.
 
 Nothing else here is documented yet, because nothing else has been run yet. The first
-audit on this host records what worked, the way the CleverCloud gotchas above were
-recorded.
+audit on this host records what worked.
 
 ### A static site with no backend
 
@@ -48,7 +47,7 @@ request logs.
 
 ## Correlate before judging
 
-Cross each signal with the code as it stands **now**:
+Cross each signal with the code as it stands now:
 
 - a Sentry culprit file → `git log -- <file>`: a fix may already have landed since the
   last event
@@ -58,19 +57,17 @@ Cross each signal with the code as it stands **now**:
 
 ## Triage
 
-Volume is not severity.
-
 | Pattern | Decision |
 |---|---|
 | 404 on stale JS bundles after a deploy | **Ignore** in `sentry.yaml`: users on cached HTML, not a bug |
 | 404 on entities that no longer exist | **Ignore**, same family: a legitimate 404 belongs in access logs, not Sentry |
-| 422 with a message | **Keep**: validation doing its job, but an *empty* message is a real bug |
+| 422 with a message | **Keep**: validation doing its job, but an empty message is a real bug |
 | Upstream 5xx with retry already configured | **Resolve**: Sentry reopens on regression, which is the safety net |
 | Real bug, few events, code path clearly wrong | **Fix**, commit referencing the issue id so Sentry auto-resolves on deploy |
 | Nothing seen for more than 14 days | **Bulk resolve**, same safety net |
 
 **Never auto-resolve without asking**, even though the OAuth scope allows it. And when
-fixing: `/quality`, push, wait for the deploy, *then* resolve. Resolving first loses the
+fixing: `/quality`, push, wait for the deploy, then resolve. Resolving first loses the
 issue if the fix does not hold.
 
 ## Gotchas worth knowing
@@ -85,10 +82,9 @@ issue if the fix does not hold.
 
 Group by return on investment, not by volume: mass pollution first, then real bugs,
 then what can be resolved (upstream flake, already fixed, stale). Every line carries its
-event count and a decision, never just a description.
+event count and a decision.
 
 **Close the loop.** For each real bug, one question in the report: *which step of the
 chain should have caught this, and why did it not?* A 500 on an unvalidated payload
 points at `/plan`; a regression on an untouched page points at a missing spec, so at
-`/verify`; a pattern repeated across files points at `/gap-analysis`. A workflow that
-never learns from what escapes it stays at the level of the day it was written.
+`/verify`; a pattern repeated across files points at `/gap-analysis`.
