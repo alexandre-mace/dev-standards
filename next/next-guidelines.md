@@ -12,6 +12,7 @@
 | TypeScript | 5.9 | TS 7 natif est GA. Migration 5.9 vers 6.0 puis 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3 |
 | Tailwind | 4 | PostCSS, zéro `tailwind.config` |
 | shadcn | base Base UI, style Nova | Le défaut de l'écosystème depuis juillet 2026 |
+| React Compiler | 1.0 | Active par `reactCompiler: true`, hors `experimental` depuis Next 16 |
 | Biome | 2.5 | Lint et format. La filière oxc (oxlint + oxfmt) est l'autre sortie du duo ESLint+Prettier, mais oxfmt est en beta : re-statuer quand il passe stable |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
 | lucide-react | 1.x | Plus d'icônes de marque |
@@ -52,7 +53,14 @@ Ce qu'on ajoute le plus souvent, et par où ça passe.
 
 **`useEffectEvent`** pour extraire d'un Effect la logique qui lit props ou state sans les mettre en dépendances. Stable depuis 19.2, jamais appelé en dehors de l'Effect qui le possède.
 
-**Pas de `useMemo` ni de `useCallback` posés par réflexe**, seulement sur un coût mesuré. Le React Compiler les rendrait inutiles, mais il n'est activé sur aucun projet : à statuer à la prochaine veille.
+**React Compiler activé**, et donc pas de `useMemo`, `useCallback` ni `React.memo` écrits à la main. Stable depuis la 1.0, et Next n'applique le plugin Babel qu'aux fichiers concernés grâce à une passe SWC, donc le coût de build reste marginal.
+
+```ts
+// next.config.ts, la cle n'est plus sous experimental
+const nextConfig: NextConfig = { reactCompiler: true };
+```
+
+Il demande `babel-plugin-react-compiler` en devDependency.
 
 ## 1. Scaffolding
 
