@@ -25,7 +25,7 @@
 | **Site d'écosystème** | le site porte l'identité commune plutôt que la sienne | le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, pas de suite de tests |
 | **Full-stack** | il faut des comptes ou des données stockées | **Convex** et ses composants `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), auth **Clerk**, et des tests qui deviennent obligatoires : Vitest et `convex-test` pour le backend, Playwright pour les parcours critiques |
 
-Avoir un backend ne fait pas changer de stack. Ce qui décide, c'est le modèle de rendu. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Symbl est ici pour des raisons historiques.
+Avoir un backend ne fait pas changer de stack. Ce qui décide, c'est le modèle de rendu. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`.
 
 ## 1. Scaffolding
 
@@ -54,23 +54,25 @@ scripts/        # pipeline data éventuel (*.mjs)
 
 **Biome** pour le lint et le format, un seul binaire et un `biome.json`. `next lint` a disparu en Next 16. Scripts : `"lint": "biome check"` et `"lint:fix": "biome check --write"`. Un site encore en ESLint migre à l'occasion, pas en big-bang.
 
-## 2. Kit et composants
+## 2. Composants
 
-`components.json` déclare la base Base UI style Nova, `iconLibrary: lucide`, `cssVariables: true`, les alias standards, et le registry :
+**Base UI, jamais React Aria ni Radix**, quel que soit le projet. La composition passe par la prop `render` et les handlers DOM standards : `asChild` n'existe dans aucune des deux bases, c'est du Radix recopié d'un projet pro. Un projet resté sur une autre base se migre en entier, jamais deux bases dans un même projet.
+
+`lucide-react` 1.x n'a plus d'icônes de marque : SVG local dans `components/icons.tsx`. Les variantes de composants suivent CVA.
+
+Ensuite, deux cas.
+
+**Projet à identité propre** : Base UI stock via le CLI shadcn officiel, style Nova, sans registry.
+
+**Site d'écosystème** : le kit `@alexandremace`. `components.json` déclare la base Base UI style Nova, `iconLibrary: lucide`, `cssVariables: true`, les alias standards, et le registry :
 
 ```json
 "registries": { "@alexandremace": "https://ui.alexandremace.fr/r/{name}.json" }
 ```
 
-**Le kit est la source.** `components/ui/` vient du registry et ne se modifie jamais dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit, puis propagé par `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
-
 Installation : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`) passent par le registry aussi, jamais par copier-coller entre projets.
 
-Un **projet à identité propre** part sur du Base UI stock via le CLI shadcn officiel, sans le registry.
-
-**Base UI, jamais React Aria ni Radix.** Le kit et ses consommateurs ont migré en août 2026. La composition passe par la prop `render` et les handlers DOM standards : `asChild` n'existe dans aucune des deux bases, c'est du Radix recopié d'un projet pro. Un projet resté sur l'ancienne base se migre en entier, jamais deux bases dans un même projet.
-
-`lucide-react` 1.x n'a plus d'icônes de marque : SVG local dans `components/icons.tsx`. Les variantes de composants projet suivent CVA, comme dans le kit.
+**Le kit est la source.** `components/ui/` ne se modifie jamais dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
 
 ## 3. Styling
 
