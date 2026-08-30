@@ -74,33 +74,15 @@ La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déc
 
 ## 4. Layout et SEO
 
-**Server Components par défaut.** `"use client"` est réservé aux composants qui portent de l'état ou de l'interaction. Une poignée de fichiers client par projet, pas la moitié.
+**Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction. Quelques fichiers client par projet, pas la moitié.
 
 **Français partout** : contenu, metadata (`locale: "fr_FR"`), commentaires. Les identifiants métier français sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
 
-Fonts Geist Sans et Geist Mono via le paquet npm `geist`, variables posées sur `<html>` :
+**Geist par le paquet `geist`**, jamais par `next/font/google` : `import { GeistSans } from "geist/font/sans"`, variables posées sur `<html>`, `font-sans` sur le `<body>`.
 
-```tsx
-<html lang="fr" className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
-  <body className="font-sans">{children}</body>
-</html>
-```
+**Chaque site vit sur son domaine canonique** (`<projet>.alexandremace.fr` ou `<projet>.climatelab.fr`), déclaré dans `metadataBase`. Jamais un `*.vercel.app` : le domaine canonique fait foi dans les metadata, les OG et les redirects. Factoriser la description en const, elle sert trois fois.
 
-**Chaque site vit sur son domaine canonique** (`<projet>.alexandremace.fr` ou `<projet>.climatelab.fr`), déclaré dans `metadataBase`. Jamais un `*.vercel.app` : le domaine canonique fait foi dans les metadata, les OG et les redirects.
-
-```tsx
-const description = "…";
-
-export const metadata: Metadata = {
-  metadataBase: new URL("https://<projet>.climatelab.fr"),
-  title: "…",
-  description,
-  openGraph: { title: "…", description, type: "website", locale: "fr_FR" },
-  twitter: { card: "summary", title: "…", description },
-};
-```
-
-**OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme. Depuis 16.2 sa police par défaut est Geist Sans, donc la cohérence est gratuite.
+**OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme.
 
 **Favicon** : `app/icon.tsx` généré, ou un emoji en data-URI dans `icons.icon`. Pas de `favicon.ico` par défaut de Next qui traîne.
 
