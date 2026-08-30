@@ -151,7 +151,7 @@ A host being retired becomes a redirect to the canonical domain, never a live du
 A page or a feature is only done when every one of these is green:
 
 - [ ] `/quality` passes, which here means `pnpm build` plus the linter
-- [ ] `/walkthrough` run: the golden path exercised in a browser, console and network clean
+- [ ] `/live-test` run: the golden path exercised in a browser, console and network clean
 - [ ] A new page exports its `metadata`; a new dynamic route has its `generateStaticParams`
 - [ ] Anything reading baked data: `pnpm data` re-run, and its control logs actually read
 - [ ] Nothing new under `components/ui/`: a gap in the kit is fixed in the kit, then propagated

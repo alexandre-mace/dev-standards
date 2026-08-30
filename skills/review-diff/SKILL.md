@@ -22,7 +22,7 @@ UAT fixes included.
 > conversation, which is the point: reviewing a diff with the context that wrote it is
 > the definition of a blind spot. Anthropic's own `/code-review` forks for the same
 > reason. The consequence is that `.claude/plan.md` is the only record you get, for the
-> intent and for what `/walkthrough` found.
+> intent and for what `/live-test` found.
 
 ## 1. Gather both terms
 
@@ -57,9 +57,9 @@ It is a checklist, so check it rather than trusting it was followed:
 - `/quality` green, per step 5.
 - No drift in the generated types, covered by `/quality`.
 - **The tests owed exist and pass**: take the "Tests owed" list from `.claude/plan.md`,
-  confirm each one is in the diff, and confirm the `## Walkthrough` block reports them green.
+  confirm each one is in the diff, and confirm the `## Live test` block reports them green.
   A test planned and not written, or written and never run, is caught here or nowhere.
-- The `## Walkthrough` block exists, the golden path passed, the E2E suite is green.
+- The `## Live test` block exists, the golden path passed, the E2E suite is green.
 - `#[IsGranted]` and `format: 'json'` on new `/api/` routes.
 - No anti-pattern from the guidelines' forbidden list.
 
@@ -72,7 +72,7 @@ It is a checklist, so check it rather than trusting it was followed:
   guidelines do not cover. If the diff uses such an API and the plan shows no sign of it,
   check it against the official docs for the version in the lockfile. An invented
   signature that compiles is what a green build does not catch.
-- Never run `/walkthrough` from here. It belongs before the review, and a missing `## Walkthrough`
+- Never run `/live-test` from here. It belongs before the review, and a missing `## Live test`
   block is a finding: send it back rather than absorbing the step.
 
 ## 6. Verdict
@@ -85,7 +85,7 @@ Scope :                  clean | N changes outside the ticket
 Guidelines :             conform | deviations listed
 Tests owed :             written | N missing
 /quality :               PASS | FAIL
-/walkthrough :                passed | never run
+/live-test :                passed | never run
 Verdict :                ready for /deploy | send back (list)
 ```
 

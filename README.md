@@ -46,7 +46,7 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
-| `walkthrough` | Does it work? Drives the feature in a real browser, then runs the Playwright suite |
+| `live-test` | Does it work? Drives the feature in a real browser, then runs the Playwright suite |
 | `commit` | Conventional Commits message for what is staged |
 | `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the DoD, at arm's length in a forked context |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |
@@ -66,7 +66,7 @@ so that "done" is a verified fact rather than a claim.
 stays callable on its own.
 
 ```
-/plan → branch → implement → /quality → /walkthrough → /commit → /review-diff¹ → debrief → /preprod → UAT → /review-diff² → /deploy
+/plan → branch → implement → /quality → /live-test → /commit → /review-diff¹ → debrief → /preprod → UAT → /review-diff² → /deploy
   │                              │          │                    │                                  │
   │                              │          │                    └─ full review                   └─ delta + fresh /quality
   │                              │          └─ does it work?
@@ -82,7 +82,7 @@ What the diagram cannot show:
   criteria, the assumed decisions, and the tests the work owes. It survives a compacted
   context, and `/review-diff` reads it instead of trusting its own memory.
 - **Three different things have to be true**, each with its own step: it is clean
-  (`/quality`, seconds), it works (`/walkthrough`, minutes), it is what was asked
+  (`/quality`, seconds), it works (`/live-test`, minutes), it is what was asked
   (`/review-diff`, judgement). Cheapest first, and none absorbs another: green checks on
   a feature nobody ran is the failure mode this order prevents.
 - **`.claude/plan.md` is a single working file**, overwritten per feature, gitignored,

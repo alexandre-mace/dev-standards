@@ -8,7 +8,7 @@ description: Disciplined bug-fix loop - reproduce, one hypothesis, instrument, r
 Takes the place of `/plan` as step 1 when the task is "fix this behaviour" rather than
 "build this thing". Typical inputs: a bug ticket from the PM, a Sentry issue, a finding
 from `/check-logs`, something broken in UAT. The rest of the chain is unchanged:
-`/quality` → `/walkthrough` → `/commit` → `/review-diff` → debrief → `/preprod` → `/deploy`.
+`/quality` → `/live-test` → `/commit` → `/review-diff` → debrief → `/preprod` → `/deploy`.
 
 Six steps, in this order.
 
@@ -19,7 +19,7 @@ Write the failing reproduction before thinking about the fix:
 - a PHPUnit or Vitest test if the bug is reachable from a test, which is the best case
   because it becomes step 6;
 - otherwise a script, a `curl` against the route, a Playwright scenario, or the browser
-  itself through `/walkthrough` when the bug only shows in the interface;
+  itself through `/live-test` when the bug only shows in the interface;
 - for a Sentry bug: start from the real event (payload, stack, breadcrumbs through the
   Sentry MCP), never from an imagined reconstruction. The `sentry-fix-issues` skill knows
   that plumbing: lean on it here and to resolve the issue at step 6.

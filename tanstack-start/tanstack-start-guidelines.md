@@ -113,7 +113,7 @@ Pushing is deploying, on the same Vercel account as everything else. Group your 
 A screen or a feature is only done when every one of these is green:
 
 - [ ] `/quality` passes: `pnpm build`, `pnpm test`, `tsc --noEmit`, the linter
-- [ ] `/walkthrough` run: the golden path exercised in a browser, console and network clean
+- [ ] `/live-test` run: the golden path exercised in a browser, console and network clean
 - [ ] A new user-facing flow ships with its Playwright spec
 - [ ] Screen state a user would share as a link lives in `validateSearch`, not in a `useState`
 - [ ] Every new server function validates its input with Zod at the boundary

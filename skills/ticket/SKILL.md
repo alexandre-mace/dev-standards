@@ -16,7 +16,7 @@ Copy this checklist into your reply and tick as you go.
 - [ ] 3. Branch          feat/<scope>, cut from an up-to-date main
 - [ ] 4. Implement       playbook followed, tests named in step 1 written
 - [ ] 5. Clean           /quality
-- [ ] 6. Works           /walkthrough
+- [ ] 6. Works           /live-test
 - [ ] 7. Saved           /commit
 - [ ] 8. Right           /review-diff
 - [ ] 9. Handover        the debrief, below
@@ -24,7 +24,7 @@ Copy this checklist into your reply and tick as you go.
 - [ ] 11. GATE           a human tests it
 ```
 
-After the UAT: fix, `/quality`, `/walkthrough`, `/commit`, `/review-diff` on the delta, then
+After the UAT: fix, `/quality`, `/live-test`, `/commit`, `/review-diff` on the delta, then
 **the user** runs `/deploy`.
 
 ## The two gates
@@ -68,7 +68,7 @@ They are not interchangeable, which is why they are three steps:
 | Step | Question | Answered by |
 |---|---|---|
 | `/quality` | Is it clean? | The machine, in seconds |
-| `/walkthrough` | Does it work? | Running it, in minutes |
+| `/live-test` | Does it work? | Running it, in minutes |
 | `/review-diff` | Is it what was asked? | Judgement, against `.claude/plan.md` |
 
 Cheapest first: never drive a browser against code that does not compile. And never let

@@ -7,7 +7,7 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 
 Everything a machine can settle on its own, fast and headless.
 
-- What needs a browser is `/walkthrough`. The full E2E suite is CI.
+- What needs a browser is `/live-test`. The full E2E suite is CI.
 - The test suites make this the slow gate. That is the price of "the tests pass" being a
   fact rather than an assumption.
 
@@ -77,7 +77,7 @@ report nobody can act on.
 `pnpm test` is Vitest, mandated on all three stacks. Running it is what turns "the tests
 pass" into a fact. Use whatever flag the project needs for a single non-watch run.
 
-**Not run here**: Playwright, which needs a browser and minutes, and which `/walkthrough`
+**Not run here**: Playwright, which needs a browser and minutes, and which `/live-test`
 owns. Psalm taint analysis is a CI job. Say so rather than letting the report imply full
 coverage.
 
@@ -98,7 +98,7 @@ TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
 Lint (Biome|ESLint):  PASS / FAIL / SKIPPED (no script)
 Format (Biome|Prettier): PASS / FAIL / SKIPPED (no script)
 Vitest:               PASS / FAIL / SKIPPED (no script)
-Not run here:         Playwright (/walkthrough), Psalm (CI)
+Not run here:         Playwright (/live-test), Psalm (CI)
 ```
 
 - Only the rows that apply.
