@@ -10,9 +10,11 @@ Read the staged diff, write the message, commit.
 
 ## What goes in the commit
 
-Commit what is staged, nothing else. When nothing is staged, show `git status --short`
-and ask before running `git add -A`: it sweeps in everything, and a scratch file, a
-`.env` or a forgotten `dump()` would ride along unseen.
+Commit what is staged, nothing else.
+
+**If nothing is staged, ask first.** Show `git status --short`, then wait for an answer.
+Running `git add -A` on your own takes everything, `.env` and leftover debug files
+included.
 
 ## The message
 
