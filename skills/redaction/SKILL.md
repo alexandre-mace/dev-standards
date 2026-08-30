@@ -6,11 +6,8 @@ disable-model-invocation: true
 
 # Redaction
 
-Rewrite the text to the rules below. The meaning does not change. The length almost
-always drops.
-
-**Target**: the text in `$ARGUMENTS`, or the last substantial text in the conversation.
-French and English alike.
+Rewrite the text to the rules below. The meaning does not change. French and English
+alike.
 
 ## Typography
 
@@ -26,31 +23,24 @@ French and English alike.
 ## Say it once
 
 - Cut a sentence that restates the one before it in negative or in stronger form.
-- One strong example beats three average ones.
+- Cut a list of three when one example carries it.
 
 ## Order
 
-- The rule first, the circumstance after.
+- The point first, the condition after.
 - Lead with the result, not with the approach that produced it.
 
 ## Substance
 
-- Cut anything nobody asked for: an invented cadence, an invented justification.
+- Cut what nobody asked for: a frequency, a justification, a caveat you added on your
+  own.
 - Cut slogans and aphorisms. "Pragmatic, not dogmatic" says nothing.
 - Explain a term the first time it appears, or do not use it.
-- A rule is written as a rule. Hedged into a suggestion, it gets ignored.
-
-## In a shared document
-
-- No project names, no company names, no ticket references, code examples included.
-- No project state. "X has migrated" is true in one repo and a lie in its neighbours.
-- Cut what the tool already documents, and what lives elsewhere in the repo: the copy
-  drifts out of date.
 
 ## Two tests before returning the text
 
-- Does each rule deserve to exist? Polishing a rule that should not be there is wasted
-  work.
+- Cut before polishing. A sentence that should not be there is not improved by rewriting
+  it.
 - Would the reader have to reformulate a sentence to understand it? Then their
   reformulation is the version to write.
 
