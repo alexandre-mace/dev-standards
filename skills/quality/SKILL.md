@@ -1,6 +1,6 @@
 ---
 name: quality
-description: Run every mechanical check the stack's guidelines mandate. Auto-detects the stack (Symfony+React, Next, TanStack Start) and runs what applies. Use before committing, or to check quality mid-work.
+description: Is the code clean? Runs every mechanical check the stack's guidelines mandate. Auto-detects the stack (Symfony+React, Next, TanStack Start) and runs what applies. Use before committing, or to check quality mid-work.
 ---
 
 # Quality gate

@@ -1,117 +1,68 @@
 ---
 name: ticket
-description: Investigate a product ticket in depth before any implementation, settle everything the code can settle, and write the plan to docs/ticket.md. Raises only what would genuinely change the work to do.
+description: Takes a pasted ticket, feature or bug, and runs it through the whole chain in order, stopping at the gates that need a human. Triggers - a pasted ticket, "prends ce ticket", "déroule la procédure".
 ---
 
-The user pasted a ticket into `$ARGUMENTS`. Investigate first. But investigating serves
-to **decide**, not to collect questions.
+# Ticket, end to end
 
-## Ticket
+`$ARGUMENTS` holds the ticket. Run the chain on it. The order is not a suggestion: each
+step produces what the next one checks.
 
-$ARGUMENTS
+Copy this checklist into your reply and tick as you go.
 
-## 1. Read the ticket
-
-- The *what*, the *why*, and the acceptance criteria, explicit or implicit.
-- The grey areas, the contradictions, the assumptions you would make.
-
-## 2. Investigate the code
-
-- Locate the files, routes, entities, services and components involved. Search in
-  parallel.
-- **Read** the impacted code, not the file names: architecture, local conventions,
-  dependencies, tests, side effects.
-- Look for an existing pattern to reuse rather than reinvent.
-- **Map the blast radius**: list the callers of every symbol touched (Grep), find the
-  tests covering the area and plan to run them. Say it explicitly when the code is
-  shared across pages, components or product lines. A small change in shared code is
-  not a small change.
-- Read the stack's guidelines and `AGENTS.md`.
-
-## 3. Settle what can be settled
-
-Take each grey area and resolve it **yourself** before considering raising it. The
-answer is usually already in the code:
-
-- Does the model force it? A NOT NULL column, a constraint, a validator that already
-  blocks it.
-- Does a single reading preserve the meaning of what exists? Then that is the one.
-- Does the ticket answer in the negative space? "It must be possible to enter" is not
-  "entering is mandatory".
-- Is there a conservative default that cannot produce a wrong result? Show nothing
-  rather than a maybe-wrong value; degrade rather than block.
-
-What gets settled this way is not a question. It is an **assumed decision**: documented
-in the code, announced in one line.
-
-## 4. Name the tests the work owes
-
-Before writing a line. The stack's Definition of Done is the reference, and it does not
-bend per ticket:
-
-- a new non-trivial API route owes a functional test, HTTP contract plus DB state
-- new money or tier arithmetic owes a property-based test
-- a new user journey owes a Playwright spec
-- a form with validation owes a Vitest spec covering the 422s
-- a fragile component about to be refactored owes its safety net **first**
-
-Owes none? Say that too, and why. **What is never named is never written.**
-
-## 5. Write `docs/ticket.md`
-
-Overwrite it: it always holds the feature in progress. It is what survives a compacted
-context, and what `/review-diff` reads instead of trusting its own memory.
-
-```markdown
-# <ticket title>
-
-## What is asked
-<two or three lines, then the acceptance criteria as a list>
-
-## Blast radius
-<files and symbols touched, and who calls them>
-
-## Assumed decisions
-- <the decision> : <the reason, one line>
-
-## Tests owed
-- [ ] <the test, and where it goes>
-
-## Raised, not blocking
-- <the finding>
-
-## Blocking
-- <the question, ideally none>
+```
+- [ ] 1. Plan            /plan  (bug instead of a feature: /diagnosing-bugs)
+- [ ] 2. GATE            no blocking question left
+- [ ] 3. Branch          feat/<scope>, cut from an up-to-date main
+- [ ] 4. Implement       playbook followed, tests named in step 1 written
+- [ ] 5. Works           /verify
+- [ ] 6. Clean           /quality
+- [ ] 7. Saved           /commit
+- [ ] 8. Right           /review-diff
+- [ ] 9. UAT             /preprod, or push the branch for a Vercel preview
+- [ ] 10. GATE           a human tests it
 ```
 
-## 6. Check in
+After the UAT: fix, `/verify`, `/quality`, `/commit`, `/review-diff` on the delta, then
+**the user** runs `/deploy`.
 
-Default: **implement** with your assumed decisions, stated clearly.
+## The two gates
 
-Raise only what meets both conditions:
+- **Step 2**: `/plan` raised something blocking. Stop, ask, wait.
+- **Step 10**: the UAT belongs to a human. Hand over the URL and stop.
 
-- it genuinely changes the work to do, not the wording of a label;
-- **and** no reasonable assumption lets you proceed without risking shipping the wrong
-  thing, or the code simply does not hold the information.
+## The three questions, in order
 
-Keep three categories separate:
+They are not interchangeable, which is why they are three steps:
 
-- **Settled**: the answer and its reasoning, one or two lines.
-- **Raised**: a real finding that needs no answer to move on (a reference table too
-  thin, an earlier decision this ticket reverses, a scope that is growing). Say it,
-  carry on.
-- **Blocking**: ideally zero, often one. More than two or three means going back to
-  step 3.
+| Step | Question | Answered by |
+|---|---|---|
+| `/verify` | Does it work? | Running it |
+| `/quality` | Is it clean? | The machine |
+| `/review-diff` | Is it what was asked? | Judgement, against `docs/plan.md` |
 
-Blocking only one batch? Ship the others, ask in parallel.
+Green checks on a feature nobody ran, and a working feature with red checks, are two
+different failures.
+
+## Step 3, cutting the branch
+
+Once the plan is clear, not before.
+
+```bash
+git checkout main && git pull && git checkout -b feat/<scope>
+```
+
+`<scope>` in kebab-case, two to four words, French or English following the repo.
+Uncommitted changes: stop and ask, never stash silently.
 
 ## Rules
 
-- **Investigation first, code second.**
-- **An inconsistency is proven, not suspected.** Half dissolve on checking: "it doesn't
-  exist" becomes "it already does", "it's ambiguous" becomes "one reading holds".
-- **Guessing and reasoning are not the same thing.** Never bluff a fact. But concluding
-  from the code and the ticket is not bluffing, it is the job.
-- **Doubt is paid in risk, not in questions.** Visible and fixable in one line: decide
-  and flag. Save the question for what would be expensive or silent.
-- **Reuse the local patterns** rather than inventing new ones.
+- **Never skip a step.** A skipped step is a check nobody ran.
+- **A red step stops the chain.** Fix it, re-run that step, then move on. Never carry a
+  FAIL forward hoping a later step catches it.
+- **Step 4 is where the work is.** The chain does not make implementing easier, it makes
+  the result checkable. Do not rush it because the surrounding steps are mechanical.
+- **Announce each step in one line**, so the user can interrupt and know where things
+  stand.
+- **Never run `/deploy` yourself.** The commit is a save point, the merge is
+  irreversible, and it is the user's call.

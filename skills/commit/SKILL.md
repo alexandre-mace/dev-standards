@@ -1,7 +1,6 @@
 ---
 name: commit
 description: Commit staged changes with a Conventional Commits message
-disable-model-invocation: true
 allowed-tools: Bash(git *)
 ---
 

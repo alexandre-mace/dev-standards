@@ -92,6 +92,25 @@ if [ -d "$STYLES_SRC" ]; then
   done
 fi
 
+# Prune: a skill renamed or deleted here leaves a dangling link behind.
+# Only ever touch links that point INTO this repo, never someone else's skill.
+prune_links() {
+  local dir="$1"
+  [ -d "$dir" ] || return 0
+  for link in "$dir"/*; do
+    [ -L "$link" ] || continue
+    local target
+    target="$(readlink "$link")"
+    case "$target" in
+      "$ROOT_DIR"/*) [ -e "$target" ] || { rm "$link"; echo "PRUNED   $(basename "$link") (no longer in the repo)"; } ;;
+    esac
+  done
+}
+
+prune_links "$TARGET_DIR"
+prune_links "$RULES_DIR"
+prune_links "$STYLES_DIR"
+
 echo
 echo "Done. Skills available:"
 ls -1 "$TARGET_DIR" | grep -vE '^\.' | sed 's/^/  - /'

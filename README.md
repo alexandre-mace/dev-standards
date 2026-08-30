@@ -42,20 +42,19 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 
 | Skill | Purpose |
 |---|---|
-| `feature` | Run a ticket through the whole chain, in order, stopping at the gates that need a human |
-| `ticket` | Investigate a ticket, settle what the code can settle, write the plan to `docs/ticket.md` |
-| `feature-start` | Start a new feature branch from an up-to-date main |
-| `verify` | Exercise the feature in a real browser: golden path, one edge case, console and network |
-| `quality` | Run every mechanical check the stack mandates, tests and contract drift included |
-| `commit` | Conventional Commits message generator for staged changes |
-| `review-diff` | Review the diff against the ticket, the guidelines and the Definition of Done |
-| `preprod` | Push the current feature branch to `preprod` (Symfony stack only) |
-| `deploy` | Merge the current feature branch into `main` and push |
-| `diagnosing-bugs` | Disciplined bug-fix loop: reproduce, hypothesis, instrument, root cause, regression test |
-| `gap-analysis` | Audit a codebase against its stack's guidelines, produce `docs/gap-analysis.md` |
-| `sota-gap` | Measure how far the guidelines sit from the state of the art, web sources being the judge |
-| `check-implementation` | Verify recent code against the official docs of the versions actually used |
-| `check-logs` | Prod health audit: CleverCloud logs + Messenger DB + Sentry, prioritized report |
+| `ticket` | Takes a ticket and runs the whole chain in order, stopping at the gates that need a human |
+| `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `docs/plan.md` |
+| `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
+| `verify` | Does it work? Drives the feature in a real browser, console and network included |
+| `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
+| `commit` | Conventional Commits message for what is staged |
+| `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the Definition of Done |
+| `check-implementation` | The escape hatch: code against official docs, for what the guidelines do not cover |
+| `preprod` | Merge into `preprod` for UAT. Symfony stack only |
+| `deploy` | Merge into `main`. The irreversible act, and the user's call |
+| `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
+| `sota-gap` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
+| `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
 | `unslop` | Strip AI writing tells from any text, French and English |
 
 ### The thread of a feature
@@ -63,35 +62,31 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 The skills chain in a fixed order. Each one hands the next something it can check,
 so that "done" is a verified fact rather than a claim.
 
-`/feature` runs this whole chain on one ticket, stopping at the gates. The steps stay
-callable on their own.
+`/ticket` runs this whole chain on a pasted ticket, stopping at the gates. Every step
+stays callable on its own.
 
 ```
-/ticket → /feature-start → implement → /verify → /quality → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy
-   │                          │            │          │                  │                                  │
-   │                          │            │          │                  └─ full review                   └─ delta + fresh /quality
-   │                          │            │          └─ static analysis, tests, contract drift
-   │                          │            └─ the app, in a browser
-   │                          └─ the stack's feature playbook
-   └─ investigation, blast radius, assumed decisions, tests owed → docs/ticket.md
+/plan → branch → implement → /verify → /quality → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy
+  │                              │          │                    │                                  │
+  │                              │          │                    └─ full review                   └─ delta + fresh /quality
+  │                              │          └─ is it clean?
+  │                              └─ does it work?
+  └─ investigation, blast radius, assumed decisions, tests owed → docs/plan.md
 
-Bug?  /diagnosing-bugs replaces /ticket, the rest of the thread is identical.
+Bug?  /diagnosing-bugs replaces /plan, the rest of the thread is identical.
 ```
 
 What the diagram cannot show:
 
-- **The plan is written down.** `/ticket` leaves `docs/ticket.md` behind: the
-  acceptance criteria, the assumed decisions, and the tests the work owes. It is what
-  survives a compacted context, and what `/review-diff` reads instead of trusting its
-  own memory of the conversation.
-- **Three different things have to be true**, and each has its own step: it does what
-  was asked (`/review-diff` against the ticket), it works (`/verify`), and it is
-  built the way the stack says (`/quality` plus `/review-diff` against the guidelines).
-  Green checks on a feature nobody ran is the failure mode this order exists to
-  prevent.
-- `/feature-start` cuts the branch once the plan is clear, not before.
-- Commits are save points, the merge is the irreversible act: nothing lands on
-  main unreviewed, UAT fixes included.
+- **The plan is written down.** `/plan` leaves `docs/plan.md` behind: the acceptance
+  criteria, the assumed decisions, and the tests the work owes. It survives a compacted
+  context, and `/review-diff` reads it instead of trusting its own memory.
+- **Three different things have to be true**, and each has its own step: it works
+  (`/verify`), it is clean (`/quality`), it is what was asked (`/review-diff`). Green
+  checks on a feature nobody ran is the failure mode this order prevents.
+- **Two gates belong to a human**: a blocking question from `/plan`, and the UAT.
+  `/deploy` is never run by the agent.
+- Commits are save points, the merge is the irreversible act.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-analysis`
 after a big delivery, `/sota-gap` as tech watch.
