@@ -1,11 +1,8 @@
 # Format de présentation d'un design system
 
-Ce document décrit **comment présenter** un design system, pas quoi mettre dedans. Il s'applique tel
-quel à un système fait maison comme à du shadcn quasi brut : ce qui change d'un produit à l'autre,
-c'est le remplissage des sections, jamais leur liste ni leur ordre.
-
-Objectif : qu'un dev qui arrive sur le DS de n'importe lequel de nos produits retrouve les mêmes
-rubriques, au même endroit, avec la même signification.
+Comment présenter un design system, pas quoi mettre dedans. Ce qui change d'un produit à l'autre,
+c'est le remplissage des sections, jamais leur liste ni leur ordre : un dev qui arrive sur n'importe
+lequel retrouve les mêmes rubriques au même endroit.
 
 ## 1. Le principe : documenter la provenance, pas les valeurs
 
@@ -23,12 +20,9 @@ on écrit.
 | `variant`  | upstream, plus des variantes maison | **uniquement les variantes maison**. Le reste renvoie à l'upstream.        |
 | `custom`   | inventé chez nous                   | la fiche complète.                                                         |
 
-Le coût de rédaction devient proportionnel à ce qu'on a réellement inventé. Un produit qui consomme
-40 composants upstream écrit 40 lignes et 3 fiches, pas 40 fiches.
-
-Cette règle est aussi ce qui rend le format portable : sur un système entièrement fait maison, tout
-est `custom` et le format redevient un catalogue classique. C'est le même formulaire, rempli
-différemment.
+Le coût de rédaction devient proportionnel à ce qu'on a réellement inventé : un produit qui consomme
+40 composants upstream écrit 40 lignes et 3 fiches, pas 40 fiches. Sur un système entièrement fait
+maison, tout est `custom` et le format redevient un catalogue classique.
 
 ### Ce qui entre dans le design system, ce qui n'y entre pas
 
@@ -54,22 +48,15 @@ Deux cas à exclure explicitement, sinon la liste se pollue : l'**infrastructure
 contextes applicatifs) qui est traversante sans être une brique d'interface, et les composants de
 feature partagés entre deux zones voisines par proximité fonctionnelle et non par généricité.
 
-### Trois mondes, un format
+### Deux environnements demandent une adaptation
 
-Le format vit aujourd'hui dans trois environnements qui n'ont rien en commun techniquement, et
-c'est ce qui le valide :
+Sur un site **no-code**, les valeurs se relèvent via l'API, variables et classes, jamais à la main, et
+la page vivante est une page du site construite avec les vraies classes.
 
-| Monde | Exemple | Comment le format s'incarne |
-| --- | --- | --- |
-| **Repo classique** | lagrange (Symfony + shadcn vendored) | le cas nominal : tout ce document s'applique tel quel |
-| **No-code** | feve.co (Webflow) | les valeurs se **relèvent via l'API** (variables, classes), jamais à la main ; la page vivante est une page du site construite avec les vraies classes (`/ds-demo`) |
-| **Upstream = notre propre kit** | mix, thermomètre, wealth (@alexandremace) | cas dégénéré, voir ci-dessous |
-
-**Quand l'upstream est notre propre kit**, la provenance a deux étages (shadcn stock → kit → projet)
-et toute la documentation de provenance vit déjà **dans le kit** : descriptions d'items, liste des
-écarts au stock, et le site du registry qui est déjà la page vivante. Un consommateur du kit ne
-documente donc que sa ligne d'identité et ses éventuelles briques custom ; tout le reste renvoie au
-kit. Appliquer le format complet à un consommateur, c'est dupliquer le kit en moins bien.
+Quand **l'upstream est notre propre kit**, la provenance a deux étages (stock, kit, projet) et la
+documentation de provenance vit déjà dans le kit : descriptions d'items, écarts au stock, et le site
+du registry qui est déjà la page vivante. Un consommateur ne documente donc que sa ligne d'identité et
+ses briques custom. Lui appliquer le format complet, c'est dupliquer le kit en moins bien.
 
 ## 2. Deux artefacts, jamais un seul
 
@@ -190,15 +177,14 @@ L'ordre est fixe. Une section sans contenu se supprime, elle ne se déplace pas.
 
 ## 5. La page vivante
 
-Un Storybook minimal, sans la dépendance Storybook. Trois exigences seulement :
+Un Storybook minimal, sans la dépendance. Trois exigences :
 
-- **Elle consomme les vrais composants de production.** Pas de copie, pas de fixture stylée à la main.
-- **Chaque entrée affiche sa provenance**, visuellement, à côté du titre.
-- **Les axes déclarés produisent des sélecteurs**, pour que l'aperçu se manipule au lieu d'être figé.
+- **Elle consomme les vrais composants de production**, pas une copie ni une fixture stylée à la main.
+- **Chaque entrée affiche sa provenance**, à côté du titre.
+- **Les axes déclarés produisent des sélecteurs**, pour que l'aperçu se manipule.
 
-Un Storybook complet est justifié quand le front est une SPA autonome. Il l'est beaucoup moins sur
-une application où une partie du DS vit en templates serveur et en classes CSS : Storybook n'en verrait
-que la moitié, et il faudrait maintenir un second build.
+Storybook lui-même ne se justifie que si le front est une SPA autonome : dès qu'une partie du design
+system vit en templates serveur et en classes CSS, il n'en voit que la moitié et impose un second build.
 
 ## 6. Une source lisible par une machine
 
