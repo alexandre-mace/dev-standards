@@ -3,8 +3,6 @@ name: gap-analysis
 description: Audit a whole codebase against its stack's guidelines and write every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
-Audit a full codebase against its stack's guidelines.
-
 **The guidelines are right, the code gets corrected.** The mirror skill is `/sota-gap`,
 where the ecosystem is right and the guidelines get corrected.
 
@@ -18,9 +16,11 @@ where the ecosystem is right and the guidelines get corrected.
 
 - Report a missing guidelines file as the first gap and stop: without the symlink into
   `dev-standards` there is nothing to audit against.
-- Then read the existing `docs/gap-analysis.md`: what was already found, what is ticked.
-- **Archived repository: stop.** A last commit saying "archive", a redirect to a
-  successor, an archived flag on the remote. Report it rather than auditing a corpse.
+- Then read the existing `docs/gap-analysis.md`. Keep its ticked items, and **re-check
+  the unticked ones**: one fixed in passing since the last run, or no longer relevant,
+  turns the file into a list of ghosts nobody trusts.
+- Stop on an archived repository, rather than auditing a corpse: a last commit saying
+  "archive", a redirect to a successor, an archived flag on the remote.
 
 ## 2. Scan the code
 
@@ -39,46 +39,40 @@ rules protect. Turn each one into a search and run it across every file.
 
 ## 3. Scan config, tooling and the quality gate
 
-A scan of `src/` never opens a config file, so the code can be pristine while the config
-silently lags. Real case: PHPStan stuck at `level: 8` against a guideline mandating
+A scan of the source never opens a config file, so the code can be pristine while the
+config silently lags. Real case: PHPStan stuck at `level: 8` against a guideline mandating
 `max`, invisible to a code-only scan, build green throughout.
 
-- **PHPStan level** in `phpstan.dist.neon` against what the guideline mandates. A
-  lower level is a real gap even with a green build. Check a baseline is used to climb.
-- **Quality gate completeness**: does the pre-commit hook (`.husky/pre-commit`) and the
-  CI (`.github/workflows/*.yml`) each run every mandated check? Name any that is
-  missing from either. A mandated test suite that does not exist is a gap, not a skip.
-- **TS and lint config**: `tsconfig.json` strict flags, and the linter the stack
-  prescribes (Biome on Next and TanStack, ESLint plus `eslint-plugin-react-hooks` >= 7
-  on the Symfony stack).
-- **Dependency versions**: compare the lockfile against the guideline's reference
-  versions, listed exactly in its "Last watch" header. Flag notable drift, and flag a
-  security floor that is not met as **Haute** priority whatever else is going on.
-- **Mandated config present**: rate limiter, `http_client` retry, Sentry level, the
-  Reprise or asset pipeline configuration, `packageManager` pinned, the lockfile
-  matching the package manager the docs claim.
+- PHPStan level in `phpstan.dist.neon` against what the guideline mandates. A lower
+  level is a real gap even with a green build. Check a baseline is used to climb.
+- Quality gate completeness: does the pre-commit hook (`.husky/pre-commit`) and the CI
+  (`.github/workflows/*.yml`) each run every mandated check? Name any missing from
+  either. A mandated test suite that does not exist is a gap, not a skip.
+- TS and lint config: `tsconfig.json` strict flags, and the linter the stack prescribes
+  (Biome on Next and TanStack, ESLint plus `eslint-plugin-react-hooks` >= 7 on Symfony).
+- Dependency versions against the guideline's reference list, in its "Last watch"
+  header. **A security floor that is not met is Haute priority** whatever else is going on.
+- Mandated config present: rate limiter, `http_client` retry, Sentry level, the asset
+  pipeline, `packageManager` pinned, the lockfile matching the package manager the docs
+  claim.
 
 ## 4. Scan the agent instruction files
 
 They steer every future agent session, and they rot silently.
 
-Run the checker shipped with this skill: it confronts the verifiable claims of
-`AGENTS.md` / `CLAUDE.md` against the repository (package manager vs lockfile, scripts
-that do not exist, paths that do not exist).
-
-```bash
-python3 ~/.claude/skills/gap-analysis/check-agent-files.py .
-```
+Run `check-agent-files.py`, in this skill's own directory, against the project root. It
+confronts the verifiable claims of `AGENTS.md` / `CLAUDE.md` with the repository: package
+manager against the lockfile, scripts that do not exist, paths that do not exist.
 
 Then read them for what a script cannot see:
 
 - **One instruction file, not two.** `CLAUDE.md` should be the single line `@AGENTS.md`
   and `AGENTS.md` should carry the content. Two files with independent content is a
   split brain: whichever the agent reads, it reads half the truth.
-- **Contradictions between the two**, when both hold content.
-- **Stale claims**: a framework version, an architecture, a file layout that no longer
-  matches. Every verifiable claim is checkable, so check it.
-- **Length**: past roughly 200 lines the file stops being read carefully. Say so.
+- Contradictions between the two, when both hold content.
+- Stale claims: a framework version, an architecture, a file layout that no longer
+  matches.
+- Length: past roughly 200 lines the file stops being read carefully. Say so.
 
 ## 5. Write the gap analysis
 
