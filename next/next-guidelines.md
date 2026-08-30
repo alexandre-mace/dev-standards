@@ -1,147 +1,147 @@
-# Next Guidelines : sites statiques perso
+# Next Guidelines: static-first personal sites
 
-> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run.
+> **Last watch: 24 August 2026** (`/sota-gap`), start from this date on the next run.
 >
-> Radar : Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, annoncé comme futur défaut) et `transitionTypes` sur `<Link>`. À regarder, pas encore des normes.
+> Radar: Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, announced as a future default) and `transitionTypes` on `<Link>`. Worth watching, not yet standards.
 
-| Outil | Version | À savoir |
+| Tool | Version | Notes |
 |---|---|---|
-| Next.js | 16.3 | App Router, Active LTS. Releases de sécurité préannoncées : patcher sous une semaine (ex. 16.3.3, critique le 26/08/2026). `catchError`/`retry()` stables pour les error boundaries ; `middleware.ts` déprécié au profit de `proxy.ts` |
+| Next.js | 16.3 | App Router, Active LTS. Security releases are pre-announced: patch within a week (e.g. 16.3.3, critical on 26/08/2026). `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts` |
 | React | 19.2 | |
-| `next/image` | 16 | Defaults : `qualities` reduit a `[75]`, cache TTL a 4 h, et une src locale avec query string exige `images.localPatterns` |
-| TypeScript | 5.9 | TS 7 natif est GA. Migration 5.9 vers 6.0 puis 7.0 à planifier ; le type-check de `next build` supporte TS 7 depuis 16.3 |
-| Tailwind | 4 | PostCSS, zéro `tailwind.config` |
-| shadcn | base Base UI, style Nova | Le défaut de l'écosystème depuis juillet 2026 |
-| React Compiler | 1.0 | Active par `reactCompiler: true`, hors `experimental` depuis Next 16 |
-| Biome | 2.5 | Lint et format. La filière oxc (oxlint + oxfmt) est l'autre sortie du duo ESLint+Prettier, mais oxfmt est en beta : re-statuer quand il passe stable |
+| `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
+| TypeScript | 5.9 | Native TS 7 is GA. Plan the 5.9 to 6.0 to 7.0 migration; `next build` type-checking supports TS 7 since 16.3 |
+| Tailwind | 4 | PostCSS, no `tailwind.config` |
+| shadcn | Base UI base, Nova style | The ecosystem default since July 2026 |
+| React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
+| Biome | 2.5 | Lint and format. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
-| lucide-react | 1.x | Plus d'icônes de marque |
-| Geist | paquet npm | |
-| Hébergement | Vercel Hobby | |
+| lucide-react | 1.x | No more brand icons |
+| Geist | npm package | |
+| Hosting | Vercel Hobby | |
 
-## Ce que couvre ce fichier
+## What this file covers
 
-Les sites Next perso. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Avoir un backend ne change rien à ce choix : ce qui décide, c'est le modèle de rendu.
+Personal Next sites. If server rendering saves no JavaScript because everything is interactive, the project is an application and belongs in `tanstack-start/`. Having a backend changes nothing here: what decides is the rendering model.
 
-Deux options se combinent librement, chacune décrite à sa place : le site prend le kit `@alexandremace` ou porte son identité propre (§2), et il ajoute un backend ou n'en a pas (§6).
+Two options combine freely, each described where it belongs: the site takes the `@alexandremace` kit or carries its own identity (§2), and it adds a backend or does not (§6).
 
 ## Playbook
 
-Ce qu'on ajoute le plus souvent, et par où ça passe.
+What gets added most often, and where it goes.
 
-- **Une page** : un dossier sous `app/`, un `page.tsx` Server Component, ses `metadata` exportées. Une route dynamique préremplit ses valeurs avec `generateStaticParams`, sinon elle n'est pas statique.
-- **Un jeu de données externe** : un `scripts/build-*.mjs` qui écrit du TypeScript typé dans `lib/`, un script `data` dans `package.json`, et des logs de contrôle en fin de run. La page importe la constante, elle ne fetche pas.
-- **Un composant interactif** (simulateur, filtre, sélecteur) : un composant client, le plus bas possible dans l'arbre. Sa page reste Server Component et lui passe les données cuites en props.
-- **Un graphique** : le composant de graphe est client, les données arrivent en props depuis le serveur. Les couleurs viennent des tokens `--chart-*` du kit, jamais de valeurs en dur.
-- **Une donnée utilisateur** : voir §6, c'est le seul cas qui justifie un backend.
+- **A page**: a folder under `app/`, a `page.tsx` Server Component, its exported `metadata`. A dynamic route pre-fills its values with `generateStaticParams`, otherwise it is not static.
+- **An external dataset**: a `scripts/build-*.mjs` writing typed TypeScript into `lib/`, a `data` script in `package.json`, and control logs at the end of the run. The page imports the constant, it does not fetch.
+- **An interactive component** (simulator, filter, picker): a client component, as low in the tree as possible. Its page stays a Server Component and passes the baked data down as props.
+- **A chart**: the chart component is client, the data arrives as props from the server. Colours come from the kit's `--chart-*` tokens, never hardcoded values.
+- **User data**: see §6, the only case that justifies a backend.
 
-## Patterns courants
+## Current patterns
 
-**Suspense pour ce qui est lent, pas pour ce qui est absent.** Un `loading.tsx` couvre le segment entier ; un `<Suspense>` local isole la seule partie lente. Sur un site statique, la plupart des pages n'ont besoin ni de l'un ni de l'autre.
+**Suspense for what is slow, not for what is missing.** A `loading.tsx` covers the whole segment; a local `<Suspense>` isolates the one slow part. On a static site most pages need neither.
 
-**`<Activity>` plutôt qu'un démontage** quand un panneau caché doit retrouver son état, ce qui est le cas de tout simulateur à onglets. Stable depuis React 19.2 : l'état, le DOM et la position de scroll survivent, les Effects sont nettoyés.
+**`<Activity>` rather than unmounting** when a hidden panel has to come back in the same state, which is every tabbed simulator. Stable since React 19.2: state, DOM and scroll position survive, Effects are cleaned up.
 
 ```tsx
-<Activity mode={ongletActif === "transport" ? "visible" : "hidden"}>
-  <PanneauTransport />
+<Activity mode={activeTab === "transport" ? "visible" : "hidden"}>
+  <TransportPanel />
 </Activity>
 ```
 
-**`useEffectEvent`** pour extraire d'un Effect la logique qui lit props ou state sans les mettre en dépendances. Stable depuis 19.2, jamais appelé en dehors de l'Effect qui le possède.
+**`useEffectEvent`** to pull out of an Effect the logic that reads props or state without listing them as dependencies. Stable since 19.2, never called outside the Effect that owns it.
 
-**React Compiler activé**, et donc pas de `useMemo`, `useCallback` ni `React.memo` écrits à la main. Stable depuis la 1.0, et Next n'applique le plugin Babel qu'aux fichiers concernés grâce à une passe SWC, donc le coût de build reste marginal.
+**React Compiler enabled**, so no hand-written `useMemo`, `useCallback` or `React.memo`. Stable since 1.0, and Next only applies the Babel plugin to the relevant files through an SWC pass, so the build cost stays marginal.
 
 ```ts
-// next.config.ts, la cle n'est plus sous experimental
+// next.config.ts, the key is no longer under experimental
 const nextConfig: NextConfig = { reactCompiler: true };
 ```
 
-Il demande `babel-plugin-react-compiler` en devDependency.
+It needs `babel-plugin-react-compiler` as a devDependency.
 
 ## 1. Scaffolding
 
 ```bash
-pnpm create next-app@latest <projet> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
+pnpm create next-app@latest <project> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
 ```
 
-Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
+Do not add `--turbopack`: it is the default bundler since Next 16.
 
-**Épingler `packageManager`** dans `package.json`, et commiter le lockfile. Un `package-lock.json` qui apparaît signale que quelqu'un a installé avec le mauvais outil.
+**Pin `packageManager`** in `package.json`, and commit the lockfile. A `package-lock.json` showing up means someone installed with the wrong tool.
 
-**Commiter le bloc auto-géré d'`AGENTS.md`** sans l'éditer : `next dev` le maintient et il pointe la doc de la version installée.
+**Commit the auto-managed block in `AGENTS.md`** without editing it: `next dev` maintains it and it points at the docs for the installed version.
 
-**Lister les hôtes réels dans `images.remotePatterns`**, jamais `hostname: "**"` : un joker laisse n'importe qui faire transiter ses images par l'optimiseur du site.
+**List the real hosts in `images.remotePatterns`**, never `hostname: "**"`: a wildcard lets anyone route their images through the site's optimizer.
 
-## 2. Composants
+## 2. Components
 
-**Base UI, jamais React Aria ni Radix**, quel que soit le projet, en style Nova. La composition passe par la prop `render` et les handlers DOM standards. `asChild` n'existe dans aucune des deux bases, c'est un idiome Radix. Migrer en entier un projet resté sur une autre base, jamais deux bases dans un même projet.
+**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. Migrate a project left on another base in full, never two bases in one project.
 
-Un **projet à identité propre** s'arrête là : CLI shadcn officiel, sans registry.
+A **project with its own identity** stops there: official shadcn CLI, no registry.
 
-Un **site d'écosystème** ajoute le kit `@alexandremace`, déclaré dans `components.json` :
+A **site in the ecosystem** adds the `@alexandremace` kit, declared in `components.json`:
 
 ```json
 "registries": { "@alexandremace": "https://ui.alexandremace.fr/r/{name}.json" }
 ```
 
-Tout ce qui vient du kit s'installe par le registry, y compris les composants d'écosystème. Jamais de copier-coller entre projets.
+Everything from the kit is installed through the registry, ecosystem components included. Never copy-paste between projects.
 
-**Le kit est la source.** Ne jamais modifier `components/ui/` dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
+**The kit is the source.** Never modify `components/ui/` in a consumer: a local need is either a real gap to fix in the kit and propagate with `/propagate-kit`, or a use case to style through `className`. Project-specific components live at the root of `components/`.
 
-**Icônes** : `lucide-react` 1.x n'a plus d'icônes de marque, SVG local dans `components/icons.tsx`.
+**Icons**: `lucide-react` 1.x has no brand icons left, local SVG in `components/icons.tsx`.
 
-**Variantes** : CVA, comme dans le kit.
+**Variants**: CVA, as in the kit.
 
 ## 3. Styling
 
-**Mono-thème clair.** Ajouter cette ligne à `app/globals.css`, après les `@import` :
+**Light single theme.** Add this line to `app/globals.css`, after the `@import`s:
 
 ```css
 @custom-variant dark (&:is(.dark *));
 ```
 
-Elle neutralise les `dark:` du stock shadcn, et la classe `.dark` n'est jamais posée. Un thème sombre est une décision de projet, pas un défaut.
+It neutralises the stock shadcn `dark:` classes, and the `.dark` class is never set. A dark theme is a project decision, not a default.
 
-**Tailwind 4 se configure en CSS**, zéro `tailwind.config.js`. Les tokens vivent en OkLCh dans `:root`, remappés en `--color-*` dans `@theme inline`. Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant, donc ajouter tout nouveau token à la main aux deux endroits.
+**Tailwind 4 is configured in CSS**, no `tailwind.config.js`. Tokens live in OkLCh under `:root`, remapped to `--color-*` in `@theme inline`. Trap: `shadcn add theme` does not rewrite an existing `globals.css`, so add every new token by hand in both places.
 
-La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déclarant les tokens, sans toucher aux composants.
+The default palette comes from the kit. A project can take its own by redeclaring the tokens, without touching the components.
 
-## 4. Layout et SEO
-- **Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction.
-- **La langue est une décision de projet**, prise au démarrage et tenue partout : contenu, commentaires, et déclarée à la fois dans `<html lang>` et dans `openGraph.locale`. Les identifiants métier dans la langue du domaine sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
-- **Geist par le paquet `geist`**, jamais par `next/font/google` : `import { GeistSans } from "geist/font/sans"`, variables posées sur `<html>`, `font-sans` sur le `<body>`.
-- **Chaque site vit sur son domaine canonique** (`<projet>.alexandremace.fr` ou `<projet>.climatelab.fr`), déclaré dans `metadataBase`. Jamais un `*.vercel.app` : le domaine canonique fait foi dans les metadata, les OG et les redirects. Factoriser la description en const, elle sert trois fois.
-- **OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme.
-- **Icônes** : `app/icon.svg`, que Next sert en `sizes="any"` à toutes les tailles, plus `app/apple-icon.png` en 180×180 pour l'écran d'accueil iOS. Next génère les balises `<link>` seul. Un `icon.tsx` qui rend une `ImageResponse` quand l'icône se dérive d'un emoji ou d'une initiale. Pas de `favicon.ico`, sauf besoin d'un très vieux navigateur.
+## 4. Layout and SEO
+- **Server Components by default.** Keep `"use client"` for components that hold state or interaction.
+- **The language is a project decision**, taken at the start and held everywhere: content, comments, and declared both in `<html lang>` and in `openGraph.locale`. Domain identifiers in that language are fine in scripts and models (`Pays`, `ANNEE`, `donnees`).
+- **Geist through the `geist` package**, never through `next/font/google`: `import { GeistSans } from "geist/font/sans"`, variables on `<html>`, `font-sans` on the `<body>`.
+- **Every site lives on its canonical domain** (`<project>.alexandremace.fr` or `<project>.climatelab.fr`), declared in `metadataBase`. Never a `*.vercel.app`: the canonical domain rules in metadata, OG and redirects. Factor the description into a const, it is used three times.
+- **Generated OG image**: `app/opengraph-image.tsx` with `ImageResponse`, 1200×630, never a static image that goes stale.
+- **Icons**: `app/icon.svg`, which Next serves with `sizes="any"` at every size, plus `app/apple-icon.png` at 180×180 for the iOS home screen. Next emits the `<link>` tags on its own. An `icon.tsx` rendering an `ImageResponse` when the icon derives from an emoji or an initial. No `favicon.ico`, unless a very old browser has to be supported.
 
-## 5. Données cuites
+## 5. Baked data
 
-Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche existe au build : pas de route handlers, pas de server actions, pas de DB, sauf si le site a un backend (§6).
+Content lives in `lib/` as typed TypeScript. Everything the page displays exists at build time: no route handlers, no server actions, no DB, unless the site has a backend (§6).
 
-**Petit jeu de données** (fiches projets, modèle) : écrit à la main dans `lib/data.ts`, typé, sources documentées en commentaire d'entête.
+**Small dataset** (project cards, a model): written by hand in `lib/data.ts`, typed, sources documented in a header comment.
 
-**Source externe** (Banque mondiale, OWID) : pipeline `pnpm data`.
+**External source** (World Bank, OWID): a `pnpm data` pipeline.
 
 - `scripts/build-*.mjs`.
-- Sortie générée dans `lib/**/*.ts` avec entête obligatoire : `// Généré par scripts/…, ne pas éditer à la main.`, la source, la date d'extraction, et la licence si elle l'exige (CC BY pour OWID). Un fichier généré édité à la main perd sa modification au prochain run.
-- **Logs de contrôle en fin de run** : totaux croisés avec un agrégat de référence, comptes de lignes. C'est le seul filet sur un site sans suite de tests.
-- Relancer `pnpm data` avant un déploiement qui dépend de la fraîcheur.
+- Output generated into `lib/**/*.ts` with a mandatory header: `// Generated by scripts/…, do not edit by hand.`, the source, the extraction date, and the licence if it requires one (CC BY for OWID). A generated file edited by hand loses that edit on the next run.
+- **Control logs at the end of the run**: totals cross-checked against a reference aggregate, row counts. It is the only safety net on a site with no test suite.
+- Re-run `pnpm data` before a deployment that depends on freshness.
 
-**Fetch runtime : seulement pour l'exploration volontaire**, par exemple un sélecteur de pays sur un graphique. Petits appels ciblés, cache en mémoire, dégradation propre si l'upstream tombe. Jamais `useEffect + fetch` pour du contenu qui pouvait être cuit au build.
+**Runtime fetch: only for deliberate exploration**, for instance a country picker on a chart. Small targeted calls, in-memory cache, clean degradation if the upstream goes down. Never `useEffect + fetch` for content that could have been baked at build time.
 
 ## 6. Backend
 
-Un site qui a besoin de comptes ou de données stockées ajoute **Convex** et ses composants officiels `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), avec **Clerk** pour l'auth.
+A site that needs accounts or stored data adds **Convex** and its official `@convex-dev/*` components (rate limiting, Resend emails, Stripe payments), with **Clerk** for auth.
 
-Les tests deviennent alors obligatoires : Vitest et `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Le log de contrôle des scripts data ne suffit plus quand un utilisateur peut écrire.
+Tests then become mandatory: Vitest and `convex-test` for the backend functions, Playwright for critical journeys. The control logs of the data scripts are no longer enough once a user can write.
 
-## 7. Qualité et déploiement
+## 7. Quality and deployment
 
-**`pnpm build` est le check** : types et génération statique. Le lancer avant de pousser.
+**`pnpm build` is the check**: types and static generation. Run it before pushing.
 
-**Pousser, c'est déployer** (webhook Vercel sur main) :
+**Pushing is deploying** (Vercel webhook on main):
 
-- Grouper les pushes. Le plan Hobby plafonne à 100 déploiements par 24 h glissantes, et chaque push de chaque projet consomme un slot.
-- La rétention Hobby est de 30 jours : ne jamais compter sur une vieille URL de déploiement comme archive.
+- Group your pushes. The Hobby plan caps at 100 deployments per rolling 24 h, and every push of every project takes a slot.
+- Hobby retention is 30 days: never rely on an old deployment URL as an archive.
 
-Un hébergement qu'on abandonne devient une redirection vers le domaine canonique, jamais un doublon vivant.
+A host being retired becomes a redirect to the canonical domain, never a live duplicate.
