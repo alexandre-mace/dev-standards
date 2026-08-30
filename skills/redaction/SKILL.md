@@ -1,7 +1,6 @@
 ---
 name: redaction
 description: Rewrites a text into Alexandre's own writing voice: documentation, guidelines, skills, commit messages, a note to a colleague.
-disable-model-invocation: true
 ---
 
 # Redaction
