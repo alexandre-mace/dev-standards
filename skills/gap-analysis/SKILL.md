@@ -82,8 +82,9 @@ except the accepted deviations.
 ```markdown
 # Gap Analysis : Theorie vs Pratique
 
-> Ecarts entre les guidelines de la stack et le code actuel.
-> Organisé par priorité. Cocher au fur et à mesure du nettoyage.
+> Ecarts entre les guidelines de la stack et le code actuel, à la date de l'audit.
+> Organisé par priorité. Les cases servent le temps d'une session de nettoyage :
+> le prochain audit réécrit le fichier.
 
 ---
 
