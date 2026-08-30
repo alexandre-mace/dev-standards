@@ -665,9 +665,33 @@ export default MonComposant;
 ```
 
 The `queryClient` is shared globally (`assets/lib/queryClient.ts`), never recreated per component.
+
+**The split into two components is the point, not a style choice.** Calling a TanStack
+Query hook in the same component that returns the provider puts the hook **above** the
+provider in the tree: `No QueryClient set, use QueryClientProvider to set one`. With no
+error boundary, React unmounts the root, so the page is **blank, usually with nothing in
+the console** beyond a React warning naming the component. On one project that shipped an
+entire tool blank in production for four months, reported by a user, invisible in the
+server logs since the crash is fully client-side.
+
+Inner component holds the hooks, exported wrapper holds the provider. And one provider
+only: a nested second one costs no crash but renders a second `<Toaster />`.
+
+To recover the real error behind a blank island, wrap the inner component in a temporary
+class error boundary whose `componentDidCatch` logs `error.stack`, read the console, then
+revert.
 ### Vite
 
 The Symfony integration is **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), Webpack Encore's official heir for Vite and Rsbuild, under the Symfony backward-compatibility promise. It replaces `pentatrion/vite-bundle` and `vite-plugin-symfony`, whose whole scope it covers. A project still on pentatrion is a gap **to close**: the migration is mechanical (Twig prefix `vite_` → `reprise_`, swap the plugin, import `startStimulusApp` from `@symfony/reprise/stimulus`), and not urgent, pentatrion not being deprecated.
+
+**While still on pentatrion**, one trap costs an hour every time. `pnpm build` rewrites
+`public/build/.vite/entrypoints.json` in production mode, and Symfony then serves the
+built bundles **even with `pnpm dev` running**: React changes stop appearing, HMR goes
+quiet, and nothing errors. The same file carries both modes and the last writer wins. The
+fix is to restart `pnpm dev`, which rewrites it in dev-server mode. The network tab
+confirms the diagnosis: the page loads `/build/assets/Xxx-<hash>.js` from the Symfony port
+instead of modules from `:5173`. Reflex: after any `pnpm build` in a dev session, restart
+Vite before believing anything you see in the browser.
 
 At least 1 entry point: `app` (the main one). Add more for heavy bundles loaded conditionally (maps, editors), or for the admin.
 
@@ -730,6 +754,20 @@ One interactivity model:
   the EA assets load partially. The symptom reads as a cache problem, since a hard reload
   "fixes" it, which is exactly what a forced full load would do. Disable `turbo-core` in
   `assets/controllers.json` rather than sprinkling the attribute.
+
+  On a project that deliberately keeps Turbo Drive on, one combination bites: a Twig form
+  sitting low in a long page, plus `html { scroll-behavior: smooth }`. On submit Turbo
+  swaps the whole `<body>` and resets the scroll, then animates back down to the anchor,
+  so the user watches the page fly to the top and scroll back down. Wrapping the form
+  block in a `<turbo-frame id="…" class="block">` fixes it, with three traps.
+  `class="block"` is mandatory: an unknown element defaults to `display: inline` and Turbo
+  injects no CSS. `data-turbo-action="advance"` must be left out, since promoting the
+  frame navigation to a visit restores the very scroll reset being fixed, at the price of
+  the URL no longer changing on submit. And the status code decides: Turbo keeps a 2xx
+  inside the frame but renders any 4xx or 5xx full page, which matters because Symfony
+  answers **422** on an invalid form, so the frame only covers the "valid form, processing
+  failed" case. Give the success page the same frame id so it renders in place instead of
+  as a bare page.
 - **RSC / React Server Components: we don't do them, on purpose.** Symfony + Twig **is** the server layer already, and the React islands are the intentional client leaves. Bolting RSC on would impose a Node rendering server next to PHP (dual role, broken CleverCloud deployment, extra RSC vulnerability surface) for a problem PHP already solves. `@vitejs/plugin-rsc` exists (2026) but stays experimental and outside Next, irrelevant to the islands-in-Symfony model. Re-open the question only if we dropped server-rendered HTML for a 100% JS frontend (a different architecture, not an evolution of this one).
 
 ---
