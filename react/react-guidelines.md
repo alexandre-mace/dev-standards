@@ -79,6 +79,22 @@ preserving local customizations.
 Use the compound components (`Dialog` + `DialogContent` + `DialogHeader`). Loading spinner
 from lucide-react, notifications through sonner's `toast`, never `alert()`.
 
+### Scoping a theme to one screen
+
+Overriding `--primary` on a wrapper element does nothing: the components stay the
+original colour. Tailwind's `@theme` declares the indirection on the root,
+`--color-primary: hsl(var(--primary))`, and a custom property's `var()` references are
+substituted on the element that carries the declaration. `--color-primary` is therefore
+resolved once on `:root`, and descendants inherit an already-computed colour. Redefining
+`--primary` further down never reaches it.
+
+Override the `--color-*` tokens the utilities actually consume, with final values, on the
+wrapper class: `--color-primary`, `--color-accent`, `--color-border`, `--color-input`,
+`--color-ring`, `--color-destructive`, and their `-foreground` counterparts. Check with
+`getComputedStyle(el).getPropertyValue('--color-primary')` rather than by eye. Portals
+(`PopoverContent`, `DialogContent`) render outside the wrapper, so they need the theme
+class passed through `className`.
+
 ### Updating a component
 
 The CLI is the update tool. Never fetch the GitHub files by hand.

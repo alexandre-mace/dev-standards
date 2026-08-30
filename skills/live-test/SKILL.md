@@ -21,6 +21,11 @@ follows is what `/run` does not know.
 
 - **Symfony needs two processes**, the PHP server and Vite. Without Vite the React
   islands render nothing and you chase a phantom bug.
+- **Check the port before assuming it.** A stale process from an earlier session can hold
+  8000 and answer 404 on every route while the live server sits elsewhere. A 404 on a
+  route that `debug:router` lists is a dead server, not a routing bug.
+- **The Browser pane refuses the local self-signed certificate.** Drive through Playwright
+  instead, which trusts it.
 - Next and TanStack Start: one `pnpm dev`.
 - A server that will not start is the finding. Report it and stop, never work around it.
 

@@ -280,6 +280,40 @@ Two rules to avoid fighting the framework:
 
    No translation files needed: `trans()` returns the string directly.
 
+3. **Never a `TextField` on a property that returns an enum.** EA's `text.html.twig`
+   renders `title="{{ field.value }}"` with the raw value, so the Twig escaper throws
+   "Object of class X could not be converted to string". Neither `TranslatableInterface`
+   nor `->formatValue()` protects you: both act on `formattedValue` while `field.value`
+   stays the enum. Still true in EA 5.5.1. The crash only fires when the index holds at
+   least one row and someone opens the page, so a rarely visited CRUD carries a silent
+   bomb. A custom `->setTemplatePath()` is the tolerated alternative, and it reads
+   `field.value.label`, never `{{ field.value }}`.
+
+   The whole family is worth one architecture test: walk the getters of every
+   `CrudController` by reflection and fail on any enum-returning property configured as
+   something other than a `ChoiceField` without a custom template.
+
+#### Migrating a column from `string` to `enumType`
+
+The getter now returns a `BackedEnum`, so every string comparison built on it goes
+**silently false**. No error, no log, the branch just stops running. On one project the
+`{% if entity.type == 'expense' %}` left behind by such a migration stayed false for six
+hours in production, until an unrelated crash on `|title` revealed it.
+
+Sweep, in this order:
+
+1. `grep -rn "\.field ==\|\.field|title\|\.field|capitalize" templates/`
+2. `entity.field == 'x'` becomes `entity.field.value == 'x'`, or
+   `entity.field == constant('App\\Domain\\X::Case')` to be strict.
+3. `entity.field|title` becomes `entity.field.label`. `|title` and `|capitalize` call
+   `mb_convert_case()`, which throws on an object.
+4. The EasyAdmin CRUDs: a legacy `ChoiceField::new('f')->setChoices(EnumX::forForm())`
+   submits strings, and the typed setter throws a `TypeError`. Drop the `setChoices()`
+   (rule 1 above) rather than patching it.
+
+A render test on the show and edit pages catches the crashes. It does not catch the
+comparisons gone false, which need an assertion on what the page displays.
+
 #### Custom actions (EasyAdmin v5): never read `entityId` from the query
 
 With EA v5's *pretty URLs*, the `entityId` of a custom action (`#[AdminRoute(path: '/{entityId}/…')]`) is a **route parameter**, not a query param. Reading it from the query always returns `null` (symptom: the action believes no entity is selected). (Since EA **5.1**, pretty URLs are the **default mode** and `usePrettyUrls()` has been removed, so stop calling it.)
@@ -506,6 +540,24 @@ $request->attributes->get('id');    // route params (also available as a typed p
 ```
 
 Prefer the mapping attributes (`#[MapRequestPayload]`, `#[MapQueryString]`) over direct bag access.
+
+### Catching around a flush leaves you with a closed EntityManager
+
+`UnitOfWork::commit()` closes the EntityManager in a `finally` block, and not only for
+Doctrine's own exceptions: anything a listener throws during the flush (an upload, a
+business hook, an event) gets you there. So inside the `catch`, the EM is closed.
+
+Re-rendering the form then works only while everything the page needs is already
+hydrated. One extra lazy load, an unloaded relation or an `EntityType` whose choices have
+not been resolved yet, and you get "The EntityManager is closed" and a 500: exactly the
+failure the catch was written to avoid. The dependency is implicit and invisible when
+reading the code.
+
+Two ways out. Redirect instead of rendering, which restarts on a fresh EM at the cost of
+what the user had typed. Or keep the render and pin it with a functional test that
+replays the failure. To make a listener added inside a test visible to the request, call
+`$this->client->disableReboot()`: otherwise the kernel restarts, builds an EM without the
+listener, and the test goes green for the wrong reason.
 
 ### When to extract into Service/
 
@@ -823,6 +875,27 @@ class StepRepository extends ServiceEntityRepository
     }
 }
 ```
+
+### The inverse side of a `OneToOne` is always eager
+
+`#[ORM\OneToOne(mappedBy: '...')]`, the side without the foreign key, cannot be made
+lazy. Doctrine says so in its own code: "to-one inverse sides can not be lazy"
+(`BasicEntityPersister`). It has to run the query to know whether the association is
+null, so hydrating the owner entity emits one `SELECT` per row **even when the code never
+calls the getter**. On a list endpoint that is an N+1 nothing in the controller reveals.
+
+For a read-only list that does not need whole entities, hydrate partially:
+
+```php
+$qb->select('f.id AS id', 'f.name AS name')->getArrayResult();
+```
+
+No entity hydrated, no eager load. Keep the security joins and the 404 checks.
+
+To prove an endpoint does not emit a query, count them: `$client->enableProfiler()`, then
+`getContainer()->get('doctrine.debug_data_holder')->reset()` right before the request (the
+DAMA transaction makes the profiler accumulate the fixtures' queries too), then filter
+`$profile->getCollector('db')->getQueries()`.
 
 ---
 
@@ -1320,6 +1393,16 @@ vendor/bin/phpstan analyse
 
 Since PHPStan 2.2.6, **Turbo**: an optional native PHP extension (precompiled binaries shipped in the Composer package, loaded automatically on PHP 8.3+) speeds analysis up by 10 to 30% with bit-identical output. Nothing to configure, just update. (Phar users: `pie install phpstan/turbo`.)
 
+#### `class.nameCase` never goes in the baseline
+
+macOS is case-insensitive, Linux is not. A `use` written `Google\Service\GroupsSettings`
+when the real class is `Groupssettings` autoloads fine locally and hard-crashes in CI and
+in production with "Class not found". PHPStan reports it as
+`Class X referenced with incorrect case` under the `class.nameCase` identifier, so
+baselining that identifier hides a live bug behind a green local build. Fix these, never
+tolerate them. Same reflex for a file renamed with only a case change: git on macOS may
+not record it.
+
 #### AbstractAppController: typing `getUser()`
 
 `AbstractController::getUser()` returns `UserInterface|null`, so PHPStan doesn't know it is your `User` entity. Write a base controller that types the return:
@@ -1401,6 +1484,36 @@ Checks for known vulnerabilities in the PHP dependencies.
 composer audit
 ```
 
+### Removing a bundle: Flex deletes the files its recipe owned
+
+`composer remove` on a package that has a Flex recipe triggers that recipe's
+`unconfigure`, and `CopyFromRecipeConfigurator::unconfigure()` deletes every file the
+recipe is recorded as owning, modified by hand or not. Removing
+`symfony/webpack-encore-bundle` this way takes `package.json`, `assets/app.js`,
+`assets/styles/app.css` and `webpack.config.js` with it, and strips the
+`###> symfony/webpack-encore-bundle ###` block from `.gitignore`, which is where
+`/node_modules/` and `/public/build/` were declared. The next commit then carries
+`node_modules/`.
+
+So: commit a clean state first, so `git checkout <file>` can bring anything back, and
+read `git status` afterwards looking for unexpected `D` lines and a shrunken
+`.gitignore`. `symfony.lock` lists what each recipe owns.
+
+### After a Symfony version bump
+
+Two failures that neither the pre-commit hook nor PHPStan will show you.
+
+**Purge every environment's cache, not just dev.** Composer's post-install `cache:clear`
+covers dev; `var/cache/test` stays compiled against the old version. A minor bump can
+remove an internal class, and the PHP files written by `symfony/cache` still reference
+it, so every Twig page 500s and the test suite drowns in false failures. `rm -rf
+var/cache/dev var/cache/test`, then `cache:clear` (raise `memory_limit`, the default
+128M is not enough).
+
+**Run the whole PHPUnit suite.** PHPStan analyses `src/` only, so an incompatibility in
+`tests/` sails through the hook. A new method on `KernelTestCase` colliding with a test
+helper of the same name is a fatal error at suite load, not a failing assertion.
+
 ### Summary
 
 | Tool | Role | When |
@@ -1445,6 +1558,11 @@ pnpm lint-staged
 lint-staged only runs on **staged** files, so it stays fast even on a large project. The `fix` / `--write` steps re-stage the auto-corrected files.
 
 > **PHP-CS-Fixer gotcha**: with several paths as arguments (the lint-staged case), you need an explicit `--config=<path>` and `--path-mode=intersection` so the config's finder correctly narrows to the files passed. The `--` separates options from paths.
+
+That intersection is also a blind spot: the hook only sees staged files, while CI runs
+`--dry-run` on the whole repository. A violation sitting in a file nobody touched passes
+the commit and turns CI red. When CI fails on CS-Fixer after a clean commit, read the CI
+diff to find the guilty file instead of searching the commit's own changes.
 
 ### Project-wide checks in the pre-commit hook
 

@@ -15,6 +15,11 @@ as in English.
 
 - Never assert what you cannot source. An invented number, frequency or constraint reads
   exactly like a real one.
+- **What a tool offers is read, not remembered.** These projects run versions released
+  after training: the installed version, the current documentation, then a grep of the
+  codebase to see whether the pattern is already in use. Answering "the framework has no
+  such thing" from memory has already been wrong about a feature that was both shipped
+  and used everywhere in the code.
 - Give the number or the cause, not the impression. "Considerably faster" says nothing,
   "ten times faster" says something.
 - Explain a term the first time it appears, or do not use it.

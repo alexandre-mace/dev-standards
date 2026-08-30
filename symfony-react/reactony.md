@@ -723,6 +723,13 @@ One interactivity model:
 - **Stimulus is mounting infrastructure only.** The `symfony/ux-react` bridge is itself a Stimulus controller, invisible, and untouched. **Do not write new custom Stimulus controllers**: no state, no fetch, no business logic in Stimulus. Tolerance: stateless micro DOM behaviour (under ~30 lines, copy-to-clipboard say) where an island would be disproportionate. Existing custom controllers are legacy, not a model to copy.
 - **Special case, enriching a classic Symfony Form field** (rich editor, datepicker, autocomplete on a server-rendered `<input>`/`<textarea>`): that is a *legitimate* Stimulus use in itself (progressive enhancement, the Symfony UX model). BUT if the React equivalent already exists (a `Wysiwyg` component, say), **reuse it as an island** rather than maintaining a parallel Stimulus controller that duplicates it: mount the React component and have it **sync into the hidden field** (`document.getElementById(targetId).value = ...` on update) so it goes out with the POST. One editor for the whole app, the Symfony field stays the submitted source.
 - **Turbo Drive: disabled globally (`<body data-turbo="false">`), on purpose.** Turbo navigation remounts React islands (state lost, double mount). Do not re-enable it without an explicit decision; for navigation polish, the route is native View Transitions (cross-document CSS). `ux-turbo` stays installed for possible Turbo Streams / Mercure use, not for the drive.
+
+  Note that `<body data-turbo="false">` only covers the templates that carry it. An admin
+  layout that does not inherit it leaves Turbo intercepting clicks towards EasyAdmin,
+  which swaps the `<body>` without a real document load: TomSelect never initialises and
+  the EA assets load partially. The symptom reads as a cache problem, since a hard reload
+  "fixes" it, which is exactly what a forced full load would do. Disable `turbo-core` in
+  `assets/controllers.json` rather than sprinkling the attribute.
 - **RSC / React Server Components: we don't do them, on purpose.** Symfony + Twig **is** the server layer already, and the React islands are the intentional client leaves. Bolting RSC on would impose a Node rendering server next to PHP (dual role, broken CleverCloud deployment, extra RSC vulnerability surface) for a problem PHP already solves. `@vitejs/plugin-rsc` exists (2026) but stays experimental and outside Next, irrelevant to the islands-in-Symfony model. Re-open the question only if we dropped server-rendered HTML for a 100% JS frontend (a different architecture, not an evolution of this one).
 
 ---

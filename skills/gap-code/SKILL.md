@@ -32,6 +32,10 @@ rule, exactly what a scan looks for, and the rest of the file gives the patterns
 rules protect. Turn each one into a search and run it across every file.
 
 - Agents in parallel, one per area of the codebase. Every file, not a sample.
+- **Each agent returns its findings and edits no file.** Several agents writing
+  `docs/gap-analysis.md` at once race each other, and the one that behaved, returning its
+  text instead of writing, sees its section left at the previous scan. The orchestrator
+  writes the file once, at the end, from everything it got back.
 - `Glob` and `Grep` systematically: most rules become one pattern each.
 - A rule that cannot be turned into a search still gets read for: architecture
   boundaries, business logic in the wrong layer, a pattern that diverges between two
@@ -126,5 +130,13 @@ Findings per priority, then the most critical items, then one line on what to do
 - Something that looks wrong in the guidelines themselves goes to `/gap-sota`.
 - Do not invent problems. Flag what genuinely deviates, or what is plainly a bug or a
   security issue.
+- **Read the code before calling it a deviation.** Code that does not follow the canonical
+  pattern is sometimes right for its situation, and forcing the pattern makes it worse.
+  Seen: mutation hooks flagged for not using `useMutation`, in islands mounted without a
+  `QueryClientProvider`, where the hook crashes on render. A form flagged for not using
+  react-hook-form, whose fields are derived asynchronously from two selects, which RHF
+  does not simplify. Hand-written Zod schemas flagged as not generated, validating the
+  state of the form rather than the payload. Say honestly that the pattern does not fit,
+  rather than opening a gap that a later session will close by breaking working code.
 - Group by theme, not by file, so the result is a work plan.
 - French for the prose of `gap-analysis.md`, matching the existing file.

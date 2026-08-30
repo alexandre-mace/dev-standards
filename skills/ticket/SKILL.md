@@ -95,5 +95,8 @@ and ask when changes are uncommitted, rather than stashing them.
   disappears into a flapping test.
 - Step 4 is where the work is. The chain does not make implementing easier, it makes the
   result checkable. Do not rush it because the surrounding steps are mechanical.
+- **Code you modify leaves covered.** When step 4 touches code whose behaviour no test
+  pins, write that test in the same branch, following the guidelines' pyramid. Deferring
+  it to a dedicated pass means never.
 - Announce each step in one line, so the user can interrupt and know where things stand.
 - Never run `/deploy` yourself. The merge is irreversible, and it is the user's call.
