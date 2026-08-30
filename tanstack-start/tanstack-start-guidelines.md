@@ -29,6 +29,10 @@ Both frameworks have Server Components. What differs is the default: Next is ser
 
 **Mixed project**: a marketing landing plus an app is one project with two audiences. Serve the landing statically and keep the app here, rather than splitting the repo.
 
+**React itself is documented once**, in `react/react-guidelines.md`: React 19, the
+compiler, shadcn and Base UI, the test doctrine. This file carries what is specific to
+the stack.
+
 ## Playbook
 
 - **A screen**: a file under `src/routes/`, its state in the URL through `validateSearch`, its data through a `loader` that goes via the Query client.

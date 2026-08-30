@@ -14,6 +14,9 @@ where the ecosystem is right and the guidelines get corrected.
 | Next | a `next.config.{js,ts,mjs}` | `docs/next-guidelines.md` |
 | TanStack Start | `@tanstack/react-start` in `package.json` | `docs/tanstack-start-guidelines.md` |
 
+Every stack also reads `docs/react-guidelines.md`: React 19, the compiler, shadcn and the
+test doctrine apply to all three.
+
 - Report a missing guidelines file as the first gap and stop: without the symlink into
   `dev-standards` there is nothing to audit against.
 - Read the existing `docs/gap-analysis.md` for one thing only: the deviations that were

@@ -10,6 +10,7 @@ where the guidelines are right and the code gets corrected.
 
 | Stack | Files |
 |---|---|
+| All three | `react/react-guidelines.md` |
 | Symfony + React | `symfony-react/symfony-guidelines.md`, `symfony-react/reactony.md` |
 | Next | `next/next-guidelines.md` |
 | TanStack Start | `tanstack-start/tanstack-start-guidelines.md` |

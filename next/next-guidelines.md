@@ -25,6 +25,10 @@ Personal Next sites. If server rendering saves no JavaScript because everything 
 
 Two options combine freely, each described where it belongs: the site takes the `@alexandremace` kit or carries its own identity (§2), and it adds a backend or does not (§6).
 
+**React itself is documented once**, in `react/react-guidelines.md`: React 19, the
+compiler, shadcn and Base UI, the test doctrine. This file carries what is specific to
+the stack.
+
 ## Playbook
 
 What gets added most often, and where it goes.

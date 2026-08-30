@@ -4,6 +4,9 @@
 >
 > **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · Symfony Reprise 1.1 (see §6) · symfony/ux 3.4 (2.x line still maintained) · TanStack Query 5.102 · RHF 7.87 (v8 still in beta) · Zod 4.5 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.19) · Vitest 4.1 (v5 in RC, see §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
 
+**React itself is documented once**, in `react/react-guidelines.md`: React 19, the
+compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
+
 ## Routing: what to read for which task
 
 Read the **Principles** (below) and the **anti-patterns (§10)** for every task; then only the sections that apply, not the whole file.
@@ -726,29 +729,6 @@ One interactivity model:
 
 ## 7. React conventions
 
-### React 19
-
-React 19 is stable (React 18 is in security support only). Key features:
-
-- **`ref` as a prop**: no more `forwardRef`, pass `ref` directly as a prop (plus cleanup functions on refs)
-- **`use()` API**: read promises and context during render
-- **`useOptimistic`**: native optimistic updates
-- **`<Activity>`**, stable since 19.2: preserve the state of hidden components (`mode="visible|hidden"`)
-- **`useEffectEvent`**, stable since 19.2: extract from an Effect the event logic that reads props/state without listing them as dependencies. Never in the deps array (the react-hooks lint enforces it), and declared in the component that owns the Effect
-- View Transitions (`<ViewTransition>`): still experimental, not in production. Stabilization is announced for React 19.3 (alongside Fragment refs), but only through a secondary source (a Next.js team AMA, nothing on react.dev), so wait for the official announcement
-
-```tsx
-// React 19: ref straight as a prop
-const Input = ({ ref, ...props }: { ref?: React.Ref<HTMLInputElement> }) => (
-  <input ref={ref} {...props} />
-);
-
-// Before React 19: forwardRef required
-const Input = forwardRef<HTMLInputElement>((props, ref) => (
-  <input ref={ref} {...props} />
-));
-```
-
 ### Files and imports
 
 - **Files**: PascalCase (`SearchFarmAlert.tsx`)
@@ -842,92 +822,38 @@ Use shadcn's `cn()` for conditional classes, no ternaries inside strings.
 <div className={`rounded-md border p-4 ${isActive ? "bg-primary text-white" : ""}`} />
 ```
 
-### shadcn components
+### shadcn and Base UI
 
-- **Buttons and clickable elements**: pick by intent, the way the shadcn primitives do themselves (their own triggers and closes are styled `<button>` elements, not the `<Button>` component):
-  - **Action** (submit, confirm, delete…) → `<Button variant=…>`.
-  - **Link** (navigation) → `<Button render={<a href=… />} variant=…>`, so a real `<a>` survives, with the variant choosing the look (`link` for an inline link; `default`/`secondary`/`outline` for a solid button).
-  - **Selectable / toggle** (filter pills, multi-select) → `Toggle` / `ToggleGroup`, not `<Button>`.
-  - **Bespoke** (image tile, clickable card, absolutely positioned icon micro-control, dropzone) → a raw `<button>` is legitimate: `<Button>` would only add a variant you have to override.
-  - Escape hatch `buttonVariants({variant})`: to give the button look to an element you cannot compose through `<Button>` (a third-party `Link` component, say).
-- Use the compound components: `Dialog` + `DialogContent` + `DialogHeader`, `Select` + `SelectTrigger` + `SelectContent`, and so on.
-- Loading: `<Loader2 className="h-4 w-4 animate-spin" />` from lucide-react
-- Notifications: `toast` from sonner (no `alert()`)
-
-### Staying on the latest shadcn (state of the art) and handling updates
-
-shadcn is **not an npm dependency**: the components are **vendored source** in `components/ui/`. So there is no `pnpm update`; you update component by component through the CLI, **preserving local customizations**.
-
-**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. A project still on `new-york-v4` (Radix) is a gap **to close**, and `/gap-code` should raise it as work to schedule: migrate it in full, never two bases in one project.
-
-> **Migrating a project**: do it cold, on a branch, re-grafting the in-house variants inventoried in the project's `DESIGN-SYSTEM.md`. A stale `style` in `components.json` makes the CLI resolve against the old registry, so new components (the chat primitives `message-scroller`/`message`/`bubble`, for instance) come back **404** even though they exist.
-
-**The inventory of what is customized is PER PROJECT and lives in its `DESIGN-SYSTEM.md`** (provenance section, `variant`/`custom` entries): that file is authoritative, not this one. Reactony is shared across products, so it cannot carry a local inventory without lying to its neighbours. Before updating a component: read the project's inventory, run a full `--diff` to catch whatever it missed, and update it in the same PR.
-
-**Known upstream v4 traps** (library facts, true for every project):
-- `PopoverClose` removed from the v4 registry: a project that uses it keeps it locally and marks it `variant`.
-- Dialog prop inverted: `hideCloseButton` became `showCloseButton`.
-- Button sizes: upstream `xs` moves to `h-6`; `icon-xs`/`icon-sm`/`icon-lg` don't exist in every style.
-- **Non-shadcn** components (`multi-select`, `visually-hidden`…): no upstream `--diff`, don't try to "update" them.
-
-Everything else must stay **as close to upstream as possible**: don't edit a `components/ui/*` without a reason, so updates stay clean diffs.
-
-**Update workflow (the CLI IS the update tool)**:
-1. `npx shadcn@latest add <component> --diff`: the gap between our local file and upstream for the configured style. **Never fetch the GitHub files by hand.**
-2. `npx shadcn@latest add <component> --diff <file>`: the diff file by file.
-3. Decide per file: no local change → safe overwrite; local change (our brand variants) → read the local file, apply the upstream updates **re-grafting our additions**.
-4. **Never `--overwrite` blindly.** An `add` can pull a registry dependency (`message-scroller` depends on `button`) and try to crush a customized component: decline the overwrite, or re-graft our variants right after.
-5. After every `add`, re-read the file and fix the icon imports (the project's own icon library) and the aliases (`@/`). Check the rendering **in the browser** (moving between styles changes shadows, focus rings and sizes).
-
-**CLI / registry news (summer 2026)**: **private** GitHub registries are supported (auth through `gh` credentials or `GH_TOKEN`: if you can read the repo, the CLI can install from it), relevant if a personal kit ever needs to go private. `npx shadcn migrate base-color` switches a project's base color: it rewrites the theme variables in the CSS pointed at by `components.json` plus the `baseColor` value (unrecognized custom tokens are listed at the end of the migration, to handle by hand; reversible by running it the other way or through git). New multi-step `Questionnaire` component.
-
-**Cadence**: at every `/gap-sota` watch, check the current style on ui.shadcn.com and reconcile the components that drifted most (a large `--diff` is a candidate for re-grafting). Target: a near-empty diff outside the documented brand variants.
+`react/react-guidelines.md` §3: the base, picking the right element, the update workflow,
+the upstream traps.
 
 ### QueryClient
 
 The shared `queryClient` (`assets/lib/queryClient.ts`) carries sensible defaults: don't create a `new QueryClient()` inside components.
 ### Performance: React Compiler
 
-The [React Compiler](https://react.dev/learn/react-compiler) is **enabled**. ⚠️ Since `@vitejs/plugin-react` v6 (Vite 8), the `react({ babel: {...} })` option no longer exists (Oxc transforms) and is **silently ignored**. Two configurations actually run the compiler:
+What the compiler changes in the code you write is in `react/react-guidelines.md` §2.
+Here, how it is enabled on a Vite build.
 
-**Native path (plugin-react ≥ 6.1, August 2026)**: the compiler's Rust port, more than 10 times faster than the Babel plugin (~100 ms to ~10 ms per file):
+⚠️ Since `@vitejs/plugin-react` v6 (Vite 8), `react({ babel: {...} })` no longer exists
+(Oxc transforms) and is **silently ignored**. Two configurations actually run it.
 
-```js
-// vite.config.js: pnpm add -D oxc-transform-react (optional peer dep)
-import react from "@vitejs/plugin-react";
-
-export default defineConfig({
-  plugins: [react({ compiler: true })],
-  // options: react({ compiler: { compilationMode: 'annotation' } })
-});
-```
-
-Still marked **experimental** by the plugin: it is the target, to switch to during a maintenance window, checking that memoization holds (React DevTools Profiler).
-
-**Babel path (the stable one)**:
+**Native path** (plugin-react ≥ 6.1), the compiler's Rust port, more than ten times
+faster than Babel, with `oxc-transform-react` as an optional peer:
 
 ```js
-// vite.config.js
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
-
-export default defineConfig({
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
-});
+plugins: [react({ compiler: true })]
 ```
 
-(`pnpm add -D -E babel-plugin-react-compiler` + `pnpm add -D @rolldown/plugin-babel @babel/core`). The compiler lint rules ship with `eslint-plugin-react-hooks` ≥ 7 (`configs.flat.recommended`): the `eslint-plugin-react-compiler` package is frozen, don't install it any more.
+Still marked experimental by the plugin: the target, to switch to during a maintenance
+window, checking memoization holds in the Profiler.
 
-**What it means for the code you write**:
-- Don't add `useMemo` / `useCallback` / `React.memo` "just in case". The compiler places them where they are needed.
-- Keep them **only** when:
-  - profiling (React DevTools Profiler) shows a specific expensive re-render
-  - a compiler rule from the `react-hooks` lint (≥ 7) reports a bail on the component (so the compiler doesn't memoize it, the rare case where an explicit `useMemo` earns its place)
-- Existing `useMemo`/`useCallback` in pre-compiler code don't need active removal: they become no-ops (the compiler adds its own on top). Clean them up opportunistically when you touch the file.
+**Babel path**, the stable one, with `babel-plugin-react-compiler`,
+`@rolldown/plugin-babel` and `@babel/core`:
 
-**Bailed components (compiler skip)**: the ESLint plugin warns about components that break the Rules of React (side effects in render, writes to `window.*`, refs mutated from an outside callback, `// eslint-disable-next-line react-hooks/exhaustive-deps`). Those components work correctly but get no auto-memoization. Not blocking; fix case by case if profiling calls for it.
-
-**Golden rule**: write the simplest React you can. The compiler optimizes.
+```js
+plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
+```
 
 **React Compiler × react-hook-form (v7)**: the `formState` proxy and `watch()` rely on internal mutability that the compiler memoizes wrongly (the lint's `incompatible-library` rule flags them). With the compiler on:
 

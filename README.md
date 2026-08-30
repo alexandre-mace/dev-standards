@@ -33,6 +33,14 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 > Components earn their keep, so `next/`. No means it is all interactive anyway, so
 > `tanstack-start/` and typed URLs instead. Decided when the project starts.
 
+### `react/`: what is true on every stack
+
+React runs on all three, so it is written once: React 19, the compiler, shadcn on the
+Base UI base, the front-end test doctrine. Each stack's file keeps what differs, starting
+with how the compiler is enabled.
+
+- **`react-guidelines.md`**, referenced by the three stack files
+
 ### Transverse
 
 - **`agent/`**, how the agent should work whatever the stack: writing rules, register, how to research
@@ -126,7 +134,10 @@ path: an absolute one carries your username and breaks on any other machine, and
 ```bash
 mkdir -p docs
 
-# Symfony app, React islands: two files
+# every stack
+ln -s ../../dev-standards/react/react-guidelines.md docs/react-guidelines.md
+
+# Symfony app, React islands: two more files
 ln -s ../../dev-standards/symfony-react/symfony-guidelines.md docs/symfony-guidelines.md
 ln -s ../../dev-standards/symfony-react/reactony.md docs/reactony.md
 
