@@ -17,15 +17,11 @@
 | Geist | paquet npm | |
 | Hébergement | Vercel Hobby | |
 
-## Portée : un socle, deux couches
+## Ce que couvre ce fichier
 
-| Couche | Quand | Ce qu'elle ajoute |
-|---|---|---|
-| **Socle** | tout projet Next perso | tout ce qui suit, sauf mention contraire |
-| **Site d'écosystème** | le site porte l'identité commune plutôt que la sienne | le kit `@alexandremace` et sa palette, les données cuites, le mono-thème clair, pas de suite de tests |
-| **Full-stack** | il faut des comptes ou des données stockées | **Convex** et ses composants `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), auth **Clerk**, et des tests qui deviennent obligatoires : Vitest et `convex-test` pour le backend, Playwright pour les parcours critiques |
+Les sites Next perso. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`. Avoir un backend ne change rien à ce choix : ce qui décide, c'est le modèle de rendu.
 
-Avoir un backend ne fait pas changer de stack. Ce qui décide, c'est le modèle de rendu. Si rendre côté serveur n'économise aucun JavaScript parce que tout est interactif, le projet est une application et va sur `tanstack-start/`.
+Deux options se combinent librement, chacune décrite à sa place : le site prend le kit `@alexandremace` ou porte son identité propre (§2), et il ajoute un backend ou n'en a pas (§6).
 
 ## 1. Scaffolding
 
@@ -131,7 +127,7 @@ export const metadata: Metadata = {
 
 ## 5. Données cuites
 
-Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche existe au build : pas de route handlers, pas de server actions, pas de DB, sauf couche full-stack.
+Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche existe au build : pas de route handlers, pas de server actions, pas de DB, sauf si le site a un backend (§6).
 
 **Petit jeu de données** (fiches projets, modèle) : écrit à la main dans `lib/data.ts`, typé, sources documentées en commentaire d'entête.
 
@@ -144,9 +140,15 @@ Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche exis
 
 **Fetch runtime : seulement pour l'exploration volontaire**, par exemple un sélecteur de pays sur un graphique. Petits appels ciblés, cache en mémoire, dégradation propre si l'upstream tombe. Jamais `useEffect + fetch` pour du contenu qui pouvait être cuit au build.
 
-## 6. Qualité et déploiement
+## 6. Backend
 
-**`pnpm build` est le check** : types, génération statique. Le lancer avant de pousser. Pas de suite de tests sur ces sites : la logique critique est dans les scripts data, contrôlée par leurs logs.
+Un site qui a besoin de comptes ou de données stockées ajoute **Convex** et ses composants officiels `@convex-dev/*` (rate limiting, emails Resend, paiements Stripe), avec **Clerk** pour l'auth.
+
+Les tests deviennent alors obligatoires : Vitest et `convex-test` pour les fonctions backend, Playwright pour les parcours critiques. Le log de contrôle des scripts data ne suffit plus quand un utilisateur peut écrire.
+
+## 7. Qualité et déploiement
+
+**`pnpm build` est le check** : types, génération statique. Le lancer avant de pousser. Pas de suite de tests sur un site sans backend : la logique critique est dans les scripts data, contrôlée par leurs logs.
 
 **Pousser, c'est déployer** (webhook Vercel sur main). Trois conséquences :
 
