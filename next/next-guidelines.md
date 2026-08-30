@@ -74,7 +74,7 @@ La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déc
 
 ## 4. Layout et SEO
 
-**Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction. Quelques fichiers client par projet, pas la moitié.
+**Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction.
 
 **La langue est une décision de projet**, prise au démarrage et tenue partout : contenu, commentaires, et déclarée à la fois dans `<html lang>` et dans `openGraph.locale`. Les identifiants métier dans la langue du domaine sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
 
@@ -84,7 +84,7 @@ La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déc
 
 **OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme.
 
-**Favicon** : `app/icon.tsx` généré, ou un emoji en data-URI dans `icons.icon`. Pas de `favicon.ico` par défaut de Next qui traîne.
+**Icônes** : `app/icon.svg`, que Next sert en `sizes="any"` à toutes les tailles, plus `app/apple-icon.png` en 180×180 pour l'écran d'accueil iOS. Next génère les balises `<link>` seul. Un `icon.tsx` qui rend une `ImageResponse` quand l'icône se dérive d'un emoji ou d'une initiale. Pas de `favicon.ico`, sauf besoin d'un très vieux navigateur.
 
 ## 5. Données cuites
 
