@@ -27,89 +27,16 @@ from here.
 
 Agents in parallel across the axes. Every file, not a sample.
 
-### Symfony backend (`src/`)
+### Per stack
 
-- **Domain/ vs Service/**: any class in `Domain/` injecting a repository,
-  EntityManager, API client, logger or any infrastructure dependency. Domain/ must be
-  pure (Entity plus other Domain). Framework attributes (`Assert`, `OA`, `Groups`)
-  are allowed and are not a finding.
-- **Enums**: abstract classes with `public const` that should be a PHP `enum`. Naming
-  (singular). Doctrine columns that should use `enumType:`.
-- **Controllers**: `/api/` routes missing `format: 'json'`; `/api/` routes missing
-  `#[IsGranted]`; `$request->get()` (removed in Symfony 8.0); `getRepository()` calls
-  instead of an injected typed repository; controllers extending `AbstractController`
-  and typing `getUser()` as `UserInterface`; inline business logic that belongs in
-  Domain/ or Service/. Length alone is not a finding: a long controller of thin
-  actions is fine.
-- **DTOs**: `MapRequestPayload` on a large entity where an allowlist DTO is due;
-  ObjectMapper DTOs carrying a constructor, `= null` or `readonly`, which breaks
-  partial mapping.
-- **Repositories**: queries living outside `Repository/`.
-- **Entities**: missing `Timestampable`; explicit column types the TypedFieldMapper
-  infers; mutable `DateTime`; logic that belongs in Domain/.
-- **Commands**: `extends Command` with `execute()` instead of the invokable pattern;
-  missing `#[AsCommand]`; more than ~100 lines of business logic inline.
-- **Services**: constructors without property promotion, missing `readonly`.
-- **Twig**: `AbstractExtension` + `getFunctions()` instead of the `#[AsTwigFunction]`
-  attributes.
-- **HttpClient**: `new RetryableHttpClient()` or a hand-rolled retry loop in a service;
-  a public endpoint with no `#[RateLimit]`.
-- **Messenger**: a message carrying an entity or an `UploadedFile`; a handler assuming
-  the entity still exists; a dispatch before the `flush()`.
-- **PHP 8.4**: implicit nullables, opportunities for asymmetric visibility or property
-  hooks.
+Read only the axis file for the stack you detected. The others do not apply and cost
+context for nothing.
 
-### React frontend (`assets/`), Symfony stack
-
-- **Data fetching**: `useEffect` + `fetch` + `useState` instead of `useQuery` and the
-  generated SDK. A bare `fetch()`. A hand-built `FormData` instead of SDK multipart.
-- **Errors**: SDK calls with no `handleSdkError`.
-- **Forms**: not on RHF + Zod + the shadcn `Field` family; hand-written Zod schemas
-  that should come from `zod.gen`; the legacy `<Form>/<FormField>` wrapper in new code.
-- **Uploads**: no `file.size` guard on the frontend.
-- **Imports**: relative `../../` instead of `@/`.
-- **Typing**: `any` outside the documented `form.setError` exception; untyped props.
-- **QueryClient**: a `new QueryClient()` inside a component; a Twig-mounted component
-  with no `<QueryClientProvider>`.
-- **React 19**: `forwardRef`; `useMemo`/`useCallback` added by hand under the compiler;
-  `watch()` or a render-time read of the `formState` proxy.
-- **Stimulus and Turbo**: a new custom Stimulus controller carrying state or fetching;
-  Turbo Drive re-enabled.
-
-### Next (`app/`, `components/`, `lib/`)
-
-- **Server by default**: `"use client"` on a component that needs no interactivity, or
-  placed too high in the tree so a whole page ships to the browser.
-- **Baked data**: a page fetching at request time what a `scripts/build-*.mjs` should
-  have written into `lib/`; a dynamic route with no `generateStaticParams`.
-- **UI base**: a project still on `new-york-v4` (Radix) or React Aria rather than Base
-  UI in Nova style; `asChild`, which belongs to neither base.
-- **The kit**: a `components/ui/` edited locally in a consumer instead of fixing the
-  kit; a component copy-pasted between projects rather than installed from the
-  registry.
-- **Config**: `reactCompiler` off; `images.remotePatterns` with `hostname: "**"`;
-  `--turbopack` still passed, redundant since Next 16; a hand-edited auto-managed
-  block in `AGENTS.md`.
-- **Icons**: a brand icon imported from `lucide-react` 1.x, which no longer ships any.
-- **SEO**: a page with no exported `metadata`.
-
-### TanStack Start (`src/routes/`, `src/components/`, `convex/`)
-
-- **The router is the framework**: `URLSearchParams` parsed by hand; a `useState` for
-  state a user would want to share as a link, instead of extending the route's
-  `validateSearch` schema.
-- **Loaders**: fetching inside a component instead of a loader feeding the Query
-  cache; a server-rendered read not using `useSuspenseQuery`.
-- **Server state**: Zustand or any client store used as a cache for server data.
-- **Server functions**: an API route written for something with no external consumer;
-  a `createServerFn` with no `.validator()`.
-- **Convex**: a database write going through anything other than a Convex mutation; a
-  hand-rolled `take(n)` migration loop instead of `@convex-dev/migrations`.
-- **Auth**: routes guarded leaf by leaf instead of in a layout route; two auth
-  providers coexisting.
-- **UI base**: same axis as Next.
-- **React Compiler**: hand-written memoization; `react({ babel: {...} })`, silently
-  ignored since plugin-react v6.
+| Stack | Axes |
+|---|---|
+| Symfony + React | [axes-symfony.md](axes-symfony.md) |
+| Next | [axes-next.md](axes-next.md) |
+| TanStack Start | [axes-tanstack.md](axes-tanstack.md) |
 
 ### Every stack
 

@@ -19,8 +19,9 @@ Copy this checklist into your reply and tick as you go.
 - [ ] 6. Works           /verify
 - [ ] 7. Saved           /commit
 - [ ] 8. Right           /review-diff
-- [ ] 9. UAT             /preprod, or push the branch for a Vercel preview
-- [ ] 10. GATE           a human tests it
+- [ ] 9. Handover        the debrief, below
+- [ ] 10. UAT            /preprod, or push the branch for a Vercel preview
+- [ ] 11. GATE           a human tests it
 ```
 
 After the UAT: fix, `/quality`, `/verify`, `/commit`, `/review-diff` on the delta, then
@@ -34,7 +35,31 @@ After the UAT: fix, `/quality`, `/verify`, `/commit`, `/review-diff` on the delt
   object cheaply: twenty lines of plan cost nothing to read, a five hundred line diff
   built on a wrong premise costs the whole implementation. This is the only place a
   wrong direction is cheap to catch.
-- **Step 10, the UAT.** It belongs to a human. Hand over the URL and stop.
+- **Step 11, the UAT.** It belongs to a human. Hand over the URL and stop.
+
+## Step 9, the debrief
+
+Ten lines, no more, written for a developer who did not type this code but owns it. The
+diff is in git and the plan is in `.claude/plan.md`; neither tells you what it was like
+to build.
+
+```
+Debrief : <feature>
+- Shape:     what moved, structurally. Not a file list, git has that.
+- Decisions: the two or three that were not obvious, each with its why in one line.
+- Fragile:   where I would look first if this breaks in three months.
+- Dropped:   a reasonable alternative I considered and did not take, and why.
+- You own:   a new dependency, a new pattern, a config that will need attention later.
+```
+
+Rules for it:
+
+- **Nothing non-obvious happened is a valid debrief.** Say it in one line. Manufacturing
+  interest is worse than admitting the ticket was mechanical.
+- **No restating the ticket**, no listing files, no commentary on the quality of the work.
+- **Name what you are unsure about.** A place where you guessed, or where the tests are
+  thinner than you would like, is the single most useful line in the whole debrief.
+- Say it in the user's language, not in the language of the codebase.
 
 ## The three questions, in order
 
