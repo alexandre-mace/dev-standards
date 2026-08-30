@@ -40,7 +40,7 @@ Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 ## 2. Composants
 
-**Base UI, jamais React Aria ni Radix**, quel que soit le projet, en style Nova. La composition passe par la prop `render` et les handlers DOM standards. `asChild` n'existe dans aucune des deux bases : c'est du Radix recopié d'un projet pro. Migrer en entier un projet resté sur une autre base, jamais deux bases dans un même projet.
+**Base UI, jamais React Aria ni Radix**, quel que soit le projet, en style Nova. La composition passe par la prop `render` et les handlers DOM standards. `asChild` n'existe dans aucune des deux bases, c'est un idiome Radix. Migrer en entier un projet resté sur une autre base, jamais deux bases dans un même projet.
 
 Un **projet à identité propre** s'arrête là : CLI shadcn officiel, sans registry.
 
