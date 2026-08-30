@@ -2,7 +2,7 @@
 
 > Source de vérité unique, pas de duplication, un seul pattern.
 >
-> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · vite-plugin-symfony 8.2 · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.86 (v8 toujours en bêta) · Zod 4.4 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
+> **Dernière veille : 30 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : React 19.2.8 · React Compiler 1.0 (voie native plugin-react 6.1, cf. §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · Symfony Reprise 1.1 (cf. §6) · symfony/ux 3.4 (ligne 2.x maintenue) · TanStack Query 5.102 · RHF 7.87 (v8 toujours en bêta) · Zod 4.5 · @hey-api/openapi-ts 0.99 (pin exact) · Tailwind 4.3 · shadcn (famille `Field` ; CLI 4.19) · Vitest 4.1 (v5 en RC, cf. §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (natif, GA, cf. §8).
 
 ## Routage : quoi lire pour quelle tâche
 
@@ -596,7 +596,7 @@ Les 5 plugins :
 - `zod` : schémas Zod 4 pour validation côté client
 - `@tanstack/react-query` : génère automatiquement les `queryOptions()`, `queryKey`, et `mutationOptions()` depuis l'OpenAPI, élimine le boilerplate de `lib/queries/`
 
-Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). État août 2026 : 0.99.0 est la courante depuis juin (pas de 1.0) ; tout projet épinglé en deçà rattrape via la page Migrating. Côté backend du pipeline, nelmio/api-doc-bundle 5.11 durcit la génération pour les workers persistants et supporte la méthode HTTP QUERY. Zod 4.4 est volontairement plus strict, relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main.
+Au bump de version (pin exact oblige), lire la [page Migrating](https://heyapi.dev/openapi-ts/migrating). Depuis 0.93 : 0.95 n'exporte plus les schémas `Data` composites (`shouldExtract: true` pour revenir), 0.96 requiert Node ≥ 22.13, 0.97 respecte réellement `throwOnError: false`, 0.98 refactore vers une config déclarative (impacte surtout les plugins custom), 0.99 renomme `plugin.symbols` → `plugin.imports` et supprime `plugin.external()`/`registerSymbol()` (et fusionne les configs de plugin dupliquées). État août 2026 : 0.99.0 est la courante depuis juin (pas de 1.0) ; tout projet épinglé en deçà rattrape via la page Migrating. Côté backend du pipeline, nelmio/api-doc-bundle 5.11 durcit la génération pour les workers persistants et supporte la méthode HTTP QUERY. Zod 4.4 est volontairement plus strict, relancer la suite Vitest au bump. Zod fournit aussi `z.codec()` (4.1, transformations bidirectionnelles typées, ex. string ISO ↔ `Date`) et son inversion `z.invertCodec()` (4.4) pour les conversions API ↔ domaine à la main. Zod 4.5 ajoute `z.compile(schema)` : même API, parse 3 à 9× plus rapide, à poser sur les schémas générés qu'on valide au runtime (réponses SDK, gros objets de formulaire).
 
 ### SDK : appels API typés
 
@@ -618,7 +618,7 @@ En CI : `make types && git diff --exit-code openapi.yaml assets/lib/api/` pour d
 
 ## 6. Infra : Vite + Symfony UX
 
-React est monté dans Twig via **Symfony UX React** + **vite-plugin-symfony**. (symfony/ux 3.4 est la ligne active, avec le support d'`import.meta.glob()` par ux-react ; requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés : montée mécanique depuis 2.x. Piège : le dist-tag npm `latest` de `@symfony/ux-react` pointe encore la 2.36, un install par défaut ne donne pas la 3.x. La ligne 2.x reste maintenue.)
+React est monté dans Twig via **Symfony UX React** + **Symfony Reprise**. (symfony/ux 3.4 est la ligne active, avec le support d'`import.meta.glob()` par ux-react ; requiert PHP 8.4 / Symfony 7.4, `react_component()` et `registerReactControllerComponents()` inchangés : montée mécanique depuis 2.x. Piège : le dist-tag npm `latest` de `@symfony/ux-react` pointe encore la 2.36, un install par défaut ne donne pas la 3.x. La ligne 2.x reste maintenue.)
 
 ### Arborescence
 
@@ -670,27 +670,49 @@ Le `queryClient` est partagé globalement (`assets/lib/queryClient.ts`), pas rec
 
 ### Vite
 
-Au moins 1 entry point dans `vite.config.js` : `app` (principal). Ajouter des entry points supplémentaires pour les bundles lourds chargés conditionnellement (ex. cartes, éditeurs).
+L'intégration Symfony est **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), l'héritière officielle de Webpack Encore pour Vite et Rsbuild, sous promesse de rétrocompatibilité Symfony. Elle remplace `pentatrion/vite-bundle` et `vite-plugin-symfony`, dont elle couvre tout le périmètre. Un projet encore sur pentatrion est un écart **à résorber** : la migration est mécanique (préfixe Twig `vite_` → `reprise_`, swap du plugin, `startStimulusApp` importé de `@symfony/reprise/stimulus`), sans urgence, pentatrion n'étant pas déprécié.
 
-```twig
-{{ vite_entry_link_tags('app') }}
-{{ vite_entry_script_tags('app', { dependency: 'react' }) }}
+Au moins 1 entry point : `app` (principal). Ajouter des entry points supplémentaires pour les bundles lourds chargés conditionnellement (ex. cartes, éditeurs), ou pour l'admin.
+
+```ts
+// vite.config.ts
+import Symfony from "@symfony/reprise/vite";
+
+export default defineConfig({
+  input: { app: "./assets/app.ts", admin: "./assets/admin.ts" }, // Vite ≤ 8.1 : build.rollupOptions.input
+  plugins: [react(), Symfony({ stimulus: "assets/controllers.json" })],
+});
 ```
 
-**Commandes** : `pnpm dev` (dev + HMR), `pnpm build` (production). L'intégration Symfony = **`pentatrion/vite-bundle`** (fonctions Twig `vite_entry_*_tags`) + **`vite-plugin-symfony`** côté JS (option `stimulus: true`) ; les entrées `assets/app.js`/`bootstrap.js` utilisent `import.meta.glob` (et non le `require.context` de webpack).
+```ts
+// assets/app.ts
+import { startStimulusApp } from "@symfony/reprise/stimulus";
+import { registerReactControllerComponents } from "@symfony/ux-react";
 
-#### EasyAdmin sous Vite : override de layout
-
-EasyAdmin n'a **pas** d'équivalent Vite natif à `Assets::addWebpackEncoreEntry()`. Pour charger une entrée dédiée (ex. `admin` : CSS de tweaks EA + petits listeners), ne pas bricoler `configureAssets()`, **override le layout** :
-
-```twig
-{# templates/bundles/EasyAdminBundle/layout.html.twig #}
-{% extends '@!EasyAdmin/layout.html.twig' %}  {# @! = template original du bundle, pas cet override (évite la boucle) #}
-{% block head_stylesheets %}{{ parent() }}{{ vite_entry_link_tags('admin') }}{% endblock %}
-{% block body_javascript %}{{ parent() }}{{ vite_entry_script_tags('admin') }}{% endblock %}
+registerReactControllerComponents(import.meta.glob("./react/controllers/**/*.{jsx,tsx}", { eager: true }));
+startStimulusApp();
 ```
 
-Et déclarer l'entrée `admin` dans `vite.config.js` (`build.rollupOptions.input`).
+```twig
+{{ reprise_entry_link_tags('app') }}
+{{ reprise_entry_script_tags('app') }}
+```
+
+- **Rien à passer pour React** : en dev, Reprise injecte lui-même le client HMR de Vite et le préambule React Fast Refresh, d'où l'absence d'équivalent au `{ dependency: 'react' }` de pentatrion.
+- **En prod, activer `reprise.cache: true`** (`config/packages/reprise.yaml`) : `entrypoints.json` est compilé en PHP au `cache:warmup` au lieu d'être décodé à chaque requête. Lancer `cache:clear` après chaque build.
+- Autres options utiles : `integrity` (SRI), `copy` (fichiers référencés par `asset()` depuis Twig), `builds` (plusieurs bundles), et le `RenderAssetTagEvent` pour poser un nonce CSP sur chaque tag.
+- **Commandes** : `pnpm dev` (dev + HMR), `pnpm build` (production).
+
+#### EasyAdmin
+
+`Assets::addRepriseEntry()` est natif depuis EasyAdmin 5.3, c'est l'exact pendant de `addWebpackEncoreEntry()`. Pas d'override de layout :
+
+```php
+public function configureAssets(): Assets
+{
+    return Assets::new()->addRepriseEntry('admin');
+}
+```
 
 #### ⚠️ Migrer Webpack Encore → Vite : piège Flex qui supprime des fichiers
 
@@ -1272,6 +1294,6 @@ Règles noires côté front. Si tu les vois dans le code existant, c'est à refa
 | Types TS + Zod v4 + SDK + queryOptions/mutationOptions | Générés via `make types` → `assets/lib/api/` |
 | Auth / sécurité | Twig + Symfony Form (pas React) |
 | Sécurité routes API | `#[IsGranted('ROLE_USER')]` sur méthode/classe |
-| Infra front | Vite + vite-plugin-symfony + Symfony UX React |
+| Infra front | Vite + Symfony Reprise + Symfony UX React |
 | Montage composant | `react_component()` dans Twig |
 | Package manager | pnpm |

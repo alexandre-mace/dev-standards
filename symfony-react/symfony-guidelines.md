@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Dernière veille : 24 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.9 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.12 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud).
+> **Dernière veille : 30 août 2026** (`/sota-gap`), repartir de cette date au prochain run. Versions de référence vérifiées : PHP 8.5.10 (floor projet 8.4 ; **≥ 8.5.9 obligatoire**, security) · Symfony 8.1.5 (8.0 unmaintained ; 8.2 attendue nov. 2026, cf. Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible : cf. §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (ruleset `@Symfony` ; `@PHP85Migration` dispo) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 obligatoire**, security) · Twig ≥ 3.27 (courant 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 dispo chez CleverCloud) · Symfony Reprise 1.1 (intégration Vite, cf. reactony §6).
 
 ## Routage : quoi lire pour quelle tâche
 
@@ -134,7 +134,6 @@ Features annoncées pour 8.2 : option `concurrency` sur Messenger (traitement pa
 - **VichUploader v3 imminente** : 2.10 est annoncé comme dernier minor de la branche 2, la 3.0.0-rc4 est publiée. Prévoir la montée.
 - **Doctrine ORM 4** : pas d'alpha publiée ; cap confirmé (PHP 8.4 minimum, entièrement bâti sur les native lazy objects), release espérée fin 2026/début 2027.
 - **Twig 3.29** apportera les commentaires de documentation ; **Twig 4 toujours en alpha**, ne pas l'anticiper.
-- **Symfony Reprise** (couche d'intégration Vite/Rsbuild officielle, pressentie comme successeur d'Encore) : encore en 0.x expérimental, déjà supportée par EasyAdmin 5.3. On reste sur `pentatrion/vite-bundle` ; re-statuer quand Reprise sera stable.
 
 ---
 
