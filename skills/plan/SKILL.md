@@ -18,8 +18,6 @@ $ARGUMENTS
 
 ## 2. Investigate the code
 
-- Locate the files, routes, entities, services and components involved. Search in
-  parallel.
 - Read the impacted code, not the file names: architecture, local conventions,
   dependencies, tests, side effects.
 - Look for an existing pattern to reuse rather than reinvent.
@@ -104,9 +102,8 @@ Raise only what meets both conditions:
 - and no reasonable assumption lets you proceed without risking shipping the wrong
   thing, or the code simply does not hold the information.
 
-Keep three categories separate:
+Keep raised and blocking separate:
 
-- **Settled**: the answer and its reasoning, one or two lines.
 - **Raised**: a real finding that needs no answer to move on (a reference table too
   thin, an earlier decision this ticket reverses, a scope that is growing). Say it,
   carry on.
@@ -117,11 +114,7 @@ When a point blocks only one batch, ship the others and ask in parallel.
 
 ## Rules
 
-- **Investigation first, code second.**
-- An inconsistency is proven, not suspected. Half dissolve on checking: "it doesn't
+- **An inconsistency is proven, not suspected.** Half dissolve on checking: "it doesn't
   exist" becomes "it already does", "it's ambiguous" becomes "one reading holds".
-- Never bluff a fact. But concluding from the code and the ticket is not bluffing, it is
-  the job.
 - Doubt is paid in risk, not in questions. Visible and fixable in one line: decide and
   flag. Save the question for what would be expensive or silent.
-- Reuse the local patterns rather than inventing new ones.
