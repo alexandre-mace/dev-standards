@@ -29,15 +29,11 @@ Deux options se combinent librement, chacune décrite à sa place : le site pren
 
 Ce qu'on ajoute le plus souvent, et par où ça passe.
 
-**Une page** : un dossier sous `app/`, un `page.tsx` Server Component, ses `metadata` exportées. Une route dynamique préremplit ses valeurs avec `generateStaticParams`, sinon elle n'est pas statique.
-
-**Un jeu de données externe** : un `scripts/build-*.mjs` qui écrit du TypeScript typé dans `lib/`, un script `data` dans `package.json`, et des logs de contrôle en fin de run. La page importe la constante, elle ne fetche pas.
-
-**Un composant interactif** (simulateur, filtre, sélecteur) : un composant client, le plus bas possible dans l'arbre. Sa page reste Server Component et lui passe les données cuites en props.
-
-**Un graphique** : le composant de graphe est client, les données arrivent en props depuis le serveur. Les couleurs viennent des tokens `--chart-*` du kit, jamais de valeurs en dur.
-
-**Une donnée utilisateur** : voir §6, c'est le seul cas qui justifie un backend.
+- **Une page** : un dossier sous `app/`, un `page.tsx` Server Component, ses `metadata` exportées. Une route dynamique préremplit ses valeurs avec `generateStaticParams`, sinon elle n'est pas statique.
+- **Un jeu de données externe** : un `scripts/build-*.mjs` qui écrit du TypeScript typé dans `lib/`, un script `data` dans `package.json`, et des logs de contrôle en fin de run. La page importe la constante, elle ne fetche pas.
+- **Un composant interactif** (simulateur, filtre, sélecteur) : un composant client, le plus bas possible dans l'arbre. Sa page reste Server Component et lui passe les données cuites en props.
+- **Un graphique** : le composant de graphe est client, les données arrivent en props depuis le serveur. Les couleurs viennent des tokens `--chart-*` du kit, jamais de valeurs en dur.
+- **Une donnée utilisateur** : voir §6, c'est le seul cas qui justifie un backend.
 
 ## Patterns courants
 
@@ -111,18 +107,12 @@ Elle neutralise les `dark:` du stock shadcn, et la classe `.dark` n'est jamais p
 La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déclarant les tokens, sans toucher aux composants.
 
 ## 4. Layout et SEO
-
-**Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction.
-
-**La langue est une décision de projet**, prise au démarrage et tenue partout : contenu, commentaires, et déclarée à la fois dans `<html lang>` et dans `openGraph.locale`. Les identifiants métier dans la langue du domaine sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
-
-**Geist par le paquet `geist`**, jamais par `next/font/google` : `import { GeistSans } from "geist/font/sans"`, variables posées sur `<html>`, `font-sans` sur le `<body>`.
-
-**Chaque site vit sur son domaine canonique** (`<projet>.alexandremace.fr` ou `<projet>.climatelab.fr`), déclaré dans `metadataBase`. Jamais un `*.vercel.app` : le domaine canonique fait foi dans les metadata, les OG et les redirects. Factoriser la description en const, elle sert trois fois.
-
-**OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme.
-
-**Icônes** : `app/icon.svg`, que Next sert en `sizes="any"` à toutes les tailles, plus `app/apple-icon.png` en 180×180 pour l'écran d'accueil iOS. Next génère les balises `<link>` seul. Un `icon.tsx` qui rend une `ImageResponse` quand l'icône se dérive d'un emoji ou d'une initiale. Pas de `favicon.ico`, sauf besoin d'un très vieux navigateur.
+- **Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction.
+- **La langue est une décision de projet**, prise au démarrage et tenue partout : contenu, commentaires, et déclarée à la fois dans `<html lang>` et dans `openGraph.locale`. Les identifiants métier dans la langue du domaine sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
+- **Geist par le paquet `geist`**, jamais par `next/font/google` : `import { GeistSans } from "geist/font/sans"`, variables posées sur `<html>`, `font-sans` sur le `<body>`.
+- **Chaque site vit sur son domaine canonique** (`<projet>.alexandremace.fr` ou `<projet>.climatelab.fr`), déclaré dans `metadataBase`. Jamais un `*.vercel.app` : le domaine canonique fait foi dans les metadata, les OG et les redirects. Factoriser la description en const, elle sert trois fois.
+- **OG image générée** : `app/opengraph-image.tsx` avec `ImageResponse`, 1200×630, jamais une image statique qui périme.
+- **Icônes** : `app/icon.svg`, que Next sert en `sizes="any"` à toutes les tailles, plus `app/apple-icon.png` en 180×180 pour l'écran d'accueil iOS. Next génère les balises `<link>` seul. Un `icon.tsx` qui rend une `ImageResponse` quand l'icône se dérive d'un emoji ou d'une initiale. Pas de `favicon.ico`, sauf besoin d'un très vieux navigateur.
 
 ## 5. Données cuites
 
