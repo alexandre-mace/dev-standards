@@ -1,212 +1,209 @@
-# Format de présentation d'un design system
+# How to present a design system
 
-Comment présenter un design system, pas quoi mettre dedans. Ce qui change d'un produit à l'autre,
-c'est le remplissage des sections, jamais leur liste ni leur ordre : un dev qui arrive sur n'importe
-lequel retrouve les mêmes rubriques au même endroit.
+How to present a design system, not what to put in it. What changes between products is how the
+sections are filled, never their list or their order: a dev arriving on any of them finds the same
+headings in the same place.
 
-## 1. Le principe : documenter la provenance, pas les valeurs
+## 1. The principle: document provenance, not values
 
-Un catalogue qui liste « voilà nos couleurs, voilà nos boutons » répond à « qu'est-ce qui existe ».
-Il ne répond pas à « lequel je prends, et qu'est-ce que j'ai le droit d'en faire ». Et sur un projet
-qui consomme une bibliothèque upstream (shadcn, Radix, Base UI), il duplique une doc déjà écrite
-ailleurs, mieux, et qui reste à jour toute seule.
+A catalogue listing "here are our colours, here are our buttons" answers "what exists". It does not
+answer "which one do I take, and what am I allowed to do with it". And on a project consuming an
+upstream library (shadcn, Radix, Base UI), it duplicates documentation already written elsewhere,
+better, and kept up to date on its own.
 
-D'où la règle centrale : **chaque brique porte une provenance**, et c'est elle qui détermine combien
-on écrit.
+Hence the central rule: **every brick carries a provenance**, and that decides how much gets written.
 
-| Provenance | Signification                       | Ce qu'on documente                                                         |
-| ---------- | ----------------------------------- | -------------------------------------------------------------------------- |
-| `upstream` | pris tel quel à la bibliothèque     | une ligne dans l'inventaire, un lien vers la doc officielle. Rien de plus. |
-| `variant`  | upstream, plus des variantes maison | **uniquement les variantes maison**. Le reste renvoie à l'upstream.        |
-| `custom`   | inventé chez nous                   | la fiche complète.                                                         |
+| Provenance | Meaning | What gets documented |
+| ---------- | ------- | -------------------- |
+| `upstream` | taken as-is from the library | one line in the inventory, a link to the official docs. Nothing more. |
+| `variant` | upstream, plus in-house variants | **only the in-house variants**. The rest points upstream. |
+| `custom` | invented here | the full card. |
 
-Le coût de rédaction devient proportionnel à ce qu'on a réellement inventé : un produit qui consomme
-40 composants upstream écrit 40 lignes et 3 fiches, pas 40 fiches. Sur un système entièrement fait
-maison, tout est `custom` et le format redevient un catalogue classique.
+Writing cost becomes proportional to what was actually invented: a product consuming 40 upstream
+components writes 40 lines and 3 cards, not 40 cards. On a fully in-house system everything is
+`custom` and the format falls back to a classic catalogue.
 
-### Ce qui entre dans le design system, ce qui n'y entre pas
+### What belongs in the design system, and what does not
 
-Un design system documente des **briques réutilisables**, pas des features. Un formulaire de
-candidature ou un simulateur appartient à sa feature. Sans critère explicite, la frontière se décide
-par accident : une brique réutilisable atterrit dans le dossier de la première feature qui en a eu
-besoin, et n'entre jamais dans le catalogue.
+A design system documents **reusable bricks**, not features. An application form or a simulator
+belongs to its feature. Without an explicit criterion the boundary gets decided by accident: a
+reusable brick lands in the folder of the first feature that needed it, and never enters the catalogue.
 
-Le critère : **une brique utilisée par au moins deux features, ou écrite pour l'être, appartient au
-design system** et doit sortir de son dossier de feature.
+The criterion: **a brick used by at least two features, or written to be, belongs to the design
+system** and must leave its feature folder.
 
-Le dossier de la bibliothèque upstream (`ui/` pour shadcn) lui reste réservé : ce qui vient d'elle,
-ses variantes, et ce qui en a la forme. Un composant maison transverse va dans un dossier partagé
-distinct. Sans cette séparation, on ne distingue plus ce qui est à nous de ce qui est à l'upstream,
-qui est toute la question à laquelle le document répond.
+The upstream library folder (`ui/` for shadcn) stays reserved for what comes from it, its variants,
+and what has its shape. An in-house cross-cutting component goes to a separate shared folder. Without
+that separation you can no longer tell what is ours from what is upstream, which is the whole question
+this document answers.
 
-Ce critère se vérifie mécaniquement : résoudre les imports, compter les zones qui consomment chaque
-composant, et lister ceux qui dépassent une zone tout en vivant hors du dossier partagé. Ce sont les
-candidats à la promotion. À passer périodiquement, sinon le catalogue décrit un périmètre qui n'est
-plus le bon.
+The criterion is checkable mechanically: resolve the imports, count the areas consuming each
+component, and list those crossing more than one area while living outside the shared folder. Those
+are the promotion candidates. Run it periodically, otherwise the catalogue describes a perimeter that
+is no longer the right one.
 
-Deux cas à exclure explicitement, sinon la liste se pollue : l'**infrastructure** (providers,
-contextes applicatifs) qui est traversante sans être une brique d'interface, et les composants de
-feature partagés entre deux zones voisines par proximité fonctionnelle et non par généricité.
+Two cases to exclude explicitly, or the list gets polluted: **infrastructure** (providers, application
+contexts), which is cross-cutting without being an interface brick, and feature components shared
+between two neighbouring areas out of functional proximity rather than genericity.
 
-### Deux environnements demandent une adaptation
+### Two environments need an adaptation
 
-Sur un site **no-code**, les valeurs se relèvent via l'API, variables et classes, jamais à la main, et
-la page vivante est une page du site construite avec les vraies classes.
+On a **no-code** site, values are read through the API, variables and classes, never by hand, and the
+living page is a page of the site built with the real classes.
 
-Quand **l'upstream est notre propre kit**, la provenance a deux étages (stock, kit, projet) et la
-documentation de provenance vit déjà dans le kit : descriptions d'items, écarts au stock, et le site
-du registry qui est déjà la page vivante. Un consommateur ne documente donc que sa ligne d'identité et
-ses briques custom. Lui appliquer le format complet, c'est dupliquer le kit en moins bien.
+When **the upstream is our own kit**, provenance has two levels (stock, kit, project) and the
+provenance documentation already lives in the kit: item descriptions, deviations from stock, and the
+registry site which is already the living page. A consumer therefore documents only its identity line
+and its custom bricks. Applying the full format to a consumer duplicates the kit, worse.
 
-## 2. Deux artefacts, jamais un seul
+## 2. Two artefacts, never one
 
-**`DESIGN-SYSTEM.md`** : la description écrite. Versionnée, diffable, lisible en revue de code.
-C'est la référence opposable.
+**`DESIGN-SYSTEM.md`**: the written description. Versioned, diffable, readable in code review. It is
+the reference you can hold someone to.
 
-**Une page vivante** servie par l'application elle-même. Elle consomme le vrai CSS et les vrais
-composants de production, donc elle ne peut pas mentir. C'est la preuve visuelle.
+**A living page** served by the application itself. It consumes the real CSS and the real production
+components, so it cannot lie. It is the visual proof.
 
-Les deux suivent le plan de la section 3, avec les mêmes titres dans le même ordre. On ne met pas de
-capture d'écran dans le `.md` : une capture périme en silence, un lien vers la page vivante non.
+Both follow the plan in section 3, same headings in the same order. No screenshots in the `.md`: a
+screenshot goes stale silently, a link to the living page does not.
 
-## 3. Le plan
+## 3. The plan
 
-### 0. Identité
+### 0. Identity
 
-Une phrase, la plus importante du document : ce qu'est ce design system et son rapport à l'upstream.
+One sentence, the most important in the document: what this design system is and how it relates to
+upstream.
 
-> « Le DS de lagrange, c'est shadcn brut, décliné sur un axe thématique par outil. »
-> « Le DS de feve.co, c'est un système maison `ui-*` posé sur les variables Webflow. »
+> "This DS is plain shadcn, themed per tool."
+> "This DS is an in-house `ui-*` system laid over the Webflow variables."
 
-Le lecteur sait immédiatement quoi attendre, et surtout quoi ne pas chercher.
+The reader immediately knows what to expect, and above all what not to look for.
 
-Si un référentiel de marque vit ailleurs (le site vitrine, un brandbook), lister ici les
-**divergences assumées** : ce que ce produit fait différemment et pourquoi c'est un choix. C'est ce
-qui permet d'uniformiser le format des brandbooks sans uniformiser les identités.
+If a brand reference lives elsewhere (the marketing site, a brandbook), list the **deliberate
+divergences** here: what this product does differently and why it is a choice. That is what lets the
+format of brandbooks be uniform without making the identities uniform.
 
-### 1. Axes de variation
+### 1. Axes of variation
 
-La plupart des systèmes se déclinent sur un ou plusieurs axes : un thème par domaine fonctionnel, un
-mode éditorial, clair/sombre, un breakpoint. Pour chaque axe, indiquer :
+Most systems vary along one or more axes: a theme per functional domain, an editorial mode,
+light/dark, a breakpoint. For each axis, state:
 
-- les valeurs possibles ;
-- ce qui change quand on en change ;
-- **ce qui ne change pas** (c'est ce qui garantit qu'on ne casse rien en basculant d'axe).
+- the possible values;
+- what changes when you switch;
+- **what does not change**, which is what guarantees switching breaks nothing.
 
-Un produit sans axe écrit « aucun » et passe à la suite.
+A product without an axis writes "none" and moves on.
 
-### 2. Fondations
+### 2. Foundations
 
-Couleur, typographie, espacement, rayon, icônes, ombres, motion. Avec la provenance en colonne, pour
-distinguer d'un coup d'oeil ce qui est le défaut de la bibliothèque de ce qu'on a posé nous.
+Colour, typography, spacing, radius, icons, shadows, motion. With provenance as a column, to tell at
+a glance what is the library default from what we laid on top.
 
-**La page vivante montre chaque token** : pastille, nom, rôle, et la valeur **lue dans le CSS rendu
-au moment de l'affichage**, pas recopiée. Une table de tokens recopiée dérive ; une table qui lit le
-CSS ne peut pas mentir. Documenter aussi les contrastes mesurés des couples réellement utilisés
-(pratique du DS feve.co, à généraliser).
+**The living page shows every token**: swatch, name, role, and the value **read from the rendered CSS
+at display time**, not copied. A copied token table drifts; a table that reads the CSS cannot lie.
+Document the measured contrast of the pairs actually used.
 
-### 3. Composants
+### 3. Components
 
-D'abord **l'inventaire** : un tableau, une ligne par composant, avec sa provenance et son lien
-upstream. C'est la carte du territoire, et sur un projet upstream c'est souvent 90 % du contenu utile.
+First the **inventory**: a table, one row per component, with its provenance and its upstream link.
+It is the map of the territory, and on an upstream-heavy project it is often 90% of the useful content.
 
-Ensuite **les fiches**, conditionnelles à la provenance (voir section 4).
+Then the **cards**, conditional on provenance (see section 4).
 
 ### 4. Patterns
 
-Les assemblages récurrents, ceux qu'on veut voir reproduits à l'identique : formulaire, état vide,
-état d'erreur, chargement, pagination, confirmation destructive.
+Recurring assemblies, the ones meant to be reproduced identically: form, empty state, error state,
+loading, pagination, destructive confirmation.
 
-### 5. Récurrences
+### 5. Recurrences
 
-Ce qui se répète dans le produit **sans être une brique du design system**. C'est le chaînon manquant
-entre le catalogue et le code de feature, et c'est souvent la section qui rapporte le plus.
+What repeats in the product **without being a design system brick**. It is the missing link between
+the catalogue and feature code, and often the section that pays off most.
 
-À ne pas confondre avec la précédente : un **pattern** est un assemblage qu'on veut voir reproduit,
-une **récurrence** est un assemblage qui _est_ reproduit, et dont il faut décider s'il devrait l'être.
+Not to be confused with the previous one: a **pattern** is an assembly you want reproduced, a
+**recurrence** is an assembly that _is_ reproduced, and about which you have to decide whether it
+should be.
 
-Pour chaque archétype : où il apparaît, ce qu'il pèse, et un verdict.
+For each archetype: where it appears, what it weighs, and a verdict.
 
-| Verdict            | Quand                                                                      |
-| ------------------ | -------------------------------------------------------------------------- |
-| **à généraliser**  | même structure écrite plusieurs fois, les différences sont accidentelles   |
-| **à surveiller**   | même apparence, objets métier différents : fusionner ferait un sac à props |
-| **action précise** | un cas isolé, corrigeable en une fois                                      |
+| Verdict | When |
+| ------- | ---- |
+| **generalise** | same structure written several times, the differences are accidental |
+| **watch** | same appearance, different domain objects: merging would make a props bag |
+| **one precise fix** | an isolated case, fixable in one go |
 
-Le verdict compte plus que la liste. « À surveiller » est une vraie réponse : cinq cartes qui se
-ressemblent mais portent des données et des comportements différents produisent, une fois fusionnées,
-un composant à quinze props optionnelles, moins lisible que les cinq versions. Ce qui s'extrait est
-alors le squelette, pas le composant.
+The verdict matters more than the list. "Watch" is a real answer: five cards that look alike but carry
+different data and behaviour produce, once merged, a component with fifteen optional props, less
+readable than the five versions. What gets extracted then is the skeleton, not the component.
 
-Deux façons de trouver les récurrences sans les deviner : les **noms de fichiers identiques dans des
-dossiers différents** (le signal le plus fiable), et les **besoins couverts par un composant upstream
-non installé** (un état vide roulé à la main alors que la bibliothèque en fournit un).
+Two ways to find recurrences without guessing: **identical file names in different folders**, the most
+reliable signal, and **needs covered by an upstream component that was never installed**, such as an
+empty state rolled by hand when the library ships one.
 
-### 6. Rédaction
+### 6. Writing
 
-Ton, registre (tutoiement ou vouvoiement), libellés de boutons, majuscules, formats de date et de
-nombre. Un DS qui ne dit rien du texte laisse chaque dev inventer le sien.
+Tone, register, button labels, capitalisation, date and number formats. A DS that says nothing about
+text leaves every dev inventing their own.
 
-### 7. Ce qu'on ne fait pas
+### 7. What we do not do
 
-Anti-patterns et éléments dépréciés, avec le remplacement en face. C'est en général la section la
-plus utile du document, parce que c'est la seule qui empêche activement de faire une bêtise. Un token
-legacy qu'on laisse sans mention sera réutilisé.
+Anti-patterns and deprecated elements, with the replacement next to each. Usually the most useful
+section in the document, because it is the only one that actively prevents a mistake. A legacy token
+left unmentioned will be reused.
 
-## 4. Le gabarit d'une fiche composant
+## 4. The component card template
 
-Selon la provenance :
+By provenance:
 
-**`upstream`** : nom, une phrase d'usage, lien vers la doc officielle. Fin.
+**`upstream`**: name, one sentence of usage, link to the official docs. Done.
 
-**`variant`** : nom, une phrase, lien upstream, puis **seulement** l'aperçu des variantes maison, avec
-la raison d'être de chacune.
+**`variant`**: name, one sentence, upstream link, then **only** a preview of the in-house variants,
+each with its reason to exist.
 
-**`custom`**, le gabarit complet :
+**`custom`**, the full template:
 
-1. Aperçu (rendu réel, avec sélecteurs de variantes si le composant en a)
-2. Anatomie (les parties nommées)
-3. Variantes
-4. États : défaut, survol, focus, actif, désactivé, chargement, erreur
-5. Tailles
-6. Quand l'utiliser / quand prendre autre chose
-7. Accessibilité : clavier, ARIA, contraste
-8. Code copiable
+1. Preview (real rendering, with variant pickers if the component has any)
+2. Anatomy (the named parts)
+3. Variants
+4. States: default, hover, focus, active, disabled, loading, error
+5. Sizes
+6. When to use it, when to take something else
+7. Accessibility: keyboard, ARIA, contrast
+8. Copyable code
 
-L'ordre est fixe. Une section sans contenu se supprime, elle ne se déplace pas.
+The order is fixed. A section without content is removed, not moved.
 
-## 5. La page vivante
+## 5. The living page
 
-Un Storybook minimal, sans la dépendance. Trois exigences :
+A minimal Storybook, without the dependency. Three requirements:
 
-- **Elle consomme les vrais composants de production**, pas une copie ni une fixture stylée à la main.
-- **Chaque entrée affiche sa provenance**, à côté du titre.
-- **Les axes déclarés produisent des sélecteurs**, pour que l'aperçu se manipule.
+- **It consumes the real production components**, not a copy nor a hand-styled fixture.
+- **Every entry shows its provenance**, next to the title.
+- **Declared axes produce pickers**, so the preview can be manipulated.
 
-Storybook lui-même ne se justifie que si le front est une SPA autonome : dès qu'une partie du design
-system vit en templates serveur et en classes CSS, il n'en voit que la moitié et impose un second build.
+Storybook itself is only justified when the front end is a standalone SPA: as soon as part of the
+design system lives in server templates and CSS classes, it sees half of it and forces a second build.
 
-## 6. Une source lisible par une machine
+## 6. A machine-readable source
 
-L'inventaire et les provenances gagnent à vivre dans un fichier structuré à la racine, consommé à la
-fois par le `.md` et par la page vivante, pour qu'ils ne puissent pas diverger. Sur un projet shadcn,
-`npx shadcn info` fournit déjà la liste des composants installés : il ne reste qu'à ajouter la
-provenance.
+The inventory and its provenances are better off in a structured file at the root, consumed both by
+the `.md` and by the living page, so the two cannot diverge. On a shadcn project, `npx shadcn info`
+already lists the installed components: all that is left is to add the provenance.
 
-Deux adaptations. Sur un site **no-code**, il n'y a pas de repo où poser le fichier : il se génère
-depuis les variables et les classes via l'API. Quand **l'upstream est notre propre kit**, le
-`registry.json` du kit joue déjà ce rôle, avec ses items typés et décrits : ne pas en créer un second.
+Two adaptations. On a **no-code** site there is no repo to hold the file: it is generated from the
+variables and classes through the API. When **the upstream is our own kit**, the kit's `registry.json`
+already plays that role, with its typed and described items: do not create a second one.
 
-## 7. Tenue dans le temps
+## 7. Keeping it true over time
 
-- **Dater le document** et dire comment les valeurs ont été obtenues : relevées via l'API, lues dans
-  le CSS, mesurées. Une valeur reconstituée de mémoire est une valeur fausse en puissance.
-- **Ne jamais recopier une valeur upstream**, la référencer.
-- **Toute nouvelle couleur passe un contrôle de contraste** avant d'entrer, et le ratio est noté.
-- **La page vivante tranche** en cas de désaccord avec le `.md` : elle rend le code réel.
-- **Le déclencheur de mise à jour est la PR, pas le calendrier.** Toute PR qui ajoute un composant,
-  crée une variante ou customise une brique met à jour l'inventaire dans la même PR. Le check
-  mécanique de la section 1 sert de filet, à passer au `/gap-analysis` suivant.
-- **L'inventaire est par produit et fait foi.** Les documents partagés entre produits ne portent
-  jamais d'inventaire local : ils gardent les procédures et les faits d'upstream, et pointent ici.
-  Deux inventaires du même fait divergent toujours.
+- **Date the document** and say how the values were obtained: read through the API, read from the CSS,
+  measured. A value reconstructed from memory is a wrong value waiting to happen.
+- **Never copy an upstream value**, reference it.
+- **Every new colour passes a contrast check** before entering, and the ratio is recorded.
+- **The living page settles it** when it disagrees with the `.md`: it renders the real code.
+- **The trigger is the PR, not the calendar.** Any PR adding a component, creating a variant or
+  customising a brick updates the inventory in the same PR. The mechanical check from section 1 is the
+  safety net, to run at the next `/gap-analysis`.
+- **The inventory is per product and it rules.** Documents shared between products never carry a local
+  inventory: they keep the procedures and the upstream facts, and point here. Two inventories of the
+  same fact always diverge.
