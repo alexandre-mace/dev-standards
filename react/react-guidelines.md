@@ -55,6 +55,26 @@ profiling asks.
 
 Write the simplest React you can, and let the compiler optimize.
 
+### Never pass a library instance down as a prop
+
+TanStack Table's `useReactTable` returns a **stable** object whose internals it mutates in
+place. The compiler knows the hook is incompatible and skips the component that calls it
+(`react-hooks/incompatible-library`, plugin ≥ 7), so a table rendered inline is safe. Pass
+that same `table` instance to a child and the safety ends: the child never calls the hook,
+so the compiler memoizes it on a prop reference that never changes, and it **stops
+re-rendering when the filtered data changes**.
+
+The tell is a counter bound to `filtered.length` updating while the rows stay put.
+
+The fix is not `"use no memo"`, it is passing **derived data**: `getHeaderGroups()` and
+`getRowModel().rows` produce a fresh reference whenever the data changes. That is also
+what React and TanStack recommend. The same reasoning applies to any library object that
+stays identical while mutating.
+
+**No unit test can catch this**, because Vitest runs its own config without the compiler
+plugin. Only an end-to-end test on a real build sees it, so a table with filtering owes a
+spec: filter down to the empty state, clear, come back.
+
 ## 3. shadcn and Base UI
 
 **Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition
@@ -111,6 +131,22 @@ The CLI is the update tool. Never fetch the GitHub files by hand.
 **What is customized is recorded per project**, in its `DESIGN-SYSTEM.md`. That file is
 authoritative; a shared document cannot hold a local inventory without lying to its
 neighbours. Read it before updating, and update it in the same PR.
+
+**A grouped bump can half-migrate a component.** v4 moved the vertical padding of `Card`
+from its sub-parts to the root (`py-6` / `gap-6` on `Card`, `px-6` alone on `CardHeader`
+and `CardFooter`). Pull the sub-parts without the root and every card has its title glued
+to the top edge. Check the components that have sub-parts after any UI bump: Card, Dialog,
+Sheet. Related: `p-0` on `Card` does **not** remove the `px-6` its sub-parts carry, so a
+chart embedded in an already-padded wrapper needs `px-0` on the sub-parts.
+
+**A card header is responsive to the card, not the viewport.** In a `md:grid-cols-2` grid
+a card is half-width, so a `sm:` breakpoint flips it at the wrong moment. v4's `CardHeader`
+already declares `@container/card-header`: use `@lg/card-header:flex-row` so the
+title-plus-action row decides on the card's own width.
+
+**Grepping generated Tailwind CSS**: the build escapes the class names, `md:p-6` is written
+`.md\:p-6`, `/` becomes `\/` and `[` becomes `\[`. Grepping the unescaped form returns
+nothing and reads as a missing class. Use `grep -F '.md\:p-6'`.
 
 **Known upstream traps**: `PopoverClose` is gone from the v4 registry; the dialog prop
 became `showCloseButton`; upstream `xs` moved to `h-6` and the `icon-*` sizes are not in

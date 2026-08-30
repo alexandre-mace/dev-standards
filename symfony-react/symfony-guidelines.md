@@ -584,6 +584,36 @@ class ProfileController extends AbstractController
 }
 ```
 
+### Every affordance is guarded by the voter of its own action
+
+A page open to a broad role is not a permission to show every button on it. Guard each
+call to action with the voter of the **target action**, on the subject, never with a raw
+role and never with the page's own voter:
+
+```twig
+{# the page is open to several roles, the buttons are not #}
+{% if is_granted('edit', structure) %}…{% endif %}
+{% if is_granted('show_groups', structure) %}…{% endif %}
+```
+
+A raw `is_granted('ROLE_X')` on a button is the recurring leak: the role sees the page,
+clicks, and gets a 403 that reaches Sentry as if it were a bug. On a React island, thread
+the verdict as a prop computed server-side with `isGranted(Voter::ACTION, $subject)`,
+never re-derive the rule in TypeScript.
+
+**Status is a third dimension, next to role and ownership.** A voter that refuses to edit
+a cancelled or paid record has to be mirrored in the UI, and a hardcoded list of statuses
+in the front will drift from it. Attach `canEdit` / `canDelete`, computed by the voter, to
+each row of the payload instead. When the entities were just hydrated by the same request,
+`find($id)` hits the identity map, so there is no N+1 to fear.
+
+Triaging a 403 from Sentry, in order: is there an affordance towards that route guarded by
+a raw role (a leak, move it to the voter), is the affordance correctly guarded or absent
+(a direct URL or a bookmark, nothing to fix), or does the refusal depend on the record's
+status (mirror the voter). And decide which way to align: when the action ought to be
+allowed to whoever sees the page, widen the route to the page's voter; otherwise hide the
+button.
+
 ### Reading request data
 
 Don't use `$request->get()` (removed in Symfony 8.0). Reach into the bags directly:
@@ -1003,6 +1033,11 @@ private string $description;
 - **Native lazy objects**: with doctrine-bundle 3.x this is the **only** mode, nothing to enable, and the `enable_native_lazy_objects` option is deprecated (bundle 3.1): remove it from the config if it is still there. ORM 4 will make them mandatory.
 - **Single-column indexes**: `#[ORM\Column(index: true)]` (ORM 3.5+) instead of a class-level `#[ORM\Index]`
 - **Doctrine enums**: `#[ORM\Column(enumType: MyEnum::class)]`
+- **`createFromFormat` always starts with `!`**: without it, the fields the format does not
+  cover are filled from **now**, the current day included. `createFromFormat('Y-m', '2026-02')`
+  run on a 30th produces 30 February, which PHP rolls over to 2 March. A month stored that
+  way is the wrong month, silently, and only for records created late in a month. Write
+  `createFromFormat('!Y-m', $value)`, which anchors everything else at zero.
 - **Simple computed getters**: fine as long as they only depend on `$this` (`isExpired()`, `getFullName()`)
 - Logic that depends on other entities or services goes in Domain/
 
@@ -1987,6 +2022,36 @@ schema-update line when the data has to be fixed while the columns still have th
 type. Each one carries a comment saying when it becomes a no-op and can be removed.
 
 Idempotent, always: the hook runs on every deploy.
+
+### An environment variable set on the app wins over `.env`
+
+A feature can be correct in code, correctly deployed, and still invisible in production
+because a CleverCloud variable diverges from the committed `.env`. The failure is silent
+when the value is a URL carrying a query parameter that the code depends on. When
+something works locally and returns empty in production, diff `clever env --alias <app>`
+against `.env` before reading the code again. After changing one, restart: a filesystem
+cache pool survives otherwise.
+
+### The platform kills idle database connections
+
+CleverCloud's TCP edge drops a Postgres connection left silent for roughly 5 to 15
+minutes, even while the application is busy doing something else, an API call for
+instance. The next query then fails on "SSL error: unexpected eof while reading" or "no
+connection to the server", which crashes a Messenger worker. Three layers, in order of
+what they cover:
+
+1. `idle_connection_ttl: 30` in `doctrine.yaml`, for the idle time between requests.
+2. A listener closing the connection every 60 seconds while the **worker** is idle.
+3. A listener pinging with `SELECT 1` after every handled or failed message, at a priority
+   above the retry listener, closing a dead connection. This is the one that covers a
+   connection killed **during** a long message, and it also resets stale transaction
+   nesting.
+
+A long command that tunnels through an external API needs the same care by hand: close the
+connection before the query that follows a long API stretch.
+
+Watch the amplification: a worker wrapper that restarts every 5 seconds turns a
+one-minute database outage into a dozen Sentry events.
 
 ### Converting `SERIAL` to `IDENTITY` orphans the sequence
 
