@@ -38,6 +38,11 @@ alike.
   nothing supports.
 - Cut a phrase that sounds good and says nothing. "Pragmatic, not dogmatic".
 
+## Do not cut
+
+- What the reader asked for.
+- An error, a command, a quoted source. Reproduce it exactly and at full length.
+
 ## Two tests before returning the text
 
 - Cut before polishing.
