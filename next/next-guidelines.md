@@ -25,30 +25,28 @@ Deux options se combinent librement, chacune décrite à sa place : le site pren
 
 ## 1. Scaffolding
 
-Next.js 16, App Router, TypeScript strict. Structure à la racine, pas de `src/` :
+```bash
+pnpm create next-app@latest <projet> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
+```
+
+Ces options donnent déjà TypeScript strict, Biome et son `biome.json`, l'alias `@/*`, l'absence de `src/`, les scripts `dev`, `build`, `start`, `lint`, et un `next.config.ts` vide. Inutile de les redocumenter, il suffit de ne pas les défaire. Pas de `--turbopack` : c'est le bundler par défaut depuis Next 16, le flag ne fait que le forcer.
+
+Ce qu'on ajoute ensuite.
+
+**Épingler `packageManager`** dans `package.json`, et commiter le lockfile. Un `package-lock.json` qui apparaît signale que quelqu'un a installé avec le mauvais outil.
+
+**Les dossiers que le template ne crée pas** :
 
 ```
-app/            # pages, layout, icon.tsx, opengraph-image.tsx
 components/     # composants du projet
 components/ui/  # kit @alexandremace, ne pas éditer
 lib/            # données typées, utils (cn)
 scripts/        # pipeline data éventuel (*.mjs)
 ```
 
-**pnpm**, lockfile commité, `packageManager` épinglé dans `package.json`. Un `package-lock.json` qui apparaît signale que quelqu'un a installé avec le mauvais outil.
+**`AGENTS.md` porte les conventions du projet**, `CLAUDE.md` se réduisant à une ligne `@AGENTS.md`. `next dev` maintient dans `AGENTS.md` un bloc auto-géré qui pointe la doc de la version installée : on le versionne tel quel sans l'éditer.
 
-**`next.config.ts`** typé `NextConfig`, vide par défaut. On n'y ajoute que le nécessaire :
-
-- `images.remotePatterns` si le site charge des images distantes. Lister les hôtes réels, jamais `hostname: "**"`. `images.domains` est déprécié.
-- Défauts `next/image` en 16 : `qualities` réduit à `[75]`, cache TTL à 4 h, et une src locale avec query string exige `images.localPatterns`.
-
-**`AGENTS.md` est commité.** Depuis 16.3, `next dev` crée et maintient un bloc auto-géré qui pointe la doc de la version installée. On le versionne tel quel sans l'éditer. C'est aussi le fichier qui porte les conventions du projet, `CLAUDE.md` se réduisant à une ligne `@AGENTS.md`.
-
-**`tsconfig`** : alias `@/*` vers la racine.
-
-**Scripts** : `dev` (avec `--turbopack`), `build`, `start`, `lint`, plus `data` si le projet a un pipeline.
-
-**Biome** pour le lint et le format, un seul binaire et un `biome.json`. `next lint` a disparu en Next 16. Scripts : `"lint": "biome check"` et `"lint:fix": "biome check --write"`. Un site encore en ESLint migre à l'occasion, pas en big-bang.
+**`images.remotePatterns`** si le site charge des images distantes. Lister les hôtes réels, jamais `hostname: "**"`. Trois défauts de `next/image` en 16 valent d'être connus : `qualities` réduit à `[75]`, cache TTL à 4 h, et une src locale avec query string exige `images.localPatterns`.
 
 ## 2. Composants
 
