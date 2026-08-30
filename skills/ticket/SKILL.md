@@ -15,15 +15,15 @@ Copy this checklist into your reply and tick as you go.
 - [ ] 2. GATE            no blocking question left
 - [ ] 3. Branch          feat/<scope>, cut from an up-to-date main
 - [ ] 4. Implement       playbook followed, tests named in step 1 written
-- [ ] 5. Works           /verify
-- [ ] 6. Clean           /quality
+- [ ] 5. Clean           /quality
+- [ ] 6. Works           /verify
 - [ ] 7. Saved           /commit
 - [ ] 8. Right           /review-diff
 - [ ] 9. UAT             /preprod, or push the branch for a Vercel preview
 - [ ] 10. GATE           a human tests it
 ```
 
-After the UAT: fix, `/verify`, `/quality`, `/commit`, `/review-diff` on the delta, then
+After the UAT: fix, `/quality`, `/verify`, `/commit`, `/review-diff` on the delta, then
 **the user** runs `/deploy`.
 
 ## The two gates
@@ -37,12 +37,13 @@ They are not interchangeable, which is why they are three steps:
 
 | Step | Question | Answered by |
 |---|---|---|
-| `/verify` | Does it work? | Running it |
-| `/quality` | Is it clean? | The machine |
-| `/review-diff` | Is it what was asked? | Judgement, against `docs/plan.md` |
+| `/quality` | Is it clean? | The machine, in seconds |
+| `/verify` | Does it work? | Running it, in minutes |
+| `/review-diff` | Is it what was asked? | Judgement, against `.claude/plan.md` |
 
-Green checks on a feature nobody ran, and a working feature with red checks, are two
-different failures.
+Cheapest first: never drive a browser against code that does not compile. But green
+checks on a feature nobody ran, and a working feature with red checks, are two different
+failures, which is why neither step absorbs the other.
 
 ## Step 3, cutting the branch
 

@@ -43,13 +43,12 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | Skill | Purpose |
 |---|---|
 | `ticket` | Takes a ticket and runs the whole chain in order, stopping at the gates that need a human |
-| `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `docs/plan.md` |
+| `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
-| `verify` | Does it work? Drives the feature in a real browser, console and network included |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
+| `verify` | Does it work? Drives the feature in a real browser, console and network included |
 | `commit` | Conventional Commits message for what is staged |
 | `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the Definition of Done |
-| `check-implementation` | The escape hatch: code against official docs, for what the guidelines do not cover |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |
 | `deploy` | Merge into `main`. The irreversible act, and the user's call |
 | `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
@@ -66,24 +65,27 @@ so that "done" is a verified fact rather than a claim.
 stays callable on its own.
 
 ```
-/plan → branch → implement → /verify → /quality → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy
+/plan → branch → implement → /quality → /verify → /commit → /review-diff¹ → /preprod → UAT → /review-diff² → /deploy
   │                              │          │                    │                                  │
   │                              │          │                    └─ full review                   └─ delta + fresh /quality
-  │                              │          └─ is it clean?
-  │                              └─ does it work?
-  └─ investigation, blast radius, assumed decisions, tests owed → docs/plan.md
+  │                              │          └─ does it work?
+  │                              └─ is it clean?
+  └─ investigation, blast radius, assumed decisions, tests owed → .claude/plan.md
 
 Bug?  /diagnosing-bugs replaces /plan, the rest of the thread is identical.
 ```
 
 What the diagram cannot show:
 
-- **The plan is written down.** `/plan` leaves `docs/plan.md` behind: the acceptance
+- **The plan is written down.** `/plan` leaves `.claude/plan.md` behind: the acceptance
   criteria, the assumed decisions, and the tests the work owes. It survives a compacted
   context, and `/review-diff` reads it instead of trusting its own memory.
-- **Three different things have to be true**, and each has its own step: it works
-  (`/verify`), it is clean (`/quality`), it is what was asked (`/review-diff`). Green
-  checks on a feature nobody ran is the failure mode this order prevents.
+- **Three different things have to be true**, each with its own step: it is clean
+  (`/quality`, seconds), it works (`/verify`, minutes), it is what was asked
+  (`/review-diff`, judgement). Cheapest first, and none absorbs another: green checks on
+  a feature nobody ran is the failure mode this order prevents.
+- **`.claude/plan.md` is a single working file**, overwritten per feature, gitignored,
+  deleted by `/deploy`. There is never more than one.
 - **Two gates belong to a human**: a blocking question from `/plan`, and the UAT.
   `/deploy` is never run by the agent.
 - Commits are save points, the merge is the irreversible act.

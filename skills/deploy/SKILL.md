@@ -41,6 +41,9 @@ git push origin --delete <branch-name>
 
 ## After deploy
 
+Delete `.claude/plan.md`: the feature has shipped, and a stale plan would be read as the
+current one by the next `/review-diff`.
+
 Show:
 ```
 ✅ Deployed <branch-name> to main

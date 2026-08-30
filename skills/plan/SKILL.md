@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Step 1 of the chain. Investigates a ticket in depth, settles everything the code can settle, names the tests owed, and writes docs/plan.md. Raises only what would genuinely change the work to do.
+description: Step 1 of the chain. Investigates a ticket in depth, settles everything the code can settle, names the tests owed, and writes .claude/plan.md. Raises only what would genuinely change the work to do.
 ---
 
 The ticket is in `$ARGUMENTS`. Investigate first. But investigating serves to **decide**,
@@ -59,13 +59,19 @@ bend per ticket:
 
 Owes none? Say that too, and why. **What is never named is never written.**
 
-## 5. Write `docs/plan.md`
+## 5. Write `.claude/plan.md`
 
-Overwrite it: it always holds the feature in progress. It is what survives a compacted
-context, and what `/review-diff` reads instead of trusting its own memory.
+**One file, always overwritten**, never one per ticket: it holds the feature in progress
+and nothing else. It survives a compacted context, and `/review-diff` reads it instead
+of trusting its own memory. `/deploy` deletes it when the feature ships.
+
+Add `.claude/plan.md` to `.gitignore` if it is not there: it is working state, not
+documentation, and committing it would put a conflict on every branch.
 
 ```markdown
 # <ticket title>
+
+Branch: feat/<scope>
 
 ## What is asked
 <two or three lines, then the acceptance criteria as a list>
