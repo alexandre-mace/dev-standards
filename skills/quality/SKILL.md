@@ -8,7 +8,8 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 Everything a machine can settle on its own, fast and headless.
 
 - What needs a browser is `/verify`. The full E2E suite is CI.
-- Keep this under ~30 seconds, so it gets run often.
+- The test suites make this the slow gate. That is the price of "the tests pass" being a
+  fact rather than an assumption.
 
 ## Detect the stack
 
@@ -56,7 +57,7 @@ frontend is about to break silently. Leave the regenerated files in place and sa
 pnpm build
 ```
 
-The build **is** the check: it type-checks and fails on compile errors. Never `next lint`
+The build is the check: it type-checks and fails on compile errors. Never `next lint`
 (removed in Next 16). On TanStack, the build surfaces route-tree and typed-router errors
 that `tsc` alone misses.
 
@@ -68,6 +69,10 @@ pnpm lint              # skip: no lint script
 pnpm format:check      # skip: no format:check script
 pnpm test              # skip: no test script
 ```
+
+Name the tool the project actually runs behind those scripts, Biome on Next and TanStack,
+ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
+report nobody can act on.
 
 `pnpm test` is Vitest, mandated on all three stacks. Running it is what turns "the tests
 pass" into a fact. Use whatever flag the project needs for a single non-watch run.
@@ -90,13 +95,15 @@ PHPUnit:              PASS / FAIL / SKIPPED (no suite)
 Contract drift:       PASS / FAIL / n/a
 Build:                PASS / FAIL
 TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
-ESLint:               PASS / FAIL / SKIPPED (no script)
-Prettier:             PASS / FAIL / SKIPPED (no script)
+Lint (Biome|ESLint):  PASS / FAIL / SKIPPED (no script)
+Format (Biome|Prettier): PASS / FAIL / SKIPPED (no script)
 Vitest:               PASS / FAIL / SKIPPED (no script)
 Not run here:         Playwright (/verify), Psalm (CI)
 ```
 
 - Only the rows that apply.
 - Every FAIL shows the real error output and the fix, never a paraphrase.
+- **A vulnerability never blocks the run.** Report it at the end, apply the update, and
+  commit that on its own: it does not belong in the feature's changeset.
 - A SKIPPED row the guidelines mandate gets one closing line: it is a `/gap-analysis`
   finding, not something to fix inside this run.
