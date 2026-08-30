@@ -60,17 +60,13 @@ Tout ce qui vient du kit s'installe par le registry, y compris les composants d'
 
 ## 3. Styling
 
-Entête canonique de `app/globals.css`, dans cet ordre :
+**Mono-thème clair.** Ajouter cette ligne à `app/globals.css`, après les `@import` :
 
 ```css
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
 @custom-variant dark (&:is(.dark *));
 ```
 
-**Mono-thème clair.** Ce `@custom-variant` neutralise les `dark:` du stock shadcn, et la classe `.dark` n'est jamais posée. Un thème sombre est une décision de projet, pas un défaut.
+Elle neutralise les `dark:` du stock shadcn, et la classe `.dark` n'est jamais posée. Un thème sombre est une décision de projet, pas un défaut.
 
 **Tailwind 4 se configure en CSS**, zéro `tailwind.config.js`. Les tokens vivent en OkLCh dans `:root`, remappés en `--color-*` dans `@theme inline`. Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant, donc ajouter tout nouveau token à la main aux deux endroits.
 
