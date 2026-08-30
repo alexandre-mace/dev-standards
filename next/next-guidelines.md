@@ -33,7 +33,7 @@ Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 **Épingler `packageManager`** dans `package.json`, et commiter le lockfile. Un `package-lock.json` qui apparaît signale que quelqu'un a installé avec le mauvais outil.
 
-**`AGENTS.md` porte les conventions du projet**, `CLAUDE.md` se réduisant à une ligne `@AGENTS.md`. `next dev` maintient dans `AGENTS.md` un bloc auto-géré qui pointe la doc de la version installée : on le versionne tel quel sans l'éditer.
+**Commiter le bloc auto-géré d'`AGENTS.md`** sans l'éditer : `next dev` le maintient et il pointe la doc de la version installée.
 
 **`images.remotePatterns`** si le site charge des images distantes. Lister les hôtes réels, jamais `hostname: "**"`. Trois défauts de `next/image` en 16 valent d'être connus : `qualities` réduit à `[75]`, cache TTL à 4 h, et une src locale avec query string exige `images.localPatterns`.
 

@@ -77,8 +77,7 @@ pnpm create @tanstack/start@latest
 ```
 
 Non negotiable from the first commit: TypeScript strict, pnpm with `packageManager`
-pinned, Biome for lint and format, Vite as the build tool, and `AGENTS.md` at the root
-with `CLAUDE.md` reduced to `@AGENTS.md`.
+pinned, Biome for lint and format, Vite as the build tool.
 
 ## 2. Routing
 
