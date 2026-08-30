@@ -1,21 +1,18 @@
 ---
 name: commit
-description: Commits the staged changes with a Conventional Commits message matching the repository's own style.
+description: Commits the current changes with a Conventional Commits message matching the repository's own style.
 allowed-tools: Bash(git *)
 ---
 
 # Commit
 
-Read the staged diff, write the message, commit.
-
 ## What goes in the commit
 
-Something staged: commit that, nothing else. Nothing staged: `git add -A`, because
-`/commit` already means "commit my work".
+Compare the modified files against the work just done. Stop and name anything unrelated:
+a leftover from earlier work, a file nobody meant to touch.
 
-List the files in the output either way, so the user sees what went in. If a file that
-should never be committed shows up, say it once: the fix is a `.gitignore` line, not a
-prompt on every commit.
+Otherwise commit everything modified, since nothing is usually staged, and list the
+files in the output.
 
 ## The message
 
@@ -24,9 +21,9 @@ prompt on every commit.
 - **Scope from the repository's own vocabulary**: `git log --oneline -20` shows the
   scopes already in use. Consistency matters more than the choice itself.
 - Lower case, no full stop. French or English, following the recent commits.
-- Several domains touched: the main one, or a scope that covers them.
-- **Never a `Co-Authored-By` line.**
-- **Never amend.** A commit is a save point; rewriting one destroys the point.
+- Use the main domain when the change spans several, or a scope that covers them.
+- Never a `Co-Authored-By` line.
+- Never amend a commit.
 
 Pass the message through a quoted heredoc, so backticks and `$` in the body are not
 expanded by the shell:
