@@ -40,11 +40,10 @@ besoin, et n'entre jamais dans le catalogue.
 Le critère : **une brique utilisée par au moins deux features, ou écrite pour l'être, appartient au
 design system** et doit sortir de son dossier de feature.
 
-Attention à ne pas tout verser au même endroit. Le dossier de la bibliothèque upstream (`ui/` pour
-shadcn) lui reste réservé : il contient ce qui vient d'elle, ses variantes, et ce qui en a la forme.
-Un composant maison transverse va dans un dossier partagé distinct. Sans cette séparation, on ne
-distingue plus ce qui est à nous de ce qui est à l'upstream, alors que c'est toute la question à
-laquelle le document répond.
+Le dossier de la bibliothèque upstream (`ui/` pour shadcn) lui reste réservé : ce qui vient d'elle,
+ses variantes, et ce qui en a la forme. Un composant maison transverse va dans un dossier partagé
+distinct. Sans cette séparation, on ne distingue plus ce qui est à nous de ce qui est à l'upstream,
+qui est toute la question à laquelle le document répond.
 
 Ce critère se vérifie mécaniquement : résoudre les imports, compter les zones qui consomment chaque
 composant, et lister ceux qui dépassent une zone tout en vivant hors du dossier partagé. Ce sont les
@@ -201,62 +200,27 @@ Un Storybook complet est justifié quand le front est une SPA autonome. Il l'est
 une application où une partie du DS vit en templates serveur et en classes CSS : Storybook n'en verrait
 que la moitié, et il faudrait maintenir un second build.
 
-## 6. La source unique
+## 6. Une source lisible par une machine
 
-Inventaire et provenance vivent dans un `design-system.json` à la racine du repo, consommé à la fois
-par le `.md` et par la page vivante. Les deux ne peuvent alors pas diverger.
+L'inventaire et les provenances gagnent à vivre dans un fichier structuré à la racine, consommé à la
+fois par le `.md` et par la page vivante, pour qu'ils ne puissent pas diverger. Sur un projet shadcn,
+`npx shadcn info` fournit déjà la liste des composants installés : il ne reste qu'à ajouter la
+provenance.
 
-```json
-{
-  "identity": "shadcn brut, décliné sur un axe thématique par outil",
-  "axes": [
-    {
-      "key": "space",
-      "label": "Thématique d'outil",
-      "values": ["skills", "project", "land", "finance", "network"]
-    }
-  ],
-  "components": [
-    {
-      "name": "button",
-      "provenance": "variant",
-      "upstream": "https://ui.shadcn.com/docs/components/radix/button"
-    },
-    {
-      "name": "input",
-      "provenance": "upstream",
-      "upstream": "https://ui.shadcn.com/docs/components/radix/input"
-    },
-    { "name": "CardSelect", "provenance": "custom" }
-  ]
-}
-```
-
-Sur un projet shadcn, `npx shadcn info` fournit déjà la liste des composants installés : le fichier
-n'a plus qu'à ajouter la provenance.
-
-**État des lieux honnête (2026-08-24)** : ce fichier n'existe encore dans aucun produit. Lagrange et
-feve.co ont chacun un `.md` écrit à la main et une page vivante construite séparément, exactement la
-divergence que cette section veut rendre impossible. C'est la cible, pas la pratique ; tant qu'il
-n'est pas construit, la page vivante reste le juge.
-
-Adaptations par monde : sur **Webflow**, le json ne peut pas vivre « à la racine du repo » d'un site
-sans repo ; il se **génère** depuis les variables et classes via l'API, dans le dossier de travail
-du site. Dans **l'écosystème kit**, ne pas créer de second fichier : le `registry.json` du kit, avec
-ses items typés et décrits, joue déjà ce rôle.
+Deux adaptations. Sur un site **no-code**, il n'y a pas de repo où poser le fichier : il se génère
+depuis les variables et les classes via l'API. Quand **l'upstream est notre propre kit**, le
+`registry.json` du kit joue déjà ce rôle, avec ses items typés et décrits : ne pas en créer un second.
 
 ## 7. Tenue dans le temps
 
-- **Dater le document** et dire comment les valeurs ont été obtenues (relevées via l'API, lues dans le
-  CSS, mesurées). Une valeur reconstituée de mémoire est une valeur fausse en puissance.
-- **Ne jamais recopier une valeur upstream.** On la référence.
+- **Dater le document** et dire comment les valeurs ont été obtenues : relevées via l'API, lues dans
+  le CSS, mesurées. Une valeur reconstituée de mémoire est une valeur fausse en puissance.
+- **Ne jamais recopier une valeur upstream**, la référencer.
 - **Toute nouvelle couleur passe un contrôle de contraste** avant d'entrer, et le ratio est noté.
-- La page vivante est le juge en cas de désaccord avec le `.md` : elle rend le code réel.
-- **Le déclencheur de mise à jour est la PR, pas le calendrier** : toute PR qui ajoute un composant,
-  crée une variante ou customise une brique met à jour l'inventaire **dans la même PR**. Le check
-  mécanique de la section 1 (résoudre les imports, compter les zones) sert de filet, à passer lors
-  du `/gap-analysis` suivant : un relevé daté d'il y a un mois est un relevé faux en puissance.
-- **L'inventaire du DS fait foi, et il est par produit.** Les documents partagés entre produits
-  (guidelines, reactony) ne portent jamais d'inventaire local : ils gardent les procédures et les
-  faits d'upstream, et pointent ici. Deux inventaires du même fait divergent toujours (constaté le
-  24/08/2026 : 7 customisations d'écart entre reactony et le DS de lagrange en un mois).
+- **La page vivante tranche** en cas de désaccord avec le `.md` : elle rend le code réel.
+- **Le déclencheur de mise à jour est la PR, pas le calendrier.** Toute PR qui ajoute un composant,
+  crée une variante ou customise une brique met à jour l'inventaire dans la même PR. Le check
+  mécanique de la section 1 sert de filet, à passer au `/gap-analysis` suivant.
+- **L'inventaire est par produit et fait foi.** Les documents partagés entre produits ne portent
+  jamais d'inventaire local : ils gardent les procédures et les faits d'upstream, et pointent ici.
+  Deux inventaires du même fait divergent toujours.
