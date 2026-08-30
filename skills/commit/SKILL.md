@@ -10,11 +10,12 @@ Read the staged diff, write the message, commit.
 
 ## What goes in the commit
 
-Commit what is staged, nothing else.
+Something staged: commit that, nothing else. Nothing staged: `git add -A`, because
+`/commit` already means "commit my work".
 
-**If nothing is staged, ask first.** Show `git status --short`, then wait for an answer.
-Running `git add -A` on your own takes everything, `.env` and leftover debug files
-included.
+List the files in the output either way, so the user sees what went in. If a file that
+should never be committed shows up, say it once: the fix is a `.gitignore` line, not a
+prompt on every commit.
 
 ## The message
 
