@@ -40,21 +40,23 @@ Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 ## 2. Composants
 
-**Base UI, jamais React Aria ni Radix**, quel que soit le projet. La composition passe par la prop `render` et les handlers DOM standards : `asChild` n'existe dans aucune des deux bases, c'est du Radix recopié d'un projet pro. Migrer en entier un projet resté sur une autre base : jamais deux bases dans un même projet.
+**Base UI, jamais React Aria ni Radix**, quel que soit le projet, en style Nova. La composition passe par la prop `render` et les handlers DOM standards. `asChild` n'existe dans aucune des deux bases : c'est du Radix recopié d'un projet pro. Migrer en entier un projet resté sur une autre base, jamais deux bases dans un même projet.
 
-`lucide-react` 1.x n'a plus d'icônes de marque : SVG local dans `components/icons.tsx`. Les variantes de composants suivent CVA.
+Un **projet à identité propre** s'arrête là : CLI shadcn officiel, sans registry.
 
-**Projet à identité propre** : Base UI stock via le CLI shadcn officiel, style Nova, sans registry.
-
-**Site d'écosystème** : le kit `@alexandremace`. `components.json` déclare la base Base UI style Nova, `iconLibrary: lucide`, `cssVariables: true`, les alias standards, et le registry :
+Un **site d'écosystème** ajoute le kit `@alexandremace`, déclaré dans `components.json` :
 
 ```json
 "registries": { "@alexandremace": "https://ui.alexandremace.fr/r/{name}.json" }
 ```
 
-Installation : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`) passent par le registry aussi, jamais par copier-coller entre projets.
+Installer un item avec `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`) passent par le registry aussi, jamais par copier-coller entre projets.
 
 **Le kit est la source.** Ne jamais modifier `components/ui/` dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
+
+**Icônes** : `lucide-react` 1.x n'a plus d'icônes de marque, SVG local dans `components/icons.tsx`.
+
+**Variantes** : CVA, comme dans le kit.
 
 ## 3. Styling
 
