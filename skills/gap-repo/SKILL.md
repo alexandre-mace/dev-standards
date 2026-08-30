@@ -66,7 +66,7 @@ The rules that need judgement, and that the checker leaves alone:
 ## 5. Report
 
 Group by what it costs to be wrong: a broken reference sends an agent to the wrong file,
-a disagreement between siblings makes it apply the wrong rule, a redaction defect only
+a disagreement between siblings makes it apply the wrong rule, a writing defect only
 slows the reading. Every finding names a file and a line.
 
 Fix nothing without asking. This repository is the one place where a silent correction
