@@ -29,7 +29,7 @@ Deux options se combinent librement, chacune décrite à sa place : le site pren
 pnpm create next-app@latest <projet> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
 ```
 
-Ces options donnent déjà TypeScript strict, Biome et son `biome.json`, l'alias `@/*`, l'absence de `src/`, les scripts `dev`, `build`, `start`, `lint`, et un `next.config.ts` vide. Inutile de les redocumenter, il suffit de ne pas les défaire. Pas de `--turbopack` : c'est le bundler par défaut depuis Next 16, le flag ne fait que le forcer.
+Ces options donnent TypeScript strict, Biome et son `biome.json`, l'alias `@/*`, l'absence de `src/`, les scripts `dev`, `build`, `start`, `lint`, et un `next.config.ts` vide. Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 Ce qu'on ajoute ensuite.
 
@@ -133,7 +133,7 @@ Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche exis
 
 - `scripts/build-*.mjs`, ESM natif : `node:fs`, `fetch` global, top-level await.
 - Sortie générée dans `lib/**/*.ts` avec entête obligatoire : `// Généré par scripts/…, ne pas éditer à la main.`, la source, la date d'extraction, et la licence si elle l'exige (CC BY pour OWID). Un fichier généré édité à la main perd sa modification au prochain run.
-- **Logs de contrôle en fin de run** : totaux croisés avec un agrégat de référence, comptes de lignes. Sur un site sans tests, le log de contrôle est le test.
+- **Logs de contrôle en fin de run** : totaux croisés avec un agrégat de référence, comptes de lignes. C'est le seul filet sur un site sans suite de tests.
 - Relancer `pnpm data` avant un déploiement qui dépend de la fraîcheur.
 
 **Fetch runtime : seulement pour l'exploration volontaire**, par exemple un sélecteur de pays sur un graphique. Petits appels ciblés, cache en mémoire, dégradation propre si l'upstream tombe. Jamais `useEffect + fetch` pour du contenu qui pouvait être cuit au build.
