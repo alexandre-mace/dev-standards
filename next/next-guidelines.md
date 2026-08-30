@@ -25,7 +25,7 @@ Deux options se combinent librement, chacune décrite à sa place : le site pren
 
 ## 1. Scaffolding
 
-Next.js 16, App Router, TypeScript strict, `private: true`. Structure à la racine, pas de `src/` :
+Next.js 16, App Router, TypeScript strict. Structure à la racine, pas de `src/` :
 
 ```
 app/            # pages, layout, icon.tsx, opengraph-image.tsx
