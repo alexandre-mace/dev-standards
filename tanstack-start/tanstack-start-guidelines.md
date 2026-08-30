@@ -3,72 +3,70 @@
 > Dashboards, internal tools, simulators, products.
 >
 > **Last watch: 29 August 2026** (`/sota-gap`), start from this date on the next run.
-> Reference versions verified on npm that day: TanStack Start 1.168, TanStack Router 1.170,
-> TanStack Query 5.102, TanStack Form 1.33, Convex 1.45, @clerk/tanstack-react-start 1.5,
-> Zod 4.5, Zustand 5.0, Vite 8.2, Tailwind 4.3, Biome 2.5, Vitest 4.1, Playwright 1.62.
 
-## Scope: when this stack instead of `next/`
+| Tool | Version | Notes |
+|---|---|---|
+| TanStack Start | 1.168 | Stable on npm, around 17M weekly downloads. Parts of the official docs still say Release Candidate, and Convex repeats that caveat: pin exact versions and read the changelog before bumping |
+| TanStack Router | 1.170 | The framework's real core |
+| TanStack Query | 5.102 | |
+| TanStack Form | 1.33 | |
+| Convex | 1.45 | Backend. `@convex-dev/react-query` bridges it to Query |
+| Clerk | `@clerk/tanstack-react-start` 1.5 | First-class support |
+| Zod | 4.5 | |
+| Vite | 8.2 | |
+| Tailwind | 4.3 | PostCSS, no `tailwind.config` |
+| Biome | 2.5 | Lint and format |
+| Vitest / Playwright | 4.1 / 1.62 | |
+| Hosting | Vercel | Build output is portable, it can move elsewhere unchanged |
 
-The fork is decided **when the project starts**, by one question you can actually test:
+## What this file covers
 
-> **Would rendering on the server ship less JavaScript to the browser?**
+Apps whose value is what the user does. The fork with `next/` is decided when the project starts, on one testable question: would rendering on the server ship less JavaScript to the browser? If yes the pages are content and belong in `next/`; if no, the server-first model is a tax paid for nothing.
 
-- **Yes**, because the pages are largely content. Server Components earn their
-  complexity, and the framework built around them is `next/`.
-- **No**, because it is all interactive anyway. Then the server-first model is a tax you
-  pay for nothing, and this stack gives you typed URLs instead.
+Both frameworks have Server Components. What differs is the default: Next is server-first until you write `use client`, Start is client-first and you opt in with `renderServerComponent()`. Start's are still experimental, so if RSC is central to the project, that settles it in favour of `next/`.
 
-The honest version of the difference: **both frameworks have Server Components. What
-differs is the default.** Next is server-first, every component runs on the server until
-you write `use client`. TanStack Start is client-first: you opt into server rendering
-explicitly, call by call, and the result flows back as data through a loader. So the
-question is not whether you *can* render on the server, it is whether you want that to
-be the default posture of the whole app.
+**If the app needs no SSR, no server functions and no streaming at all**, the TanStack docs recommend dropping Start for **TanStack Router alone**, as a SPA.
 
-What is genuinely *not* comparable today: Next's Server Components are production-grade,
-TanStack Start's are **experimental** and its own docs say so. If RSC is central to what
-you are building, that settles it: go to `next/`.
+**Mixed project**: a marketing landing plus an app is one project with two audiences. Serve the landing statically and keep the app here, rather than splitting the repo.
 
-Nor is SEO a differentiator, whatever the blogs say: this stack does full-document SSR,
-so a page here is indexed and previewed like any other.
+## Playbook
 
-A login is a common sign of the second case, never its definition: an internal tool on
-an open URL belongs here, and so does a public simulator whose every screen is generated
-by what the user typed.
+- **A screen**: a file under `src/routes/`, its state in the URL through `validateSearch`, its data through a `loader` that goes via the Query client.
+- **A filter, a tab, a pagination**: extend the route's Zod search schema. Never a `useState` for something a user would want to share as a link.
+- **Reading server data**: a Convex query through `@convex-dev/react-query`, consumed with `useSuspenseQuery` so fetching starts during SSR.
+- **Writing server data**: a Convex mutation. Nothing else touches the database.
+- **A one-off server-side operation** (a third-party call, a secret): a server function, not an API route.
+- **A form**: TanStack Form with the same Zod schema that validates the server side.
 
-Apply the test rather than the vibe. A tool whose page is a fifteen-word shell mounting
-thirty-five client components ships exactly as much JavaScript either way, so Next's
-default buys it nothing. What it would gain here is the thing it lacks: state in the
-URL, typed, so a result can be shared as a link.
+## Current patterns
 
-The other side of the test is just as real. Many pages of prose, a blog, a catalogue,
-documentation: the server renders them once, the browser downloads almost no JavaScript,
-and that is Next doing what it was built for.
+**Typed search params** are the reason this stack exists. The schema lives on the route, so both reads and links are checked at compile time: rename a field and every link that used it fails to build.
 
-**Mixed projects**: a marketing landing plus an app is one project with two audiences.
-Serve the landing statically and keep the app here, rather than splitting the repo.
+```tsx
+export const Route = createFileRoute('/shop/products')({
+  validateSearch: z.object({
+    page: z.number().default(1),
+    sort: z.enum(['newest', 'price']).default('newest'),
+  }),
+})
 
-Do not migrate a working project just to follow this fork. It applies to new work.
+const { page, sort } = Route.useSearch()
+<Link from={Route.fullPath} search={(prev) => ({ page: prev.page + 1 })}>Next</Link>
+```
 
-**If the app needs no SSR, no server functions and no streaming at all**, the
-TanStack docs themselves recommend dropping Start and using **TanStack Router alone**
-as a SPA. Reach for Start when you actually want server functions or SSR, not by default.
+**Server functions** are typed RPC, validated at the boundary and callable from a loader or a component.
 
-## Principles
+```tsx
+export const getUser = createServerFn({ method: 'GET' })
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => db.user(data.id))
+```
 
-1. **The router is the framework.** Routes, params and search params are typed end
-   to end. If you find yourself parsing `URLSearchParams` by hand, you left the rails.
-2. **Server state is not client state.** TanStack Query owns anything that comes from
-   the server. Zustand exists only for genuinely global client state (a theme, a
-   sidebar, a wizard in progress), never as a cache.
-3. **Server functions instead of endpoints.** A typed RPC beats a hand-written REST
-   route and its client. Write an API route only for a real external consumer.
-4. **The backend is Convex.** Schema, queries, mutations and actions live in TypeScript
-   next to the app, which is what makes an agent able to work across the seam.
-5. **Validate at the boundary, once.** Zod on anything entering the system, and the
-   inferred type flows from there.
-6. **Tests are not optional here.** This is an app, not a brochure: Vitest for logic,
-   Playwright for the paths a user actually takes.
+Call them directly in a `loader`, or through `useServerFn()` in a component.
+
+**Loaders feed the Query cache** rather than fetching in a component. A route then renders from cache and revalidates, instead of blocking on a waterfall.
+
+**`useSuspenseQuery` for anything server-rendered.** The browser client resumes the live Convex subscription afterwards with no loading flash. Subscriptions stay alive 5 minutes after unmount (`gcTime`): lower it deliberately, not by accident.
 
 ## 1. Scaffolding
 
@@ -76,68 +74,22 @@ as a SPA. Reach for Start when you actually want server functions or SSR, not by
 pnpm create @tanstack/start@latest
 ```
 
-Non negotiable from the first commit: TypeScript strict, pnpm with `packageManager`
-pinned, Biome for lint and format, Vite as the build tool.
+TypeScript strict, pnpm with `packageManager` pinned, Biome for lint and format. Commit the generated route tree.
 
-## 2. Routing
+## 2. Rules
 
-- **File-based routes** under `src/routes/`, with the generated route tree committed.
-- **Typed search params** through `validateSearch`, with a Zod schema. This is the
-  main thing this stack buys over Next: filters, pagination and tabs live in the URL,
-  typed, shareable, and the back button works for free.
-- **Loaders** fetch through the Query client so a route can render from cache and
-  revalidate, rather than blocking on a waterfall.
-- Guard authenticated areas in a **layout route**, not in each leaf.
+- **The router is the framework.** Parsing `URLSearchParams` by hand means you left the rails.
+- **Server state is not client state.** TanStack Query owns anything that comes from the server. Zustand is for genuinely global client state (a theme, a sidebar, a wizard in progress), never as a cache.
+- **Server functions instead of endpoints.** Write an API route only for a real external consumer.
+- **The backend is Convex.** Schema, queries, mutations and actions live in TypeScript next to the app, which is what lets an agent work across the seam. Data migrations go through `@convex-dev/migrations`, never a hand-rolled `take(n)` loop.
+- **Validate at the boundary, once**, with Zod. The inferred type flows from there.
+- **Auth in a layout route**, never checked leaf by leaf. Clerk by default, Better Auth when self-hosting is required, never both.
+- **One library per job.** One form library, one validation library, one auth provider.
 
-## 3. Data: Convex and TanStack Query
+## 3. UI
 
-The combination Start plus TanStack Query plus Convex is the documented sweet spot,
-and Convex supports it officially.
+The `@alexandremace` kit, shadcn on the Base UI base in Nova style, Tailwind 4 through PostCSS. A component fixed once is fixed everywhere, so never modify `components/ui/` in a consumer: the change belongs in the kit, then propagates with `/propagate-kit`.
 
-- `@convex-dev/react-query` bridges the two: Convex subscriptions become Query entries.
-- Use `useSuspenseQuery()` when a route server-renders, so fetching starts on the server.
-  The browser client resumes the live subscription afterwards with no loading flash.
-- Subscriptions stay alive 5 minutes after unmount (`gcTime`), which is usually what you
-  want when a user navigates back and forth. Lower it deliberately, not by accident.
-- Data migrations go through `@convex-dev/migrations`, never a hand-rolled `take(n)` loop.
+## 4. Quality and deployment
 
-## 4. Auth
-
-**Clerk** through `@clerk/tanstack-react-start`, which has first-class support.
-**Better Auth** is the alternative when self-hosting is required. Pick one at the
-start of the project, never both, and put the session check in the layout route.
-
-## 5. UI
-
-Same kit as the rest of the personal ecosystem, so a component fixed once is fixed
-everywhere: the `@alexandremace` registry, shadcn on the **Base UI** base, style Nova,
-Tailwind 4 through PostCSS with no `tailwind.config`. Forms use TanStack Form with a
-Zod schema, or React Hook Form if the project already leans that way, but only one of
-the two per project.
-
-## 6. Quality and deployment
-
-- `pnpm build` and `pnpm test` are the gate. `tsc --noEmit` is part of it.
-- Vitest for units and logic, Playwright for user paths. A new user-facing flow ships
-  with a Playwright spec.
-- Deployment on Vercel like the rest, knowing the build output is portable and can move
-  elsewhere without rewriting the app.
-
-## 7. Anti-patterns
-
-- Reaching for this stack for a site whose content is the product. That is `next/`.
-- Zustand, or a `useState`, holding data that came from the server.
-- Hand-parsed query strings next to a router that types them.
-- A REST route written for the app's own frontend, where a server function would do.
-- Two form libraries, two validation libraries, or two auth providers in one project.
-- Copying a Next.js idiom by reflex. Server Components exist here but are opt-in and
-  experimental: you call `renderServerComponent()` deliberately, you do not sprinkle
-  `use client` to escape a server-first default that does not exist.
-
-## Watch
-
-The framework ships stable on npm (`latest` is a plain `1.x`, past 800 releases, with
-the beta line long closed), and it sits around 17M weekly downloads against 55M for
-Next. But **parts of the official documentation still describe it as a Release Candidate**,
-and Convex repeats that caveat. Treat breaking changes in a minor as possible, pin
-exact versions, and read the changelog before bumping.
+`pnpm build`, `pnpm test` and `tsc --noEmit` are the gate. Vitest for logic, Playwright for user journeys, and a new user-facing flow ships with its Playwright spec. This is an app, not a brochure: tests are not optional.
