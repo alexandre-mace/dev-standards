@@ -67,19 +67,14 @@ Entête canonique de `app/globals.css`, dans cet ordre :
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Mono-theme clair : la variante dark ne s'active que par classe .dark, jamais posee. */
 @custom-variant dark (&:is(.dark *));
 ```
 
 **Mono-thème clair.** Ce `@custom-variant` neutralise les `dark:` du stock shadcn, et la classe `.dark` n'est jamais posée. Un thème sombre est une décision de projet, pas un défaut.
 
-Tokens en OkLCh dans `:root`, remappés en `--color-*` dans `@theme inline`, échelle de radius dérivée de `--radius: 0.625rem`. Tailwind 4 se configure en CSS : zéro `tailwind.config.js`.
+**Tailwind 4 se configure en CSS**, zéro `tailwind.config.js`. Les tokens vivent en OkLCh dans `:root`, remappés en `--color-*` dans `@theme inline`. Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant, donc ajouter tout nouveau token à la main aux deux endroits.
 
-Palette par défaut : celle du kit, fond sable `#FAF8F0`, cartes `#FDFCF8`, primary `#0737FF`, plus `--warning` et `--success`. Un projet peut assumer la sienne en re-déclarant les tokens, sans toucher aux composants.
-
-Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant. Ajouter tout nouveau token à la main dans `:root` **et** dans `@theme inline`.
-
-Classes conditionnelles via `cn()`, de `lib/utils.ts`.
+La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déclarant les tokens, sans toucher aux composants.
 
 ## 4. Layout et SEO
 
