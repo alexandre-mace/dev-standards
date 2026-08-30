@@ -72,6 +72,6 @@ intent it will get.
 - Never announce "fixed" on the disappearance of the symptom alone: the regression test
   is what settles it.
 - Flag in one line a fragile pattern the bug reveals elsewhere, as a candidate for
-  `/gap-analysis`. Do not go and fix it everywhere: the scope of the fix stays the bug.
+  `/gap-code`. Do not go and fix it everywhere: the scope of the fix stays the bug.
 - If two hypotheses fall in a row, stop and present the state: what is ruled out, what
   remains possible, what is missing to decide.

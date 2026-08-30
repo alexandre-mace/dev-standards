@@ -1,11 +1,11 @@
 ---
-name: sota-gap
-description: Measure how far the dev-standards guidelines sit from the state of the art, judging them against the ecosystem's own sources. Triggers - sota gap, veille, update guidelines, "are the guidelines still current?", state of the art.
+name: gap-sota
+description: Measure how far the dev-standards guidelines sit from the state of the art, judging them against the ecosystem's own sources. Triggers - veille, update guidelines, "are the guidelines still current?", state of the art.
 ---
 
-# sota-gap
+# gap-sota
 
-**The ecosystem is right, the guidelines get corrected.** The mirror of `/gap-analysis`,
+**The ecosystem is right, the guidelines get corrected.** The mirror of `/gap-code`,
 where the guidelines are right and the code gets corrected.
 
 | Stack | Files |
@@ -85,7 +85,7 @@ that does not move its own date sends the next run to the wrong starting point.
 - **Prescriptive, not descriptive.** Never weaken a guideline because the code does not
   follow it yet, never strengthen one because recent commits happen to.
 - No per-project state. "The project is on ^12.5" is true in one repo and a lie in its
-  neighbours. Project-to-guideline gaps are `/gap-analysis`'s job. A lesson drawn from
+  neighbours. Project-to-guideline gaps are `/gap-code`'s job. A lesson drawn from
   history stays legitimate: that is justification, not state.
 - No project names, no company names, no ticket references, code examples included.
 - English throughout. Keep the tone: prescriptive, dense, short code examples.

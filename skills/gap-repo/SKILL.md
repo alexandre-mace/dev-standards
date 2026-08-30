@@ -1,12 +1,12 @@
 ---
-name: check-standards
+name: gap-repo
 description: Audits the dev-standards repository against itself - broken cross-references, a README out of step with the skills, sibling skills that disagree. Use after renaming or adding a skill, and before trusting the repo again.
 ---
 
 # Check the standards repo
 
-**This repo is the only one nothing audits.** `/gap-analysis` measures a project against
-the guidelines, `/sota-gap` measures the guidelines against the ecosystem, and neither
+**This repo is the only one nothing audits.** `/gap-code` measures a project against
+the guidelines, `/gap-sota` measures the guidelines against the ecosystem, and neither
 looks at whether this repository still agrees with itself.
 
 ## 1. Run the checker

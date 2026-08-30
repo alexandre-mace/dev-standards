@@ -1,6 +1,6 @@
 # Next Guidelines: static-first personal sites
 
-> **Last watch: 24 August 2026** (`/sota-gap`), start from this date on the next run.
+> **Last watch: 24 August 2026** (`/gap-sota`), start from this date on the next run.
 >
 > Radar: Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, announced as a future default) and `transitionTypes` on `<Link>`. Worth watching, not yet standards.
 

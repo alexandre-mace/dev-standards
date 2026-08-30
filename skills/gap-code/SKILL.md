@@ -1,9 +1,9 @@
 ---
-name: gap-analysis
+name: gap-code
 description: Audit a whole codebase against its stack's guidelines and write every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
-**The guidelines are right, the code gets corrected.** The mirror skill is `/sota-gap`,
+**The guidelines are right, the code gets corrected.** The mirror skill is `/gap-sota`,
 where the ecosystem is right and the guidelines get corrected.
 
 ## 1. Identify the stack, read its guidelines in full
@@ -120,7 +120,7 @@ Findings per priority, then the most critical items, then one line on what to do
 - Exhaustive, not sampled. Every file, with `Glob` and `Grep`.
 - Every finding names a file and a line or a method. "Some controllers are too big" is
   worthless, "`AdvertController.php:245` maps icons inline" is actionable.
-- Something that looks wrong in the guidelines themselves goes to `/sota-gap`.
+- Something that looks wrong in the guidelines themselves goes to `/gap-sota`.
 - Do not invent problems. Flag what genuinely deviates, or what is plainly a bug or a
   security issue.
 - Group by theme, not by file, so the result is a work plan.

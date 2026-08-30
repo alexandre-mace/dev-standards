@@ -105,5 +105,5 @@ Not run here:         Playwright (/verify), Psalm (CI)
 - Every FAIL shows the real error output and the fix, never a paraphrase.
 - **A vulnerability never blocks the run.** Report it at the end, apply the update, and
   commit that on its own: it does not belong in the feature's changeset.
-- A SKIPPED row the guidelines mandate gets one closing line: it is a `/gap-analysis`
+- A SKIPPED row the guidelines mandate gets one closing line: it is a `/gap-code`
   finding, not something to fix inside this run.

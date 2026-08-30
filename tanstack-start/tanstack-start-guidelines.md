@@ -2,7 +2,7 @@
 
 > Dashboards, internal tools, simulators, products.
 >
-> **Last watch: 29 August 2026** (`/sota-gap`), start from this date on the next run.
+> **Last watch: 29 August 2026** (`/gap-sota`), start from this date on the next run.
 
 | Tool | Version | Notes |
 |---|---|---|

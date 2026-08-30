@@ -13,4 +13,4 @@ a re-run.
 | Technical, tied to a stack | `symfony-react/`, `next/` or `tanstack-start/` |
 | True of one repository only | that repo's `AGENTS.md` |
 | A procedure run on demand | `skills/` |
-| Where a project currently stands | nowhere: `/gap-analysis` measures it |
+| Where a project currently stands | nowhere: `/gap-code` measures it |

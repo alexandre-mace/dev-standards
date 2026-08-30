@@ -59,7 +59,7 @@ pnpm test:e2e <spec>                # while iterating
 - On a suite too slow to run whole each time, run the specs touching the feature while
   iterating and the whole suite once before `/review-diff`, saying which you ran.
 - Say it when the project has no suite at all. The guidelines mandate one, so its
-  absence is a `/gap-analysis` finding, not a neutral fact.
+  absence is a `/gap-code` finding, not a neutral fact.
 
 ## What to read
 

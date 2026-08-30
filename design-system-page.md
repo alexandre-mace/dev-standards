@@ -203,7 +203,7 @@ already plays that role, with its typed and described items: do not create a sec
 - **The living page settles it** when it disagrees with the `.md`: it renders the real code.
 - **The trigger is the PR, not the calendar.** Any PR adding a component, creating a variant or
   customising a brick updates the inventory in the same PR. The mechanical check from section 1 is the
-  safety net, to run at the next `/gap-analysis`.
+  safety net, to run at the next `/gap-code`.
 - **The inventory is per product and it rules.** Documents shared between products never carry a local
   inventory: they keep the procedures and the upstream facts, and point here. Two inventories of the
   same fact always diverge.

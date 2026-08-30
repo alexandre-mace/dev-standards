@@ -43,7 +43,7 @@ UAT fixes included.
 
 ## 3. Diff against the guidelines
 
-The diff only, not the project: that is `/gap-analysis`. Flag only what the diff
+The diff only, not the project: that is `/gap-code`. Flag only what the diff
 introduces or worsens.
 
 - Symfony and React: DTO patterns, `format: 'json'` and `#[IsGranted]` on API routes, a

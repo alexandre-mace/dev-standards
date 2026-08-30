@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 30 August 2026** (`/sota-gap`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · Symfony Reprise 1.1 (see §6) · symfony/ux 3.4 (2.x line still maintained) · TanStack Query 5.102 · RHF 7.87 (v8 still in beta) · Zod 4.5 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.19) · Vitest 4.1 (v5 in RC, see §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
+> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · Symfony Reprise 1.1 (see §6) · symfony/ux 3.4 (2.x line still maintained) · TanStack Query 5.102 · RHF 7.87 (v8 still in beta) · Zod 4.5 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.19) · Vitest 4.1 (v5 in RC, see §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
 
 ## Routing: what to read for which task
 
@@ -856,7 +856,7 @@ Use shadcn's `cn()` for conditional classes, no ternaries inside strings.
 
 shadcn is **not an npm dependency**: the components are **vendored source** in `components/ui/`. So there is no `pnpm update`; you update component by component through the CLI, **preserving local customizations**.
 
-**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. A project still on `new-york-v4` (Radix) is a gap **to close**, and `/gap-analysis` should raise it as work to schedule: migrate it in full, never two bases in one project.
+**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. A project still on `new-york-v4` (Radix) is a gap **to close**, and `/gap-code` should raise it as work to schedule: migrate it in full, never two bases in one project.
 
 > **Migrating a project**: do it cold, on a branch, re-grafting the in-house variants inventoried in the project's `DESIGN-SYSTEM.md`. A stale `style` in `components.json` makes the CLI resolve against the old registry, so new components (the chat primitives `message-scroller`/`message`/`bubble`, for instance) come back **404** even though they exist.
 
@@ -879,7 +879,7 @@ Everything else must stay **as close to upstream as possible**: don't edit a `co
 
 **CLI / registry news (summer 2026)**: **private** GitHub registries are supported (auth through `gh` credentials or `GH_TOKEN`: if you can read the repo, the CLI can install from it), relevant if a personal kit ever needs to go private. `npx shadcn migrate base-color` switches a project's base color: it rewrites the theme variables in the CSS pointed at by `components.json` plus the `baseColor` value (unrecognized custom tokens are listed at the end of the migration, to handle by hand; reversible by running it the other way or through git). New multi-step `Questionnaire` component.
 
-**Cadence**: at every `/sota-gap` watch, check the current style on ui.shadcn.com and reconcile the components that drifted most (a large `--diff` is a candidate for re-grafting). Target: a near-empty diff outside the documented brand variants.
+**Cadence**: at every `/gap-sota` watch, check the current style on ui.shadcn.com and reconcile the components that drifted most (a large `--diff` is a candidate for re-grafting). Target: a near-empty diff outside the documented brand variants.
 
 ### QueryClient
 

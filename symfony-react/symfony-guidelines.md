@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 30 August 2026** (`/sota-gap`), start from this date on the next run. Reference versions verified: PHP 8.5.10 (project floor 8.4; **≥ 8.5.9 required**, security) · Symfony 8.1.5 (8.0 unmaintained; 8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 required**, security) · Twig ≥ 3.27 (currently 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 available on CleverCloud) · Symfony Reprise 1.1 (Vite integration, see reactony §6).
+> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP 8.5.10 (project floor 8.4; **≥ 8.5.9 required**, security) · Symfony 8.1.5 (8.0 unmaintained; 8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 required**, security) · Twig ≥ 3.27 (currently 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 available on CleverCloud) · Symfony Reprise 1.1 (Vite integration, see reactony §6).
 
 ## Routing: what to read for which task
 
@@ -1530,7 +1530,7 @@ Calls to external services (Hubspot, Discord, Slack, emails) are dispatched asyn
 ### Transport
 
 Doctrine (PostgreSQL, the `messenger_messages` table). The `SendEmailMessage`, `ChatMessage` and `SmsMessage` messages stay **sync**, because their templates receive Doctrine entities that don't serialize.
-Target PostgreSQL version: **≥ 17** (the CleverCloud default; 18.3 is available, with io_uring and UUIDv7). An add-on still on 15 or 16 is a gap for gap-analysis to raise, the upgrade on Clever being cheap.
+Target PostgreSQL version: **≥ 17** (the CleverCloud default; 18.3 is available, with io_uring and UUIDv7). An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap.
 
 ### Message: the DTO
 

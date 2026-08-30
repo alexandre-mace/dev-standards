@@ -1,6 +1,6 @@
 # Dev Standards
 
-The recipe for each stack Alexandre Macé builds on, in the version he and the `/sota-gap` tech watch agree is state of the art, plus the Claude Code skills that go with them.
+The recipe for each stack Alexandre Macé builds on, in the version he and the `/gap-sota` tech watch agree is state of the art, plus the Claude Code skills that go with them.
 
 ## Stacks
 
@@ -51,9 +51,9 @@ Vite build, deployed on Vercel. UI from the `@alexandremace` kit, on the Base UI
 | `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the DoD, at arm's length in a forked context |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |
 | `deploy` | Merge into `main`. The irreversible act, and the user's call |
-| `gap-analysis` | The code against its stack's guidelines. The guidelines are right |
-| `sota-gap` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
-| `check-standards` | This repo against itself: broken cross-references, siblings that disagree |
+| `gap-code` | The code against its stack's guidelines. The guidelines are right |
+| `gap-sota` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
+| `gap-repo` | This repo against itself: broken cross-references, siblings that disagree |
 | `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
 | `redaction` | Rewrites a text into Alexandre's writing voice |
 
@@ -100,8 +100,8 @@ What the diagram cannot show:
   `/deploy` is never run by the agent.
 - Commits are save points, the merge is the irreversible act.
 
-Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-analysis`
-after a big delivery, `/sota-gap` as tech watch.
+Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-code`
+after a big delivery, `/gap-sota` as tech watch.
 
 ## Setup
 
