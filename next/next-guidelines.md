@@ -94,7 +94,7 @@ Le contenu vit dans `lib/` en TypeScript typé. Tout ce que la page affiche exis
 
 **Source externe** (Banque mondiale, OWID) : pipeline `pnpm data`.
 
-- `scripts/build-*.mjs`, ESM natif : `node:fs`, `fetch` global, top-level await.
+- `scripts/build-*.mjs`.
 - Sortie générée dans `lib/**/*.ts` avec entête obligatoire : `// Généré par scripts/…, ne pas éditer à la main.`, la source, la date d'extraction, et la licence si elle l'exige (CC BY pour OWID). Un fichier généré édité à la main perd sa modification au prochain run.
 - **Logs de contrôle en fin de run** : totaux croisés avec un agrégat de référence, comptes de lignes. C'est le seul filet sur un site sans suite de tests.
 - Relancer `pnpm data` avant un déploiement qui dépend de la fraîcheur.
@@ -109,14 +109,11 @@ Les tests deviennent alors obligatoires : Vitest et `convex-test` pour les fonct
 
 ## 7. Qualité et déploiement
 
-**`pnpm build` est le check** : types, génération statique. Le lancer avant de pousser. Pas de suite de tests sur un site sans backend : la logique critique est dans les scripts data, contrôlée par leurs logs.
+**`pnpm build` est le check** : types et génération statique. Le lancer avant de pousser.
 
-**Pousser, c'est déployer** (webhook Vercel sur main). Trois conséquences :
+**Pousser, c'est déployer** (webhook Vercel sur main) :
 
 - Grouper les pushes. Le plan Hobby plafonne à 100 déploiements par 24 h glissantes, et chaque push de chaque projet consomme un slot.
 - La rétention Hobby est de 30 jours : ne jamais compter sur une vieille URL de déploiement comme archive.
-- Une security release Next se patche sur tous les projets sous une semaine.
 
-Un ancien hébergement se recycle en page de redirection vers le domaine canonique, jamais en doublon vivant.
-
-Dev local : serveur déclaré dans `.claude/launch.json`, un port dédié par projet.
+Un hébergement qu'on abandonne devient une redirection vers le domaine canonique, jamais un doublon vivant.
