@@ -1,21 +1,19 @@
 ---
 name: check-logs
-description: Prod health audit correlating CleverCloud access and application logs, Messenger DB state and Sentry issues, into a triaged report. Use monthly or quarterly to separate noise from real bugs and keep Sentry clean.
+description: Audits the health of a production app by correlating CleverCloud logs, Messenger state and Sentry issues. Use when checking on prod, triaging Sentry, or chasing down noise in the logs.
 ---
 
 # Check prod logs
 
-**Applies to**: apps on CleverCloud with Sentry wired up, which today means the
-Symfony + React stack. Needs the `clever` CLI authenticated and the Sentry MCP connected.
+Ask for the period (default `7d`) if not given. Pull the signals, correlate them against
+the current code, triage.
 
-Ask for the period (default `7d`), the CleverCloud alias and the Sentry project if not
-given. Pull the three sources in parallel, correlate them against the current code, then
-triage.
+## Where the signals live
 
-## The two commands that do not behave as expected
+### CleverCloud, Sentry, Messenger
 
 ```bash
-# streaming by default: --before bounds the range and gives a finite tail
+# both stream by default: --before bounds the range and gives a finite tail
 clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s
 clever logs       --alias <ALIAS> --since <PERIOD> --before 30s
 ```
@@ -23,8 +21,7 @@ clever logs       --alias <ALIAS> --since <PERIOD> --before 30s
 `clever accesslogs` is alpha and its columns are positional: pull the HTTP status with
 `awk` rather than assuming a field index.
 
-Messenger state, when the app uses the Doctrine transport, from the prod `DATABASE_URL`
-in `clever env`:
+Messenger state, from the prod `DATABASE_URL` in `clever env`:
 
 ```sql
 SELECT message_type, failure_type, COUNT(*) AS n, MAX(received_at) AS last
@@ -33,13 +30,25 @@ WHERE failure_type IS NOT NULL AND received_at > NOW() - INTERVAL '<PERIOD>'
 GROUP BY 1,2 ORDER BY n DESC;
 ```
 
-Sentry comes from its MCP, which documents its own tools: search the unresolved issues
-for the period and read them.
+Sentry issues come from its MCP.
+
+### Vercel and Convex
+
+`npx convex logs` follows a deployment, `npx convex dashboard` opens it. Vercel keeps its
+own runtime logs per deployment.
+
+Nothing else here is documented yet, because nothing else has been run yet. The first
+audit on this host records what worked, the way the CleverCloud gotchas above were
+recorded.
+
+### A static site with no backend
+
+There is nothing to audit. Say so rather than producing a report out of Vercel's
+request logs.
 
 ## Correlate before judging
 
-A raw list of issues is not an audit. Each signal gets crossed with the code as it is
-**now**:
+Cross each signal with the code as it stands **now**:
 
 - a Sentry culprit file → `git log -- <file>`: a fix may already have landed since the
   last event
@@ -49,7 +58,7 @@ A raw list of issues is not an audit. Each signal gets crossed with the code as 
 
 ## Triage
 
-The judgement this skill exists for. Volume is not severity.
+Volume is not severity.
 
 | Pattern | Decision |
 |---|---|
