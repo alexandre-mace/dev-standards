@@ -1178,143 +1178,31 @@ final class ValidateSharesTest extends WebTestCase
 
 ### E2E avec Playwright
 
-`tests/` couvre le contrat HTTP, mais **n'attrape pas** les régressions multi-pages (le tunnel investissement = 5 étapes, JS interactif, redirections). Playwright tape sur l'app dans Chromium réel.
-
-Playwright 1.62 (juillet 2026) : `signal` (AbortSignal) sur la plupart des opérations, screenshots de comparaison au format WebP, `retryStrategy: 'isolated'` (retries séquentiels en fin de run dans un worker unique) ; des APIs dépréciées ont été supprimées au passage, lire les release notes au bump. Côté a11y, garder `@axe-core/playwright` en `^4.13` : chaque bump du moteur axe peut faire apparaître de nouvelles violations, les traiter au bump plutôt que les ignorer.
-
-#### Setup
+`tests/` couvre le contrat HTTP mais n'attrape pas les régressions multi-pages : un tunnel de cinq étapes, du JS interactif, des redirections. Playwright tape sur l'app dans un Chromium réel.
 
 ```bash
 pnpm add -D @playwright/test @axe-core/playwright
 pnpm exec playwright install --with-deps chromium
 ```
 
-`playwright.config.ts` à la racine :
+Les seuls choix qui ne se devinent pas, dans `playwright.config.ts` :
+
+- **`fullyParallel: false` et `workers: 1`.** La DB est partagée, donc le parallélisme la rend non déterministe.
+- **Trois projets** : un `setup` qui seed et s'authentifie une fois en sauvant son `storageState`, un projet public pour les specs sans auth, et un projet authentifié qui déclare `dependencies: ['setup']` et réutilise ce `storageState`.
+- `trace: 'on-first-retry'` et `screenshot: 'only-on-failure'`, sinon un échec en CI n'est pas diagnosticable.
+
+**La commande de seed** (`app:e2e:seed`) est idempotente, wipe puis insère, préfixe ses lignes avec `__e2e__` pour rester isolable, et ne dépend d'aucune API externe.
+
+**L'accessibilité se vérifie dans la spec**, pas dans une passe séparée : une violation casse le test.
 
 ```ts
-import {defineConfig, devices} from '@playwright/test';
-
-export default defineConfig({
-    testDir: './e2e',
-    fullyParallel: false,                  // serial = DB déterministe
-    forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
-    workers: 1,
-    reporter: process.env.CI ? 'github' : 'list',
-
-    use: {
-        baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'https://localhost:8000',
-        ignoreHTTPSErrors: true,
-        trace: 'on-first-retry',
-        screenshot: 'only-on-failure',
-    },
-
-    projects: [
-        // Setup project : seed DB + login, sauve le storageState
-        {name: 'setup', testMatch: /auth\.setup\.ts/},
-        // Specs publiques (pas d'auth)
-        {
-            name: 'chromium-public',
-            testMatch: /(smoke|registration)\.spec\.ts/,
-            use: {...devices['Desktop Chrome']},
-        },
-        // Specs authentifiées : réutilisent le storageState
-        {
-            name: 'chromium-auth',
-            testIgnore: /(smoke|registration|auth\.setup)\.(spec|ts)/,
-            use: {
-                ...devices['Desktop Chrome'],
-                storageState: 'e2e/.auth/user.json',
-            },
-            dependencies: ['setup'],
-        },
-    ],
-});
+const a11y = await new AxeBuilder({page}).analyze();
+expect(a11y.violations).toEqual([]);
 ```
 
-#### Commande de seed dédiée
+Garder `@axe-core/playwright` en `^4.13` : chaque bump du moteur axe fait apparaître de nouvelles violations, à traiter au bump plutôt qu'à ignorer.
 
-`src/Command/E2eSeedCommand.php` : **idempotente** (wipe puis insère), prefixe les rows avec `__e2e__` pour isolation, ne dépend d'aucune API externe :
-
-```php
-#[AsCommand(name: 'app:e2e:seed', description: 'Seed la DB pour les tests Playwright')]
-final class E2eSeedCommand
-{
-    public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly UserPasswordHasherInterface $hasher,
-    ) {}
-
-    public function __invoke(SymfonyStyle $io): int
-    {
-        // 1. Wipe : tout ce qui commence par __e2e__
-        $this->em->createQuery('DELETE FROM App\Entity\User u WHERE u.email LIKE :p')
-            ->setParameter('p', '__e2e__%')->execute();
-
-        // 2. Re-seed
-        $user = new User();
-        $user->setEmail('__e2e__@e2e.test');
-        $user->setPassword($this->hasher->hashPassword($user, 'E2eTestPass1!'));
-        // … champs requis
-        $this->em->persist($user);
-        $this->em->flush();
-
-        $io->success('Seeded.');
-        return Command::SUCCESS;
-    }
-}
-```
-
-#### Setup auth Playwright
-
-`e2e/auth.setup.ts` :
-
-```ts
-import {test as setup, expect} from '@playwright/test';
-import {execSync} from 'node:child_process';
-
-const STORAGE_STATE = 'e2e/.auth/user.json';
-
-setup('seed DB and authenticate', async ({page}) => {
-    execSync('php bin/console app:e2e:seed --no-interaction', {stdio: 'inherit'});
-
-    await page.goto('/connexion');
-    await page.fill('input[name="_username"]', '__e2e__@e2e.test');
-    await page.fill('input[name="_password"]', 'E2eTestPass1!');
-    await Promise.all([
-        page.waitForURL((url) => !/\/connexion$/.test(url.pathname)),
-        page.click('button[type="submit"]'),
-    ]);
-
-    await expect(page.locator('input[name="_username"]')).toHaveCount(0);
-    await page.context().storageState({path: STORAGE_STATE});
-});
-```
-
-#### Spec E2E + a11y
-
-```ts
-import {test, expect} from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
-
-test('investment tunnel — happy path', async ({page}) => {
-    await page.goto('/tunnel');
-    await page.getByRole('spinbutton', {name: /parts/i}).fill('5');
-    await page.getByRole('button', {name: /continuer/i}).click();
-    await expect(page).toHaveURL(/\/tunnel\/identity/);
-
-    // a11y inline — les violations cassent le test
-    const a11y = await new AxeBuilder({page}).analyze();
-    expect(a11y.violations).toEqual([]);
-});
-```
-
-#### Bypass des intégrations externes en E2E
-
-Mêmes contraintes qu'en `tests/` : **jamais d'appel à HubSpot, ZohoSign, Pennylane, etc.** depuis un E2E. Soit :
-- Variables d'environnement `*_API_KEY=` vides → les services tombent dans leurs branches no-op
-- Override des services dans `config/packages/test/services.yaml` chargé par l'env de dev quand `APP_ENV=e2e`
-- Un wrapper `MockHttpClient` injecté à la place
+**Jamais d'appel à une intégration externe depuis un E2E**, mêmes contraintes qu'en `tests/`. Trois façons : des variables d'environnement de clé vides pour que les services tombent dans leur branche no-op, un override de services dans la config de l'env `e2e`, ou un `MockHttpClient` injecté à la place.
 
 ### Contract drift : diff OpenAPI en CI
 
