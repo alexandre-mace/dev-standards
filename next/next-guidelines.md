@@ -76,7 +76,7 @@ La palette par défaut vient du kit. Un projet peut assumer la sienne en re-déc
 
 **Server Components par défaut.** Réserver `"use client"` aux composants qui portent de l'état ou de l'interaction. Quelques fichiers client par projet, pas la moitié.
 
-**Français partout** : contenu, metadata (`locale: "fr_FR"`), commentaires. Les identifiants métier français sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
+**La langue est une décision de projet**, prise au démarrage et tenue partout : contenu, commentaires, et déclarée à la fois dans `<html lang>` et dans `openGraph.locale`. Les identifiants métier dans la langue du domaine sont tolérés dans les scripts et les modèles (`Pays`, `ANNEE`, `donnees`).
 
 **Geist par le paquet `geist`**, jamais par `next/font/google` : `import { GeistSans } from "geist/font/sans"`, variables posées sur `<html>`, `font-sans` sur le `<body>`.
 
