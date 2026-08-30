@@ -1,57 +1,27 @@
 ---
 name: preprod
-description: Push the current feature branch to preprod for testing. Does NOT touch main.
+description: Merges the current feature branch into preprod for UAT, then returns to it. Never touches main.
 disable-model-invocation: true
 allowed-tools: Bash(git *)
 ---
 
 # Push to preprod
 
-Merge the current feature branch into `preprod` for testing, then return to the feature branch.
+Push the branch, merge it into `preprod`, push that, come back to the branch.
 
-**Applies to**: the Symfony + React stack, which has a long-lived `preprod` branch
-deployed on CleverCloud. On Next and TanStack Start there is nothing to merge: Vercel
-builds a preview per branch, so pushing the feature branch is the UAT deploy. Use
-`/verify` plus that preview URL instead, and skip this skill.
+**Applies to**: the Symfony + React stack, which has a long-lived `preprod` branch that
+CleverCloud tracks. On Next and TanStack Start there is nothing to merge: Vercel builds a
+preview per branch, so pushing the branch *is* the UAT deploy. Skip this skill there and
+hand over the preview URL.
 
-## Pre-checks
+## Rules
 
-1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).
-2. Verify you are NOT on `main` or `preprod`. If you are, abort with a message.
-3. Run `git branch --show-current` to get the branch name.
-
-## Steps
-
-```bash
-# 1. Push current branch
-git push -u origin $(git branch --show-current)
-
-# 2. Save current branch name
-BRANCH=$(git branch --show-current)
-
-# 3. Switch to preprod and pull
-git checkout preprod && git pull
-
-# 4. Merge the feature branch into preprod
-git merge $BRANCH
-
-# 5. Push preprod
-git push
-
-# 6. Return to the feature branch
-git checkout $BRANCH
-```
-
-## After
-
-Show:
-```
-✅ Merged <branch-name> into preprod
-   You are back on <branch-name>
-```
-
-## Safety
-
-- NEVER touch `main` : this skill only merges into `preprod`
-- NEVER delete the feature branch : it stays for further work or future deploy
-- If merge conflicts occur, stop and ask the user
+- **Abort if the current branch is `main` or `preprod`.** This skill merges *from* a
+  feature branch, never onto itself.
+- **Uncommitted changes: stop and ask.** Offer `/commit`, never stash or commit silently.
+- **Never touch `main`.**
+- **Never delete the feature branch.** It stays for the UAT fixes and the eventual
+  `/deploy`. That is the whole difference with `/deploy`.
+- **A merge conflict stops everything.** Resolving it is the user's call, not a guess.
+- End on the feature branch, and say so: landing the user on `preprod` without telling
+  them is how the next commit goes to the wrong place.

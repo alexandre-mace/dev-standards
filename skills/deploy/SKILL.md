@@ -1,57 +1,24 @@
 ---
 name: deploy
-description: Deploy the current feature branch to production (main). Commits, pushes, merges into main, and cleans up.
+description: Merges the current feature branch into main and cleans up. The irreversible act, invoked by a human only.
 disable-model-invocation: true
 allowed-tools: Bash(git *)
 ---
 
 # Deploy to production
 
-Merge the current feature branch into `main` and push.
+Push the branch, merge it into `main`, push that, delete the branch local and remote.
 
-**Applies to**: all three stacks. On Vercel and on CleverCloud alike, `main` is what
-production tracks, so this merge is the irreversible act. Nothing reaches it without
-`/review-diff`.
+**Applies to**: all three stacks. On Vercel as on CleverCloud, `main` is what production
+tracks, so this merge **is** the deploy. It is the one irreversible step of the chain.
 
-## Pre-checks
+## Rules
 
-1. Run `git status` : if there are uncommitted changes, run `/commit` first (ask the user).
-2. Verify you are NOT on `main` or `preprod`. If you are, abort with a message.
-3. Run `git branch --show-current` to get the branch name.
-
-## Steps
-
-```bash
-# 1. Push current branch
-git push -u origin $(git branch --show-current)
-
-# 2. Switch to main and pull latest
-git checkout main && git pull
-
-# 3. Merge the feature branch
-git merge <branch-name>
-
-# 4. Push main
-git push
-
-# 5. Delete the feature branch (local + remote)
-git branch -d <branch-name>
-git push origin --delete <branch-name>
-```
-
-## After deploy
-
-Delete `.claude/plan.md`: the feature has shipped, and a stale plan would be read as the
-current one by the next `/review-diff`.
-
-Show:
-```
-✅ Deployed <branch-name> to main
-   Branch <branch-name> deleted (local + remote)
-```
-
-## Safety
-
-- NEVER run on `main` or `preprod` branch
-- NEVER force push
-- If merge conflicts occur, stop and ask the user
+- **Nothing reaches `main` without `/review-diff`**, UAT fixes included. If the last
+  review predates the last commit, stop and review first.
+- **Abort if the current branch is `main` or `preprod`.**
+- **Uncommitted changes: stop and ask.** Offer `/commit`, never commit silently.
+- **Never force push.** A merge conflict stops everything and goes back to the user.
+- **Delete `.claude/plan.md`** after the merge: the feature has shipped, and a stale plan
+  would be read as the current one by the next `/review-diff`.
+- Report what was merged and that the branch is gone, both sides.
