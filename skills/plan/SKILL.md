@@ -63,8 +63,9 @@ If the ticket owes none, say so and why. What is never named is never written.
 
 ## 5. Write `.claude/plan.md`
 
-**One file, always overwritten**: it holds the feature in progress and nothing else. It survives a compacted context, and `/review-diff` reads it instead
-of trusting its own memory. `/deploy` deletes it when the feature ships.
+**One file, always overwritten**: it holds the feature in progress and nothing else. It
+survives a compacted context, and `/review-diff` reads it instead of trusting its own
+memory. `/deploy` deletes it when the feature ships.
 
 Add `.claude/plan.md` to `.gitignore` if it is not there: it is working state, not
 documentation, and committing it would put a conflict on every branch.
