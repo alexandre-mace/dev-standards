@@ -22,7 +22,7 @@ follows is what `/run` does not know.
 - **Symfony needs two processes**, the PHP server and Vite. Without Vite the React
   islands render nothing and you will chase a phantom bug.
 - Next and TanStack Start: one `pnpm dev`.
-- Server will not start: that is the finding. Report it and stop, do not work around it.
+- A server that will not start **is** the finding. Report it and stop, never work around it.
 
 ## What to walk
 
@@ -56,10 +56,10 @@ pnpm test:e2e <spec>                # while iterating
   A new spec that passes on the first run proves nothing: it may be asserting nothing.
 - A failure here is a finding, whether it belongs to this feature or not: a spec broken
   by a neighbouring change is exactly what this step is for.
-- Suite too slow to run whole on each pass: run the specs touching the feature while
-  iterating, and the whole suite once before `/review-diff`. Say which one you ran.
-- No suite in the project at all: say so. The guidelines mandate one, so its absence is
-  a `/gap-analysis` finding, not a neutral fact.
+- On a suite too slow to run whole each time, run the specs touching the feature while
+  iterating and the whole suite once before `/review-diff`, saying which you ran.
+- Say it when the project has no suite at all. The guidelines mandate one, so its
+  absence is a `/gap-analysis` finding, not a neutral fact.
 
 ## What to read
 

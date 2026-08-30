@@ -10,13 +10,9 @@ Read the staged diff, write the message, commit.
 
 ## What goes in the commit
 
-**Never commit a file the user has not seen.**
-
-- Something already staged: commit exactly that, nothing more. The user chose it.
-- Nothing staged: show `git status --short`, and ask before running `git add -A`. That
-  command sweeps in everything, and a scratch file, a `.env` or a forgotten `dump()`
-  would ride along unseen.
-- The user named what to commit, here or earlier: stage those paths and only those.
+Commit what is staged, nothing else. When nothing is staged, show `git status --short`
+and ask before running `git add -A`: it sweeps in everything, and a scratch file, a
+`.env` or a forgotten `dump()` would ride along unseen.
 
 ## The message
 

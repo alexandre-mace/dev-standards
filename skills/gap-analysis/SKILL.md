@@ -17,8 +17,8 @@ from here.
 | Next | a `next.config.{js,ts,mjs}` | `docs/next-guidelines.md` |
 | TanStack Start | `@tanstack/react-start` in `package.json` | `docs/tanstack-start-guidelines.md` |
 
-- Files missing: the project has no symlink into `dev-standards`. That is the first gap,
-  and the audit stops there.
+- Report a missing guidelines file as the first gap and stop: without the symlink into
+  `dev-standards` there is nothing to audit against.
 - Then read the existing `docs/gap-analysis.md`: what was already found, what is ticked.
 - **Archived repository: stop.** A last commit saying "archive", a redirect to a
   successor, an archived flag on the remote. Report it rather than auditing a corpse.
