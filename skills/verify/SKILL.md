@@ -8,7 +8,7 @@ description: Does the feature actually work? Drives it in a real browser - golde
 Static analysis proves it compiles. Tests prove what they cover. Only running it proves
 the user gets what the ticket asked for.
 
-Runs after the implementation, before `/quality` and `/review-diff`.
+Runs after `/quality`, before `/commit` and `/review-diff`.
 
 **Applies to**: all three stacks. Skip it when the change has no observable surface (a
 console command, a migration, a CI tweak) and say so.
@@ -20,9 +20,9 @@ follows is what `/run` does not know.
 ## Stack gotchas
 
 - **Symfony needs two processes**, the PHP server and Vite. Without Vite the React
-  islands render nothing and you will chase a phantom bug.
+  islands render nothing and you chase a phantom bug.
 - Next and TanStack Start: one `pnpm dev`.
-- A server that will not start **is** the finding. Report it and stop, never work around it.
+- A server that will not start is the finding. Report it and stop, never work around it.
 
 ## What to walk
 
@@ -45,7 +45,7 @@ Not a smoke test of the page that was touched.
 ## Then run the specs
 
 The hand walk covers the new path. The Playwright suite covers everything the change
-could have broken without you noticing, and it is the only assertion that survives you.
+could have broken without you noticing.
 
 ```bash
 pnpm test:e2e                       # whole suite
@@ -53,7 +53,7 @@ pnpm test:e2e <spec>                # while iterating
 ```
 
 - **A spec the plan owed must have been seen to fail before the fix, and pass after.**
-  A new spec that passes on the first run proves nothing: it may be asserting nothing.
+  One that passes on its first run may be asserting nothing.
 - A failure here is a finding, whether it belongs to this feature or not: a spec broken
   by a neighbouring change is exactly what this step is for.
 - On a suite too slow to run whole each time, run the specs touching the feature while
@@ -65,11 +65,11 @@ pnpm test:e2e <spec>                # while iterating
 
 A screen that looks right and logs errors is not right.
 
-- **Console**: every error, and every warning the feature introduced. Key warnings,
+- Console: every error, and every warning the feature introduced. Key warnings,
   hydration mismatches and `act()` warnings count.
-- **Network**: status codes, and no duplicate or runaway request. A `useQuery` firing on
+- Network: status codes, and no duplicate or runaway request. A `useQuery` firing on
   every render shows up here and nowhere else.
-- **Server logs**: on Symfony, a 500 swallowed by a catch is invisible in the browser.
+- Server logs: on Symfony, a 500 swallowed by a catch is invisible in the browser.
 
 ## Report
 
@@ -91,7 +91,7 @@ cannot tell whether this step ever ran.
 
 - **Never hand the check back to the user.** "You can test it at localhost:3000" is the
   failure mode this skill exists to remove.
-- **A finding here outranks a green suite.** Broken golden path: stop and fix.
-- **Fix in the source, never in the page.** The console reads state, it does not patch it.
-- **Name what you could not verify.** A real payment, a signed document, a third-party
+- A finding here outranks a green suite. Stop and fix before moving on.
+- Fix in the source, never in the page. The console reads state, it does not patch it.
+- Name what you could not verify. A real payment, a signed document, a third-party
   callback: hand that part to the UAT explicitly rather than implying full coverage.
