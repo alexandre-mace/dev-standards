@@ -10,8 +10,8 @@
 | TanStack Router | 1.170 | The framework's real core |
 | TanStack Query | 5.102 | |
 | TanStack Form | 1.33 | |
-| Convex | 1.45 | Backend. `@convex-dev/react-query` bridges it to Query |
-| Clerk | `@clerk/tanstack-react-start` 1.5 | First-class support |
+| Convex | 1.45 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query` |
+| Clerk | `@clerk/tanstack-react-start` 1.5 | Optional. First-class support when the app has accounts |
 | Zod | 4.5 | |
 | Vite | 8.2 | |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
@@ -40,7 +40,7 @@ Both frameworks have Server Components. What differs is the default: Next is ser
 
 ## Current patterns
 
-**Typed search params** are the reason this stack exists. The schema lives on the route, so both reads and links are checked at compile time: rename a field and every link that used it fails to build.
+**Typed search params.** The schema lives on the route, so both reads and links are checked at compile time: rename a field and every link that used it fails to build.
 
 ```tsx
 export const Route = createFileRoute('/shop/products')({
@@ -81,9 +81,9 @@ TypeScript strict, pnpm with `packageManager` pinned, Biome for lint and format.
 - **The router is the framework.** Parsing `URLSearchParams` by hand means you left the rails.
 - **Server state is not client state.** TanStack Query owns anything that comes from the server. Zustand is for genuinely global client state (a theme, a sidebar, a wizard in progress), never as a cache.
 - **Server functions instead of endpoints.** Write an API route only for a real external consumer.
-- **The backend is Convex.** Schema, queries, mutations and actions live in TypeScript next to the app, which is what lets an agent work across the seam. Data migrations go through `@convex-dev/migrations`, never a hand-rolled `take(n)` loop.
+- **When the app needs a backend, it is Convex.** Schema, queries, mutations and actions live in TypeScript next to the app, which is what lets an agent work across the seam. Data migrations go through `@convex-dev/migrations`, never a hand-rolled `take(n)` loop. An app that stores nothing needs none of this.
 - **Validate at the boundary, once**, with Zod. The inferred type flows from there.
-- **Auth in a layout route**, never checked leaf by leaf. Clerk by default, Better Auth when self-hosting is required, never both.
+- **If there are accounts, guard them in a layout route**, never leaf by leaf. Clerk by default, Better Auth when self-hosting is required, never both.
 - **One library per job.** One form library, one validation library, one auth provider.
 
 ## 3. UI
@@ -97,3 +97,5 @@ A project that carries the shared identity adds the `@alexandremace` kit instead
 ## 4. Quality and deployment
 
 `pnpm build`, `pnpm test` and `tsc --noEmit` are the gate. Vitest for logic, Playwright for user journeys, and a new user-facing flow ships with its Playwright spec. This is an app, not a brochure: tests are not optional.
+
+Pushing is deploying, on the same Vercel account as everything else. Group your pushes: the Hobby plan caps at 100 deployments per rolling 24 h across all projects, and retention is 30 days, so never rely on an old deployment URL as an archive.
