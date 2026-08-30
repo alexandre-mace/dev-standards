@@ -82,7 +82,7 @@ def check(root):
         for i, line in enumerate(raw.split('\n'), 1):
             # les deux fichiers qui enoncent la regle doivent citer le caractere
             if ('—' in line or '–' in line) and rel not in (
-                    'agent/redaction.md', 'skills/technical-writing/SKILL.md'):
+                    'agent/writing.md', 'skills/technical-writing/SKILL.md'):
                 out.append(f'{rel}:{i}: tiret cadratin ou demi-cadratin')
         if '\r\n' in raw:
             out.append(f'{rel}: fins de ligne CRLF')

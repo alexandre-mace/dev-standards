@@ -1,6 +1,6 @@
 # agent/: how the agent should work
 
-Behaviour, true on every project whatever the stack. `redaction.md` governs how
+Behaviour, true on every project whatever the stack. `writing.md` governs how
 anything gets written, files included. `writing-things-down.md` governs where it
 goes. `output-styles/` governs the shape of a reply, and modifies the system prompt
 rather than being read as context.
