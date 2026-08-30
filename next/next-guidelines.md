@@ -29,9 +29,7 @@ Deux options se combinent librement, chacune décrite à sa place : le site pren
 pnpm create next-app@latest <projet> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
 ```
 
-Ces options donnent TypeScript strict, Biome et son `biome.json`, l'alias `@/*`, l'absence de `src/`, les scripts `dev`, `build`, `start`, `lint`, et un `next.config.ts` vide. Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
-
-Ce qu'on ajoute ensuite.
+Ne pas ajouter `--turbopack` : c'est le bundler par défaut depuis Next 16.
 
 **Épingler `packageManager`** dans `package.json`, et commiter le lockfile. Un `package-lock.json` qui apparaît signale que quelqu'un a installé avec le mauvais outil.
 
@@ -50,11 +48,9 @@ scripts/        # pipeline data éventuel (*.mjs)
 
 ## 2. Composants
 
-**Base UI, jamais React Aria ni Radix**, quel que soit le projet. La composition passe par la prop `render` et les handlers DOM standards : `asChild` n'existe dans aucune des deux bases, c'est du Radix recopié d'un projet pro. Un projet resté sur une autre base se migre en entier, jamais deux bases dans un même projet.
+**Base UI, jamais React Aria ni Radix**, quel que soit le projet. La composition passe par la prop `render` et les handlers DOM standards : `asChild` n'existe dans aucune des deux bases, c'est du Radix recopié d'un projet pro. Migrer en entier un projet resté sur une autre base : jamais deux bases dans un même projet.
 
 `lucide-react` 1.x n'a plus d'icônes de marque : SVG local dans `components/icons.tsx`. Les variantes de composants suivent CVA.
-
-Ensuite, deux cas.
 
 **Projet à identité propre** : Base UI stock via le CLI shadcn officiel, style Nova, sans registry.
 
@@ -66,7 +62,7 @@ Ensuite, deux cas.
 
 Installation : `npx shadcn@latest add -y -o @alexandremace/<item>`. Les composants d'écosystème (`made-with-love`, `brand`, `climatelab-badge`, `search-trigger`) passent par le registry aussi, jamais par copier-coller entre projets.
 
-**Le kit est la source.** `components/ui/` ne se modifie jamais dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
+**Le kit est la source.** Ne jamais modifier `components/ui/` dans un consommateur : un besoin local est soit un vrai écart à remonter dans le kit puis à propager avec `/propagate-kit`, soit un cas d'usage à styler via `className`. Les composants propres au projet vivent à la racine de `components/`.
 
 ## 3. Styling
 
@@ -87,7 +83,7 @@ Tokens en OkLCh dans `:root`, remappés en `--color-*` dans `@theme inline`, éc
 
 Palette par défaut : celle du kit, fond sable `#FAF8F0`, cartes `#FDFCF8`, primary `#0737FF`, plus `--warning` et `--success`. Un projet peut assumer la sienne en re-déclarant les tokens, sans toucher aux composants.
 
-Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant. Un nouveau token s'ajoute à la main dans `:root` **et** dans `@theme inline`.
+Piège : `shadcn add theme` ne réécrit pas un `globals.css` existant. Ajouter tout nouveau token à la main dans `:root` **et** dans `@theme inline`.
 
 Classes conditionnelles via `cn()`, de `lib/utils.ts`.
 
