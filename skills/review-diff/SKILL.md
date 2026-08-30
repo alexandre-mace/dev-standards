@@ -63,6 +63,15 @@ It is a checklist, so check it rather than trusting it was followed:
 - `#[IsGranted]` and `format: 'json'` on new `/api/` routes.
 - No anti-pattern from the guidelines' forbidden list.
 
+Then the part no checklist of green ticks covers, **completeness**:
+
+- **No dead end.** Follow the whole path, interface to backend to persisted data and
+  back to the interface. A button that calls a mutation nothing ever reads is a feature
+  that compiles and does not exist.
+- **Whole lifecycle.** Anything persisted is created, read, updated **and** cleaned up.
+  No orphan row or file left behind on delete.
+- **Nothing unused.** No dependency, schema field or prop added that nothing consumes.
+
 ## 5. Delegate the mechanical checks
 
 - Run **`/quality`**, unless it already passed green on this exact commit with nothing
