@@ -1,6 +1,6 @@
 ---
 name: redaction
-description: Rewrites a text into Alexandre's own writing voice: documentation, guidelines, skills, commit messages, a note to a colleague.
+description: Rewrites a text into Alexandre's own writing voice: documentation, guidelines, skills, the reports the other skills produce, commit messages, a note to a colleague.
 ---
 
 # Redaction
