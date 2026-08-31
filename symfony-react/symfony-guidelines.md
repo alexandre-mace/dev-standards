@@ -924,6 +924,42 @@ The Sentry Monolog handler is configured at the `ERROR` level (see `config/packa
 | `$logger->error()` | Clever logs + **Sentry** | Anything worth a human looking at |
 | `$logger->critical()` | Clever logs + **Sentry** | Blocking error / data corruption |
 
+### A secret in a query string ends up in the logs
+
+HttpClient logs every call at INFO with the full URL, query string included
+(`$this->logger?->info(sprintf('Request: "%s %s"', $method, $url))` in `CurlHttpClient`). So an
+upstream API that authenticates by a `key` or `token` **parameter** writes its own credential into
+the application logs, and into Sentry's breadcrumbs. With a `fingers_crossed` handler those INFO
+lines surface whenever anything else in the same request goes wrong, which on a flaky upstream is
+exactly when it happens.
+
+The contract belongs to the upstream, so the parameter usually cannot move to a header. Redact on the
+way out instead, with a Monolog processor applied to every channel:
+
+```php
+#[AsMonologProcessor]
+final class RedactQueryStringSecretsProcessor
+{
+    private const SENSITIVE = ['key', 'token', 'api_key', 'access_token', 'password'];
+
+    public function __invoke(LogRecord $record): LogRecord
+    {
+        return $record->with(message: preg_replace(
+            '/\b('.implode('|', self::SENSITIVE).')=[^&"\s]+/i',
+            '$1=[REDACTED]',
+            $record->message,
+        ));
+    }
+}
+```
+
+It cannot regress anything: the request goes out untouched, only the record written to the log is
+transformed. And it covers the leaks nobody has thought of yet.
+
+For `/gap-code`: an API client passing a credential in `query` is a **Haute** finding when no
+redaction processor exists in the project. Note that redaction protects the future only. A key
+already written to the logs is exposed and has to be rotated with whoever issued it.
+
 The rule: if you expect a human to react, it's `error`. Otherwise it's `warning` or `notice`.
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.
