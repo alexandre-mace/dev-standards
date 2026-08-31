@@ -141,6 +141,35 @@ The seam itself, schema, query, mutation and the bridge to TanStack Query, is wr
 
 Tests then become mandatory: Vitest and `convex-test` for the backend functions, Playwright for critical journeys. The control logs of the data scripts are no longer enough once a user can write.
 
+## 6 bis. Security
+
+A statically generated site with no backend has almost no attack surface. The moment §6 applies,
+accounts and stored data, it has all of it, and the framework hides where the boundary sits.
+
+**What crosses to the browser.** A `NEXT_PUBLIC_` variable is in the bundle, readable by anyone, and
+nothing warns you: the prefix is the whole security model. Only what would be fine on a billboard
+takes it, a publishable key, a public URL. Everything else is read server-side only. A secret read in
+a component that turns out to be a client component is a secret published, so check the `"use client"`
+boundary of any file that touches one, transitively.
+
+**A server action is a public endpoint.** It compiles to a POST route anyone can call with any
+payload, whatever the form around it looked like. It therefore starts by checking the session, then
+the authorization for the specific object, then validates its input with the schema, in that order.
+Being called from a form the user could only reach when logged in proves nothing.
+
+**Never `dangerouslySetInnerHTML` on anything a user can influence**, directly or through the CMS.
+The escape hatch is for markup produced by the project, and sanitised at that.
+
+**Headers.** A Content Security Policy, `X-Content-Type-Options`, `Referrer-Policy` and
+`Strict-Transport-Security` are declared once, in `next.config.ts` or `proxy.ts`. Their absence is
+silent, so it is a `/gap-code` finding on its own.
+
+**Rate limits at the edge of writes.** With Convex, the official `@convex-dev/rate-limiter`
+component. Sign-in, any public POST, anything expensive to call in a loop.
+
+**Personal data.** It does not travel into a URL, a log, or a Sentry breadcrumb. Sentry captures the
+request by default: restrict it before the first real user, not after.
+
 ## 7. Quality and deployment
 
 **`pnpm build` is the check**: types and static generation. Run it before pushing.

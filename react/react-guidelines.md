@@ -156,7 +156,25 @@ upstream diff at all.
 **Cadence**: at every `/gap-sota`, check the current style on ui.shadcn.com and reconcile
 whatever drifted most. Target a near-empty diff outside the documented brand variants.
 
-## 4. Front-end tests
+## 4. Security, on the front
+
+Three things are true on the three stacks, and each stack's file carries the rest.
+
+**Everything in the bundle is public.** A prefixed environment variable (`NEXT_PUBLIC_`, `VITE_`) is
+readable by anyone who opens the sources, and nothing warns you. Only what would be fine on a
+billboard takes the prefix. A secret read in a file that also runs on the client is a secret
+published, so follow the `"use client"` boundary transitively before concluding a file is
+server-only.
+
+**`dangerouslySetInnerHTML` is for markup the project produced**, never for anything a user or a CMS
+can influence, and sanitised even then. The `href` of a link built from data deserves the same
+suspicion: a `javascript:` URL is an execution.
+
+**What the client sends, the client can forge.** A check done in the component is an ergonomic
+affordance, not a guard. The rule that matters lives on the other side, and the front's job is to
+render the server's verdict rather than re-derive it, which is also what stops the two from drifting.
+
+## 5. Front-end tests
 
 Vitest with `@testing-library/react` and `user-event`, MSW for the network, Playwright for
 journeys. Same stack everywhere; what differs is how the tests reach the backend, and that

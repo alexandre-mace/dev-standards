@@ -176,6 +176,34 @@ re-exported, passed as the `mutationFn`.
 one scans the table. Data migrations through `@convex-dev/migrations`. Tests with
 `convex-test` on the functions, which is where the business logic lives.
 
+## 3 bis. Security
+
+The framework makes the client and the server look like the same file, which is exactly what makes
+the boundary easy to lose sight of.
+
+**A server function is a public endpoint.** It compiles to a route anyone can call with any payload.
+Guarding the route that renders the UI guards nothing: the check belongs **inside** the function, in
+this order, session, then authorization for the specific object, then validation of the input. Same
+for a Convex `query` or `mutation`: `ctx.auth.getUserIdentity()` first, and an identity is not an
+authorization, the ownership of the document still has to be checked.
+
+**A query that returns a whole document publishes it whole.** Convex sends what the function
+returns, so select the fields rather than returning the row: an email, a hash, an internal note
+travel otherwise. And an `internalQuery` or `internalMutation` is the only thing the client cannot
+call, so anything not meant for the client is declared internal.
+
+**What crosses to the browser.** Only a `VITE_`-prefixed variable belongs in the bundle, and it is
+readable by anyone. Everything else is read in a server function or in a Convex environment
+variable. A secret read in a file that also runs on the client is a secret published.
+
+**Never `dangerouslySetInnerHTML` on anything a user can influence.**
+
+**Rate limits at the edge of writes**, with `@convex-dev/rate-limiter`: sign-in, any public mutation,
+anything expensive to call in a loop. And **headers**: a Content Security Policy,
+`X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security`, declared once.
+
+**Personal data** does not travel into a URL, a log, or a Sentry breadcrumb.
+
 ## 4. UI
 
 **Base UI in Nova style**, whatever the project, with Tailwind 4 through PostCSS.
