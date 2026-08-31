@@ -187,6 +187,24 @@ this order, session, then authorization for the specific object, then validation
 for a Convex `query` or `mutation`: `ctx.auth.getUserIdentity()` first, and an identity is not an
 authorization, the ownership of the document still has to be checked.
 
+**The session is not in `context` by default.** A server function's `context` starts empty and holds
+only what a middleware put there, so a handler that reads `context.userId` without one reads
+`undefined` and the guard guards nothing. The middleware reads the session and hands it down, then
+the functions that need it declare it:
+
+```ts
+const authenticated = createMiddleware({ type: 'function' }).server(async ({ next }) => {
+  const { userId } = await readSession()
+  if (!userId) throw new Error('Unauthenticated')
+  return next({ context: { userId } })
+})
+
+createServerFn({ method: 'POST' }).middleware([authenticated]).handler(async ({ context }) => …)
+```
+
+It is to server functions what the layout route of §2 is to screens: the session is checked once, in
+one place, rather than leaf by leaf.
+
 **A query that returns a whole document publishes it whole.** Convex sends what the function
 returns, so select the fields rather than returning the row: an email, a hash, an internal note
 travel otherwise. And an `internalQuery` or `internalMutation` is the only thing the client cannot
