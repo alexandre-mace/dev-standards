@@ -682,7 +682,14 @@ class error boundary whose `componentDidCatch` logs `error.stack`, read the cons
 revert.
 ### Vite
 
-The Symfony integration is **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), Webpack Encore's official heir for Vite and Rsbuild, under the Symfony backward-compatibility promise. It replaces `pentatrion/vite-bundle` and `vite-plugin-symfony`, whose whole scope it covers. A project still on pentatrion is a gap **to close**: the migration is mechanical (Twig prefix `vite_` → `reprise_`, swap the plugin, import `startStimulusApp` from `@symfony/reprise/stimulus`), and not urgent, pentatrion not being deprecated.
+The Symfony integration is **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), Webpack Encore's official heir for Vite and Rsbuild, under the Symfony backward-compatibility promise. It replaces `pentatrion/vite-bundle` and `vite-plugin-symfony`, whose whole scope it covers. A project still on pentatrion is a gap **to close**, and not urgent, pentatrion not being deprecated.
+
+**The migration is only mechanical** (Twig prefix `vite_` → `reprise_`, swap the plugin, import `startStimulusApp` from `@symfony/reprise/stimulus`) **when the project registers its React controllers with an eager glob from a single entry.** Attempted on a real repo (31 August 2026), two ux-react 3.4 limits block the rename-only path, verified in `vendor/symfony/ux-react/assets/dist/register_controller.js`:
+
+- `registerReactControllerComponents` **hard-throws on a lazy glob** (`{ eager: false }`). Pentatrion's helper awaits the lazy import at mount, so each island ships as its own on-demand chunk; ux-react has no counterpart, and forcing `eager: true` pulls every controller (leaflet, maplibre…) into the main entry's graph on every page.
+- Called from **several entries** (a page loading `app` plus a dedicated `leaflet_app`), it **rebuilds the registry from scratch instead of merging**: the last entry wins and the other's islands throw "does not exist" at mount. Its `normalizeGlobKeys` also strips the deepest common prefix of each registered set, so a scoped glob in a secondary entry resolves to names that no longer match the Twig `react_component()` calls.
+
+Migrating such a repo is a loading-model decision, not a plumbing swap: either accept eager and carve the heavy controllers out of the main glob into their dedicated entries, or write a project-local shim that merges registrations across entries, or wait for lazy-glob support upstream. Decide it explicitly.
 
 **While still on pentatrion**, one trap costs an hour every time. `pnpm build` rewrites
 `public/build/.vite/entrypoints.json` in production mode, and Symfony then serves the
