@@ -302,6 +302,8 @@ The getter now returns a `BackedEnum`, so every string comparison built on it go
 `{% if entity.type == 'expense' %}` left behind by such a migration stayed false for six
 hours in production, until an unrelated crash on `|title` revealed it.
 
+**Before anything, verify the stored data**: `SELECT DISTINCT` (with counts) on the column, **in production**. Every value must map to a case, and NULL is not the same as the empty string: NULL only needs a nullable enum, while a single `''` row makes `from('')` throw at hydration. The column itself stays varchar (`schema:update --dump-sql` must emit nothing); values that writers can produce but prod has not seen yet still need cases, so grep the writers too.
+
 Sweep, in this order:
 
 1. `grep -rn "\.field ==\|\.field|title\|\.field|capitalize" templates/`
@@ -1886,6 +1888,8 @@ Calls to external services (Hubspot, Discord, Slack, emails) are dispatched asyn
 
 Doctrine (PostgreSQL, the `messenger_messages` table). The `SendEmailMessage`, `ChatMessage` and `SmsMessage` messages stay **sync**, because their templates receive Doctrine entities that don't serialize.
 Target PostgreSQL version: **≥ 17** (the CleverCloud default; 18.3 is available, with io_uring and UUIDv7). An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap.
+
+**`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (`clever ssh` + `dbal:run-sql`), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
 ### Message: the DTO
 

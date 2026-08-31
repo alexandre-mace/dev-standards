@@ -616,7 +616,7 @@ In CI: `make types && git diff --exit-code openapi.yaml assets/lib/api/` catches
 
 ## 6. Infra: Vite + Symfony UX
 
-React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. (symfony/ux 3.4 is the active line, with `import.meta.glob()` support in ux-react; it requires PHP 8.4 / Symfony 7.4, and `react_component()` and `registerReactControllerComponents()` are unchanged, so the upgrade from 2.x is mechanical. Gotcha: the npm `latest` dist-tag of `@symfony/ux-react` still points at 2.36, so a default install does not give you 3.x. The 2.x line stays maintained.)
+React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. (symfony/ux 3.4 is the active line, with `import.meta.glob()` support in ux-react; it requires PHP 8.4 / Symfony 7.4, and `react_component()` and `registerReactControllerComponents()` are unchanged, so the upgrade from 2.x is mechanical. Gotcha: the npm `latest` dist-tag of `@symfony/ux-react` still points at 2.36, so a default install does not give you 3.x; irrelevant when the JS package is linked `file:vendor/symfony/ux-react/assets`, the default wiring, which follows the composer version by itself. The 2.x line stays maintained.)
 
 ### Layout
 
@@ -930,7 +930,7 @@ pnpm lint:fix      # auto-fix
 
 Flat config (`eslint.config.js`) with:
 - `@eslint/js` + `typescript-eslint`: TS rules
-- `eslint-plugin-react-hooks` ≥ 7 through `configs.flat.recommended`: hook rules **and React Compiler rules** (they entered the standard `recommended` in **v7.0**; v6 only exposed them behind the opt-in `recommended-latest`; `eslint-plugin-react-compiler` is obsolete)
+- `eslint-plugin-react-hooks` ≥ 7 through `configs.flat.recommended`: hook rules **and React Compiler rules** (they entered the standard `recommended` in **v7.0**; v6 only exposed them behind the opt-in `recommended-latest`; `eslint-plugin-react-compiler` is obsolete). `set-state-in-effect` is inert in 7.0 and becomes an **error** in 7.1's recommended: expect the violations to surface only at that bump, and fix them as derivations or event-scoped code rather than disabling
 - `eslint-config-prettier`: disables the rules that conflict with Prettier
 
 ### Prettier
@@ -952,7 +952,7 @@ Config (`.prettierrc`) with `prettier-plugin-tailwindcss` for automatic class so
 pnpm tsc --noEmit
 ```
 
-**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX.
+**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, eslint and hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
 
 ### Summary
 
