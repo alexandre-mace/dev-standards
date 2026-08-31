@@ -62,6 +62,7 @@ with how the compiler is enabled.
 | `gap-code` | The code against its stack's guidelines. The guidelines are right |
 | `gap-sota` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
 | `gap-repo` | This repo against itself: broken cross-references, siblings that disagree |
+| `attack-surface` | What can someone reach, and do with it? Maps the entry points, follows untrusted input, proves each finding |
 | `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
 | `technical-writing` | Rewrites a text into Alexandre's writing voice |
 
@@ -109,7 +110,8 @@ What the diagram cannot show:
 - Commits are save points, the merge is the irreversible act.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-code`
-after a big delivery, `/gap-sota` as tech watch.
+after a big delivery, `/gap-sota` as tech watch, and `/attack-surface` before a
+project opens to real users, then whenever its surface grows.
 
 ## Setup
 
