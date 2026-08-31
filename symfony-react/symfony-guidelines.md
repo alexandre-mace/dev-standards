@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP 8.5.10 (project floor 8.4; **≥ 8.5.9 required**, security) · Symfony 8.1.5 (8.0 unmaintained; 8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 required**, security) · Twig ≥ 3.27 (currently 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 available on CleverCloud) · Symfony Reprise 1.1 (Vite integration, see reactony §6).
+> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5 opt-in via `CC_PHP_VERSION=8.5`, Clever default images 8.4.24; floor 8.4; security ≥ 8.5.9 / ≥ 8.4.24 per branch) · Symfony 8.1.5 (8.0 unmaintained; 8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 required**, security) · Twig ≥ 3.27 (currently 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 available on CleverCloud) · Symfony Reprise 1.1 (Vite integration, see reactony §6).
 
 ## Routing: what to read for which task
 
@@ -110,13 +110,15 @@ A feature is only "done" when **every** one of these is green:
 
 ---
 
-## PHP 8.4+ (8.5 runtime)
+## PHP 8.4+ (CleverCloud runtime)
 
-PHP 8.5 is the **current stable** (GA 20 Nov. 2025) and production runs on 8.5; the `composer.json` floor stays `>= 8.4`. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
+**The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer, read at every watch from the CleverCloud changelog (`clever.cloud/developers/changelog/`) and the PHP runtime doc. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. At the 30 August 2026 watch: 8.5 is available opt-in (`CC_PHP_VERSION=8.5`, announced to become the default within months, PECL extension coverage partial so check `php -m` needs first), and Clever's default images serve 8.4.24.
+
+PHP 8.5 is the **current stable upstream** (GA 20 Nov. 2025); the `composer.json` floor stays `>= 8.4`, with `config.platform.php` pinned on that floor so dependency resolution cannot outrun it. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
 **PHP 8.5 features usable now**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
 
-**Security floor: runtime ≥ 8.5.9.** The 8.5.8 (July 2026, OpenSSL CVE) and above all 8.5.9 patches are security releases; 8.5.9 fixes CVE-2026-17543 in particular, a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()` (also fixed in 8.4.24 for the 8.4 branch).
+**Security floor: runtime ≥ 8.5.9 on the 8.5 branch, ≥ 8.4.24 on 8.4.** The 8.5.8 (July 2026, OpenSSL CVE) and above all 8.5.9 patches are security releases; 8.5.9 fixes CVE-2026-17543 in particular, a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()`, fixed in 8.4.24 for the 8.4 branch.
 
 ## Symfony 8.2 radar (November 2026)
 

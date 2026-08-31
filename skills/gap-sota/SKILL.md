@@ -35,6 +35,11 @@ Where to look:
 - Official changelogs for every recent major and minor of every library named
 - Official blogs: `symfony.com/blog`, `react.dev/blog`, `vercel.com/blog`,
   `doctrine-project.org/blog`, `php.net/releases`, `tanstack.com/blog`
+- **Hosted runtimes are referenced by what the host publishes, not by upstream.** PHP and
+  PostgreSQL run on CleverCloud: the reference version is the newest one its images
+  offer, read from `clever.cloud/developers/changelog/` and the runtime docs. php.net
+  shipping a version CleverCloud has not published yet does not move the reference; it
+  becomes a watch item until Clever ships it.
 - Release notes and migration guides, often `UPGRADE.md` or `CHANGELOG.md`
 - RFCs and roadmap discussions
 
