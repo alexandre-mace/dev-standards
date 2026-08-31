@@ -590,9 +590,12 @@ class ProfileController extends AbstractController
 
 ### Every affordance is guarded by the voter of its own action
 
-A page open to a broad role is not a permission to show every button on it. Guard each
-call to action with the voter of the **target action**, on the subject, never with a raw
-role and never with the page's own voter:
+**The rule applies once an action's permission involves more than a role**: ownership, a
+subject, a record status. When the role IS the whole rule (an admin-only button on an
+admin page), a raw `is_granted('ROLE_X')` is the rule spelled out, and a voter would be
+ceremony; a project with only plain roles legitimately has no voter at all. From the
+moment a subject enters, guard each call to action with the voter of the **target
+action**, on the subject, never with a raw role and never with the page's own voter:
 
 ```twig
 {# the page is open to several roles, the buttons are not #}
