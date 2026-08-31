@@ -47,7 +47,7 @@ webhook body, an upstream API's response. The finding is at the landing point, n
 | A shell or a filesystem | An interpolated command, a path built from a name (`../`), an unchecked archive extraction |
 | An HTTP call | A URL that depends on input, which reaches the internal network (SSRF) |
 | A redirect | A destination taken from a parameter, which sends the user anywhere |
-| A log or Sentry | A secret in a query string, personal data in a breadcrumb |
+| A log or Sentry | A secret in a query string that ends up written to the logs |
 | A file store | An upload whose type is trusted from its extension or its declared MIME, a public bucket |
 
 ## 4. Secrets and what crosses to the client

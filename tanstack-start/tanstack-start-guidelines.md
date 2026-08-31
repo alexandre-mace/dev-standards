@@ -202,8 +202,6 @@ variable. A secret read in a file that also runs on the client is a secret publi
 anything expensive to call in a loop. And **headers**: a Content Security Policy,
 `X-Content-Type-Options`, `Referrer-Policy`, `Strict-Transport-Security`, declared once.
 
-**Personal data** does not travel into a URL, a log, or a Sentry breadcrumb.
-
 ## 4. UI
 
 **Base UI in Nova style**, whatever the project, with Tailwind 4 through PostCSS.

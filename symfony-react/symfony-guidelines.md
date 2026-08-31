@@ -960,17 +960,6 @@ For `/gap-code`: an API client passing a credential in `query` is a **Haute** fi
 redaction processor exists in the project. Note that redaction protects the future only. A key
 already written to the logs is exposed and has to be rotated with whoever issued it.
 
-### Personal data does not go in a log
-
-Same reasoning, different stake. An email, a phone number, a postal address, a SIRET, a payslip
-amount: none of them belong in a log line, and a log is read by more people than the database is.
-Log the **identifier**, and let whoever needs the rest look it up with their own access rights.
-
-Sentry deserves its own look, because it captures more than what you pass it: the request, its
-headers, its body, and the breadcrumbs preceding the error. `send_default_pii` stays off, and
-`before_send` is the place to strip what remains. This is worth doing before the first real user
-rather than after, since an event already sent cannot be unsent.
-
 The rule: if you expect a human to react, it's `error`. Otherwise it's `warning` or `notice`.
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.

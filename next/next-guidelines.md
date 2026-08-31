@@ -167,9 +167,6 @@ silent, so it is a `/gap-code` finding on its own.
 **Rate limits at the edge of writes.** With Convex, the official `@convex-dev/rate-limiter`
 component. Sign-in, any public POST, anything expensive to call in a loop.
 
-**Personal data.** It does not travel into a URL, a log, or a Sentry breadcrumb. Sentry captures the
-request by default: restrict it before the first real user, not after.
-
 ## 7. Quality and deployment
 
 **`pnpm build` is the check**: types and static generation. Run it before pushing.
