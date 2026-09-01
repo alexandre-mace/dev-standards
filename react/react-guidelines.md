@@ -99,6 +99,14 @@ preserving local customizations.
 Use the compound components (`Dialog` + `DialogContent` + `DialogHeader`). Loading spinner
 from lucide-react, notifications through sonner's `toast`, never `alert()`.
 
+**A `Select` whose values differ from their labels needs `items` on the root.** Radix
+resolved the trigger label from the selected `SelectItem`'s children; Base UI does not,
+and `SelectValue` falls back to `String(value)`, so the trigger shows raw keys
+(`__all__`, `price:asc`). Pass `items={{value: label}}` to `Select` (a partial map works,
+unlisted values fall back to the value itself), or give `SelectValue` a render function.
+A post-Radix-migration sweep of every `<SelectValue`: one report showed nine components
+leaking sentinels into the UI.
+
 ### Scoping a theme to one screen
 
 Overriding `--primary` on a wrapper element does nothing: the components stay the
