@@ -107,6 +107,22 @@ unlisted values fall back to the value itself), or give `SelectValue` a render f
 A post-Radix-migration sweep of every `<SelectValue`: one report showed nine components
 leaking sentinels into the UI.
 
+**Declare the `data-horizontal` / `data-vertical` variants in your CSS.** The Nova
+components style themselves by orientation through those Tailwind variants, and shadcn
+ships no CSS to define them. Base UI exposes orientation as
+`data-orientation="horizontal|vertical"`, so a bare `data-horizontal:` variant matches
+nothing and every orientation rule silently drops. Seen on a `Tabs`: the root kept
+`flex-row`, the tab list took a column down the left and the panel collapsed to zero
+pixels wide, on every page using tabs. Add both lines once:
+
+```css
+@custom-variant data-horizontal (&[data-orientation='horizontal']);
+@custom-variant data-vertical (&[data-orientation='vertical']);
+```
+
+`grep -rl 'data-horizontal\|data-vertical' components/ui/` names the components that
+depend on them; it found eight, from `tabs` to `slider` and `separator`.
+
 ### Scoping a theme to one screen
 
 Overriding `--primary` on a wrapper element does nothing: the components stay the
