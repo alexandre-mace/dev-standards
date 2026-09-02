@@ -1510,6 +1510,8 @@ git diff --exit-code openapi.yaml assets/lib/api/
 
 If the command fails, the PR either forgot to regenerate the SDK or introduced an unacknowledged breaking change. No extra Python or Node dependency.
 
+**In CI, call the `types` target, never recopy its commands.** The target ends with a `prettier --write` on the generated directory, since what is committed is formatted. A workflow that inlines the dump and the generator drops that step: the format check then fails on files nobody wrote, and the drift gate right after compares formatted committed code with unformatted output. The CI stays red on every commit, for a reason that has nothing to do with the commit.
+
 On top of that, [oasdiff](https://github.com/oasdiff/oasdiff) (a GitHub Action) classifies the `openapi.yaml` diff as breaking or non-breaking: `git diff` says there is drift, oasdiff says whether it breaks the contract.
 
 ### Mandatory safeguard: `tests/bootstrap.php` refuses remote databases
