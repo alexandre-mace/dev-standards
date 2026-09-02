@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 · shadcn CLI 4.19 (Base UI base, Nova style) · lucide-react 1.x · eslint-plugin-react-hooks 7.1 · Vitest 4.1 · MSW 2.15 · Playwright 1.62.
+> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 · shadcn CLI 4.20 (Base UI base, Vega style) · lucide-react 1.x · eslint-plugin-react-hooks 7.1 · Vitest 4.1 · MSW 2.15 · Playwright 1.62.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
@@ -77,7 +77,10 @@ spec: filter down to the empty state, clear, come back.
 
 ## 3. shadcn and Base UI
 
-**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition
+**Base UI, never React Aria or Radix**, whatever the project, in **Vega** style (`"style": "base-vega"` in `components.json`).
+Vega is the classic shadcn geometry: a 36 px default button, `rounded-md`. Nova, the other Base UI
+style, is visibly tighter, a 32 px button on `rounded-lg`, and a project that lands on it without
+choosing it ends up with controls smaller than the rest of its interface. Composition
 goes through the `render` prop and standard DOM handlers. `asChild` exists in neither
 base, it is a Radix idiom. A project still on `new-york-v4` is a gap for `/gap-code` to
 raise: migrate it in full, never two bases in one project.
@@ -107,7 +110,7 @@ unlisted values fall back to the value itself), or give `SelectValue` a render f
 A post-Radix-migration sweep of every `<SelectValue`: one report showed nine components
 leaking sentinels into the UI.
 
-**Declare the `data-horizontal` / `data-vertical` variants in your CSS.** The Nova
+**Declare the `data-horizontal` / `data-vertical` variants in your CSS.** The Base UI
 components style themselves by orientation through those Tailwind variants, and shadcn
 ships no CSS to define them. Base UI exposes orientation as
 `data-orientation="horizontal|vertical"`, so a bare `data-horizontal:` variant matches
