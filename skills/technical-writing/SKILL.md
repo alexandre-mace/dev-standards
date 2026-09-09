@@ -1,6 +1,9 @@
 ---
 name: technical-writing
-description: Rewrites technical writing into Alexandre's own voice: documentation, guidelines, skills, the reports the other skills produce, commit messages, a note to a colleague. Not for product or marketing copy, which has its own reviewer.
+description: >-
+  Rewrites technical writing into Alexandre's own voice: documentation, guidelines,
+  skills, the reports the other skills produce, commit messages, a note to a colleague.
+  Not for product or marketing copy, which has its own reviewer.
 ---
 
 # Technical writing
