@@ -89,10 +89,13 @@ a promise or a context during render.
 ## 1. Scaffolding
 
 ```bash
-pnpm create @tanstack/start@latest
+pnpm dlx @tanstack/cli@latest create <name> --framework React --toolchain biome --deployment vercel \
+  --add-ons convex,clerk,tanstack-query,form,compiler --no-examples --non-interactive
 ```
 
-TypeScript strict, pnpm with `packageManager` pinned, Biome for lint and format. Commit the generated route tree.
+`pnpm create @tanstack/start` is deprecated since September 2026, the CLI says so itself. Drop the add-ons the app does not need. The generated `package.json` declares the TanStack packages as `latest` and no `packageManager`: pin every dependency to its exact installed version (`pnpm add -E`, or the CLI's `pin-versions` command) and add `packageManager` before the first commit. The `compiler` add-on wires the Babel path (`reactCompilerPreset` through `@rolldown/plugin-babel`), the stable fallback; moving to `react({ compiler: true })` is a deliberate change, not a default.
+
+TypeScript strict, Biome for lint and format. Commit the generated route tree.
 
 ## 2. Rules
 
