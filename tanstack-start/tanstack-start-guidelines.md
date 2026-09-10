@@ -222,7 +222,7 @@ anything expensive to call in a loop. And **headers**: a Content Security Policy
 
 ## 4. UI
 
-**Base UI in Nova style**, whatever the project, with Tailwind 4 through PostCSS.
+**Base UI in Vega style**, whatever the project, with Tailwind 4 through PostCSS.
 
 A product with its own identity stops there: official shadcn CLI, no registry. That is the common case for an app.
 

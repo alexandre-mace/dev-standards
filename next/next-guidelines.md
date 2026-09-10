@@ -11,7 +11,7 @@
 | `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
 | TypeScript | 5.9 | Native TS 7 is GA. Plan the 5.9 to 6.0 to 7.0 migration; `next build` type-checking supports TS 7 since 16.3 |
 | Tailwind | 4 | PostCSS, no `tailwind.config` |
-| shadcn | Base UI base, Nova style | The ecosystem default since July 2026 |
+| shadcn | Base UI base, Vega style | The ecosystem default since July 2026 |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
 | Biome | 2.5 | Lint and format. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
@@ -78,7 +78,7 @@ Do not add `--turbopack`: it is the default bundler since Next 16.
 
 ## 2. Components
 
-**Base UI, never React Aria or Radix**, whatever the project, in Nova style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. Migrate a project left on another base in full, never two bases in one project.
+**Base UI, never React Aria or Radix**, whatever the project, in Vega style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. Migrate a project left on another base in full, never two bases in one project.
 
 A **project with its own identity** stops there: official shadcn CLI, no registry.
 
