@@ -27,6 +27,9 @@ alike.
 - Explain a term the first time it appears, or do not use it.
 - Give the number or the cause, not the impression. "Considerably faster" says nothing,
   "ten times faster" says something.
+- A fact the reader has to act on gets its own clause, with a verb. Tacked onto the
+  previous sentence as an apposition, it reads as a spec line: "the calculation becomes
+  amount x index, one cell to update in July every year."
 
 ## Say it once
 
@@ -49,6 +52,9 @@ alike.
 
 - What the reader asked for.
 - An error, a command, a quoted source. Reproduce it exactly and at full length.
+- In a message to a person, what says how sure the author is: "maybe", "to be
+  discussed?", "you had probably seen it". That is information about the author, not
+  filler.
 - Stop once no rule applies any more. Rewriting past that point only flattens the voice.
 
 ## Two tests before returning the text
