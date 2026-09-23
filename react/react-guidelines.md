@@ -92,7 +92,12 @@ preserving local customizations.
 ### Picking the right element
 
 - **Action** (submit, confirm, delete) → `<Button variant=…>`.
-- **Link** → `<Button render={<a href=… />} variant=…>`, so a real `<a>` survives.
+- **Link** → `<ButtonLink href=… variant=…>`, a plain `<a>` carrying `buttonVariants`,
+  defined next to `Button` in `components/ui/button.tsx`. Never `<Button render={<a />}>`:
+  Base UI reserves `Button` for buttons. It warns about the missing `<button>`, and
+  `nativeButton={false}`, which silences the warning, puts `role="button"` on the link, so a
+  screen reader announces a button (cf. base-ui.com/react/components/button). A link has
+  no `disabled`: use `aria-disabled` and drop the `href`.
 - **Selectable or toggle** (filter pills, multi-select) → `Toggle` / `ToggleGroup`.
 - **Bespoke** (image tile, clickable card, absolutely positioned icon, dropzone) → a raw
   `<button>` is legitimate; `<Button>` would only add a variant to override.
