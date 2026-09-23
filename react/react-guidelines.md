@@ -97,7 +97,7 @@ preserving local customizations.
   Base UI reserves `Button` for buttons. It warns about the missing `<button>`, and
   `nativeButton={false}`, which silences the warning, puts `role="button"` on the link, so a
   screen reader announces a button (cf. base-ui.com/react/components/button). A link has
-  no `disabled`: use `aria-disabled` and drop the `href`.
+  no `disabled`: pass `aria-disabled`, and `ButtonLink` drops the `href` itself.
 - **Selectable or toggle** (filter pills, multi-select) → `Toggle` / `ToggleGroup`.
 - **Bespoke** (image tile, clickable card, absolutely positioned icon, dropzone) → a raw
   `<button>` is legitimate; `<Button>` would only add a variant to override.
