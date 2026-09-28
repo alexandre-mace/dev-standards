@@ -63,6 +63,13 @@ Never:
 
 ## 3. Analyse
 
+**The latest stable release is the target.** A version that is stable (no alpha, beta,
+RC, canary or experimental flag) becomes the prescription at the watch that finds it,
+major versions included: do not hold one back out of caution. Only two things hold it
+back: an experimental status, or a documented regression (an open issue confirmed by the
+maintainers, a fix pending in the next patch). A floor for those who have not migrated
+yet can sit next to it.
+
 - Version references: still accurate?
 - Factual accuracy: check the signature, not your memory of it.
 - Completeness: a breaking change, a security item, a new stable feature that changes the

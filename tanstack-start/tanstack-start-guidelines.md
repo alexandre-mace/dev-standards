@@ -2,21 +2,21 @@
 
 > Dashboards, internal tools, simulators, products.
 >
-> **Last watch: 29 August 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run.
 
 | Tool | Version | Notes |
 |---|---|---|
-| TanStack Start | 1.168 | Stable on npm, around 17M weekly downloads. Parts of the official docs still say Release Candidate, and Convex repeats that caveat: pin exact versions and read the changelog before bumping |
-| TanStack Router | 1.170 | The framework's real core |
-| TanStack Query | 5.102 | |
+| TanStack Start | 1.168 | Stable on npm, around 17M weekly downloads. Parts of the official docs still say Release Candidate, and Convex repeats that caveat: pin exact versions and read the changelog before bumping. **Floor 1.168.51**: it hardens URL handling against open redirects (protocol allowlist on links and redirects), removes the `isAbsoluteUrl` export, and requires configured `origin` values without a path or trailing slash |
+| TanStack Router | 1.170 | The framework's real core. Floor 1.170.34, same hardening as Start |
+| TanStack Query | 5.104 | |
 | TanStack Form | 1.33 | |
-| Convex | 1.45 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query` |
-| Clerk | `@clerk/tanstack-react-start` 1.5 | Optional. First-class support when the app has accounts |
-| Zod | 4.5 | |
-| Vite | 8.2 | With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
+| Convex | 1.46 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query`. 1.46 puts `.optional()` on every validator, which changes type compatibility between Convex versions: one `convex` version across the workspace |
+| Clerk | `@clerk/tanstack-react-start` 1.6 | Optional. First-class support when the app has accounts. 1.6 drops keyless mode: without `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` the dev server throws, so a new project runs `npx clerk@latest init` first |
+| Zod | 4.6 | Floor 4.6: 4.5 runs out of memory on some recursive schemas |
+| Vite | 8.3 | With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
 | Biome | 2.5 | Lint and format |
-| Vitest / Playwright | 4.1 / 1.62 | |
+| Vitest / Playwright | 5.0 / 1.63 | Vitest 5 migration notes in `symfony-react/reactony.md` §9 |
 | Hosting | Vercel | Build output is portable, it can move elsewhere unchanged |
 
 ## What this file covers

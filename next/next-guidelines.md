@@ -1,23 +1,23 @@
 # Next Guidelines: static-first personal sites
 
-> **Last watch: 24 August 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run.
 >
-> Radar: Instant Navigations (`cacheComponents` + `partialPrefetching`, opt-in, announced as a future default) and `transitionTypes` on `<Link>`. Worth watching, not yet standards.
+> Radar: Instant Navigations (`cacheComponents` + `partialPrefetching`) are still opt-in in 16.3, and the 16.4 canary pushes them as the future default. The 16.4 canary also turns strict route matching on by default: a route tree that cannot resolve fails the build (escape hatch `deprecated.looseRouteMatching`). Worth watching, not yet standards.
 
 | Tool | Version | Notes |
 |---|---|---|
-| Next.js | 16.3 | App Router, Active LTS. Security releases are pre-announced: patch within a week (e.g. 16.3.3, critical on 26/08/2026). `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts` |
-| React | 19.2 | |
+| Next.js | 16.3 | App Router, Active LTS. **Floor 16.3.7** (security release of 30/09/2026, 16.3.6 until then). Security releases are usually pre-announced on nextjs.org/blog: patch within the week. A critical one can ship the same day it is announced (16.3.6, 22/09/2026, remote code execution through `ImageResponse`): patch that day. `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts` |
+| React | 19.3 | `<ViewTransition>` stable: `transitionTypes` on `<Link>` needs no flag any more |
 | `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
-| TypeScript | 5.9 | Native TS 7 is GA. Plan the 5.9 to 6.0 to 7.0 migration; `next build` type-checking supports TS 7 since 16.3 |
+| TypeScript | 7.0 | The native Go port, published as `typescript`; `next build` type-checks with it since 16.3. A project still on 5.9 migrates through 6.0 first (see `symfony-react/reactony.md` §8) |
 | Tailwind | 4 | PostCSS, no `tailwind.config` |
-| shadcn | Base UI base, Vega style | The ecosystem default since July 2026 |
+| shadcn | Base UI base, Vega style | The ecosystem default since July 2026. `cn` from the `cn` package (see `react/react-guidelines.md` §3) |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
 | Biome | 2.5 | Lint and format. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
 | lucide-react | 1.x | No more brand icons |
 | Geist | npm package | |
-| Hosting | Vercel Hobby | |
+| Hosting | Vercel Hobby | Keeps only the 3 latest production deployments since September 2026: an instant rollback reaches no further back |
 
 ## What this file covers
 
@@ -115,7 +115,7 @@ The default palette comes from the kit. A project can take its own by redeclarin
 - **The language is a project decision**, taken at the start and held everywhere: content, comments, and declared both in `<html lang>` and in `openGraph.locale`. Domain identifiers in that language are fine in scripts and models (`Pays`, `ANNEE`, `donnees`).
 - **Geist through the `geist` package**, never through `next/font/google`: `import { GeistSans } from "geist/font/sans"`, variables on `<html>`, `font-sans` on the `<body>`.
 - **Every site lives on its canonical domain** (`<project>.alexandremace.fr` or `<project>.climatelab.fr`), declared in `metadataBase`. Never a `*.vercel.app`: the canonical domain rules in metadata, OG and redirects. Factor the description into a const, it is used three times.
-- **Generated OG image**: `app/opengraph-image.tsx` with `ImageResponse`, 1200×630, never a static image that goes stale.
+- **Generated OG image**: `app/opengraph-image.tsx` with `ImageResponse`, 1200×630, never a static image that goes stale. It renders baked data only, never a query parameter or anything else a visitor controls: in the Node runtime, user input reaching the SVG was a remote code execution before 16.3.6.
 - **Icons**: `app/icon.svg`, which Next serves with `sizes="any"` at every size, plus `app/apple-icon.png` at 180×180 for the iOS home screen. Next emits the `<link>` tags on its own. An `icon.tsx` rendering an `ImageResponse` when the icon derives from an emoji or an initial. No `favicon.ico`, unless a very old browser has to be supported.
 
 ## 5. Baked data

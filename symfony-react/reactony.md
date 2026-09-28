@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.2 (Rolldown) · Symfony Reprise 1.1 (see §6) · symfony/ux 3.4 (2.x line still maintained) · TanStack Query 5.102 · RHF 7.87 (v8 still in beta) · Zod 4.5 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.19) · Vitest 4.1 (v5 in RC, see §9) · MSW 2.15 · Playwright 1.62 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.3 (Rolldown) · Symfony Reprise 1.3 (see §6) · symfony/ux 3.5 · TanStack Query 5.104 · RHF 7.89 (v8 still in beta) · Zod 4.6 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.21, `cn` package) · Vitest 5.0 (see §9) · MSW 3.0 (see §9) · Playwright 1.63 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -594,7 +594,7 @@ The five plugins:
 - `zod`: Zod 4 schemas for client-side validation
 - `@tanstack/react-query`: generates `queryOptions()`, `queryKey` and `mutationOptions()` from the OpenAPI, removing the `lib/queries/` boilerplate
 
-When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating). Since 0.93: 0.95 no longer exports composite `Data` schemas (`shouldExtract: true` brings them back), 0.96 requires Node ≥ 22.13, 0.97 actually honours `throwOnError: false`, 0.98 refactors towards a declarative config (mostly affecting custom plugins), 0.99 renames `plugin.symbols` to `plugin.imports` and removes `plugin.external()`/`registerSymbol()` (and merges duplicated plugin configs). As of August 2026: 0.99.0 has been current since June (no 1.0); any project pinned below catches up through the Migrating page. On the backend end of the pipeline, nelmio/api-doc-bundle 5.11 hardens generation for persistent workers and supports the QUERY HTTP method. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. Zod also ships `z.codec()` (4.1, typed bidirectional transforms, e.g. ISO string ↔ `Date`) and its inverse `z.invertCodec()` (4.4) for hand-written API ↔ domain conversions. Zod 4.5 adds `z.compile(schema)`: same API, parses 3 to 9 times faster, worth putting on the generated schemas you validate at runtime (SDK responses, large form objects).
+When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating). Since 0.93: 0.95 no longer exports composite `Data` schemas (`shouldExtract: true` brings them back), 0.96 requires Node ≥ 22.13, 0.97 actually honours `throwOnError: false`, 0.98 refactors towards a declarative config (mostly affecting custom plugins), 0.99 renames `plugin.symbols` to `plugin.imports` and removes `plugin.external()`/`registerSymbol()` (and merges duplicated plugin configs). As of September 2026: 0.99.0 has been current since June (no 1.0); any project pinned below catches up through the Migrating page. On the backend end of the pipeline, nelmio/api-doc-bundle 5.11 hardens generation for persistent workers and supports the QUERY HTTP method, and 5.12 passes `#[Context]` data down to the property describers. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. Zod also ships `z.codec()` (4.1, typed bidirectional transforms, e.g. ISO string ↔ `Date`) and its inverse `z.invertCodec()` (4.4) for hand-written API ↔ domain conversions. Zod 4.5 adds `z.compile(schema)`: same API, parses 3 to 9 times faster, worth putting on the generated schemas you validate at runtime (SDK responses, large form objects). **Floor `^4.6`**: 4.5 runs out of memory on some recursive schemas, and 4.6 fixes it. 4.6 also adds `schema.validate(value)`, a boolean guard up to 35 times faster than `.safeParse().success` on a compiled schema: use it when only the verdict matters, not the errors.
 
 ### SDK: typed API calls
 
@@ -915,7 +915,7 @@ plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
 - ✅ `useWatch({ control, name })`, `useFormState({ control })`, `useController` / `<Controller>` (explicit subscriptions); `getValues()` reserved for handlers and effects
 - Transitional escape hatch: a `'use no memo'` directive on a problematic form component
 
-RHF v8 (the compiler-first rewrite) is in beta: don't adopt it before stable.
+RHF v8 (the compiler-first rewrite) is still in beta (`8.0.0-beta.4`, September 2026): don't adopt it before stable.
 
 ---
 
@@ -979,8 +979,8 @@ The standard stack, shared by every Symfony + React project. No "light" or "heav
 
 | Layer | Tool | Role |
 |---|---|---|
-| Unit / component | **Vitest 4** + `@testing-library/react` + `@testing-library/user-event` (jsdom) | Pure logic and isolated components |
-| SDK / API mocking | **MSW 2** (Mock Service Worker) | Intercepts the generated SDK's network calls; the mocks are reusable in Storybook and dev |
+| Unit / component | **Vitest 5** + `@testing-library/react` + `@testing-library/user-event` (jsdom) | Pure logic and isolated components |
+| SDK / API mocking | **MSW 3** (Mock Service Worker) | Intercepts the generated SDK's network calls; the mocks are reusable in Storybook and dev |
 | E2E / journeys | **Playwright** | Covers multi-page flows (funnel, payment, signature) in a real browser |
 | Accessibility | **`@axe-core/playwright`** | WCAG audit inside every E2E spec |
 
@@ -993,7 +993,15 @@ pnpm test:e2e:ui         # Playwright in interactive UI mode
 
 > **Why Vitest and not Jest**: the project runs on Vite, so Vitest shares the same config (the `@/` alias, plugins, TS/TSX transformers). Native ESM means `lucide-react`, the hey-api SDK and other ESM modules work without `transformIgnorePatterns`. React 19 compatible, 5 to 28 times faster than Jest depending on the suite. The API is near-identical: `vi` instead of `jest`, `vi.mock()` hoisted like `jest.mock()`, the same matchers through `@testing-library/jest-dom` (Vitest compatible).
 
-> **Vitest 5 is in RC** (August 2026): don't adopt before stable, but write code today that will survive it. Announced breaking changes: `clearMocks: true` becomes the default, an un-`await`ed async assertion fails the test, `toHaveTextContent` becomes a strict equality (partial matching moves to `toMatchTextContent`), Node ≥ 22.12 required (Node 24 is the Active LTS as of August 2026).
+> **Vitest 5** (stable since September 2026) requires Node ≥ 22.12 and takes `vite` as a peer dependency. What bites when migrating from 4:
+> - `clearMocks: true` is the default: call counts reset before every test, so a test that counted calls made by a previous one now fails.
+> - An un-`await`ed async assertion (`resolves`, `rejects`) fails the test instead of passing silently.
+> - `vi.mock`, `vi.unmock` and `vi.hoisted` throw when they are not at the top level of the file.
+> - `test.sequential` and `describe.sequential` are gone: `concurrent: false`.
+> - The config is no longer looked up in parent directories, and reports move to `.vitest/` (add it to `.gitignore`).
+> - In Browser Mode only, `toHaveTextContent` becomes a strict equality (`toMatchTextContent` for partial or regex matching) and locators are exact by default. The jest-dom matcher under jsdom does not change.
+>
+> A project staying on 4 for now needs **≥ 4.1.11**: earlier versions let the `@vitest/mocker` redirect read arbitrary files (GHSA-82fw-gwwq-j7x9).
 
 ### What to test, by return on investment
 
@@ -1032,7 +1040,7 @@ import {server} from './test-mocks/server';
 afterEach(() => cleanup());
 
 // MSW: intercepts every SDK request during the tests
-beforeAll(() => server.listen({onUnhandledRequest: 'error'}));
+beforeAll(() => server.listen({onUnhandledFrame: 'error'}));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
@@ -1050,6 +1058,11 @@ beforeAll(() => {
 ### MSW setup: mocking the generated SDK
 
 MSW intercepts at the network level, so the hey-api functions are still called for real. The big advantage over `vi.mock('@/lib/api')`: the mocks are defined once and shared between tests, Storybook and dev.
+
+**MSW 3** (September 2026) is ESM-only and requires Node ≥ 22.12 and TypeScript ≥ 5.9. `http`, `HttpResponse` and `setupServer` keep their names; what changes in a Vitest suite:
+- `onUnhandledRequest` becomes **`onUnhandledFrame`**, with no alias: TypeScript rejects the old key, and at runtime it is ignored, so unhandled requests fall back to `'warn'`.
+- In a handler, `request.headers.get('cookie')` returns `null`: read the `cookies` argument of the resolver.
+- MSW no longer patches `setTimeout` under fake timers: a `delay()` response needs the timers advanced (`vi.advanceTimersByTimeAsync`).
 
 `assets/test-mocks/server.ts`:
 

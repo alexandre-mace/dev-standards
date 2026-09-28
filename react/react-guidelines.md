@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.2.8 · React Compiler 1.0 · shadcn CLI 4.20 (Base UI base, Vega style) · lucide-react 1.x · eslint-plugin-react-hooks 7.1 · Vitest 4.1 · MSW 2.15 · Playwright 1.62.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0 · React Compiler 1.0 · shadcn CLI 4.21 (Base UI 1.8 base, Vega style, `cn` package) · lucide-react 1.x · eslint-plugin-react-hooks 7.1 · Vitest 5.0 · MSW 3.0 · Playwright 1.63.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
@@ -30,9 +30,15 @@ const Input = ({ ref, ...props }: { ref?: React.Ref<HTMLInputElement> }) => (
 );
 ```
 
-**View Transitions** (`<ViewTransition>`) stay experimental, not in production.
-Stabilization is announced for 19.3 alongside Fragment refs, but only through a secondary
-source: wait for the official announcement.
+**Stable since 19.3**, usable in production:
+
+- **`<ViewTransition>`** with `addTransitionType`: animate between two UI states with the
+  browser's View Transitions API, no animation library.
+- **Fragment refs**: a ref on `<Fragment>` reaches its children without a wrapper `div`.
+
+19.3 also renders independent transitions separately instead of batching them into one
+render. Code that relied on two `startTransition` calls committing together can now see an
+intermediate state.
 
 ## 2. React Compiler
 
@@ -88,6 +94,11 @@ raise: migrate it in full, never two bases in one project.
 shadcn is **not an npm dependency**: the components are vendored source in
 `components/ui/`. There is no `pnpm update`, only the CLI, component by component,
 preserving local customizations.
+
+**`cn` comes from the `cn` npm package** since CLI 4.21: `lib/utils.ts` reduces to
+`export { cn } from "cn"`, and registry components import it from there. A project still on
+`clsx` + `tailwind-merge` migrates with `npx shadcn@latest migrate cn`, then drops both
+dependencies.
 
 ### Picking the right element
 

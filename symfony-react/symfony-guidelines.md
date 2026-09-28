@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 30 August 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5 opt-in via `CC_PHP_VERSION=8.5`, Clever default images 8.4.24; floor 8.4; security ≥ 8.5.9 / ≥ 8.4.24 per branch) · Symfony 8.1.5 (8.0 unmaintained; 8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.6.8 / doctrine-bundle 3.3.1 / DBAL 4.4.4 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.9 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.12.1 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.5.1 (**≥ 5.5.1 required**, security) · Twig ≥ 3.27 (currently 3.28) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.11 · PostgreSQL ≥ 17 (18.3 available on CleverCloud) · Symfony Reprise 1.1 (Vite integration, see reactony §6).
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026, and 8.4.25; floor 8.4; security ≥ 8.5.9 / ≥ 8.4.24, 8.5.11 / 8.4.26 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -112,13 +112,13 @@ A feature is only "done" when **every** one of these is green:
 
 ## PHP 8.4+ (CleverCloud runtime)
 
-**The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer. Two sources, at every watch: the "PHP version" table of the runtime doc (`clever.cloud/developers/doc/applications/php/`), which lists the accepted `CC_PHP_VERSION` values and what the bare `8` resolves to, and the changelog (`clever.cloud/developers/changelog/`) for the announcements. Neither gives the patch number: only `php -v` on an instance does. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. At the 30 August 2026 watch: 8.5 is available opt-in (`CC_PHP_VERSION=8.5`, announced to become the default within months, PECL extension coverage partial so check `php -m` needs first), and Clever's default images serve 8.4.24.
+**The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer. Two sources, at every watch: the "PHP version" table of the runtime doc (`clever.cloud/developers/doc/applications/php/`), which lists the accepted `CC_PHP_VERSION` values and what the bare `8` resolves to, and the changelog (`clever.cloud/developers/changelog/`) for the announcements. Neither gives the patch number: only `php -v` on an instance does. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. At the 29 September 2026 watch: Clever's images serve 8.5.10 and 8.4.25 (update of 23 September), and **8.5 becomes the default** with the first image release after 1 October 2026: an app deployed without `CC_PHP_VERSION`, or with the bare `8`, moves to 8.5 on its next deployment. Clever warns that a few PECL extensions are not packaged for 8.5 yet, so check `php -m` against the app's needs before switching.
 
 PHP 8.5 is the **current stable upstream** (GA 20 Nov. 2025); the `composer.json` floor stays `>= 8.4`, with `config.platform.php` pinned on that floor so dependency resolution cannot outrun it. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
 **PHP 8.5 features usable now**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
 
-**Security floor: runtime ≥ 8.5.9 on the 8.5 branch, ≥ 8.4.24 on 8.4.** The 8.5.8 (July 2026, OpenSSL CVE) and above all 8.5.9 patches are security releases; 8.5.9 fixes CVE-2026-17543 in particular, a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()`, fixed in 8.4.24 for the 8.4 branch.
+**Security floor: runtime ≥ 8.5.9 on the 8.5 branch, ≥ 8.4.24 on 8.4.** The 8.5.8 (July 2026, OpenSSL CVE) and above all 8.5.9 patches are security releases; 8.5.9 fixes CVE-2026-17543 in particular, a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()`, fixed in 8.4.24 for the 8.4 branch. **Pending on Clever**: php.net shipped 8.5.11 and 8.4.26 on 24 September 2026, security releases (TLS hostname verification falling back to the CN, a heap overflow on wildcard certificates, credentials leaking across origins on HTTP stream redirects, an FPM IPv6 ACL bypass). They become the floor the day Clever's images publish them.
 
 ## Symfony 8.2 radar (November 2026)
 
@@ -129,13 +129,24 @@ Deprecations and behaviour changes **already merged** on the 8.2 branch (UPGRADE
 - `File` constraint: `mimeTypes` and `extensions` will be checked independently (no more MIME restriction inferred from the extension).
 - `Schedule::with()` deprecated (clone or build a new schedule); `framework.ide` deprecated in favour of the `SYMFONY_IDE` variable.
 
-Features announced for 8.2: a `concurrency` option on Messenger (parallel message processing), rate-limited Mailer transports, a `Cron` constraint, single-use signed URLs.
+Merged since, still on the 8.2 branch (no beta tag at the 29 September watch):
+
+- **FrameworkBundle is split** into bundles shipped by their own components (MessengerBundle, MailerBundle, SerializerBundle, ValidationBundle, RouterBundle and about twenty more), registered automatically when the component is installed. The `framework.*` keys keep working as aliases; `asset`, `translation` and `workflow` become root keys. `debug:config framework <key>` no longer resolves those sections.
+- **HTTP errors below 500 are logged at `warning`**, no longer `error`: a `fingers_crossed` handler with `action_level: error`, and the Sentry alerting built on it, stop firing on 4xx. Check that no alert relied on them.
+- **EventDispatcher**: `addListener()` / `addSubscriber()` on the container's dispatcher are deprecated, tests included (register a listener service, or use a `ScopedEventDispatcher`). The autowiring alias `Symfony\Component\EventDispatcher\EventDispatcherInterface` is deprecated: type `Symfony\Contracts\EventDispatcher\EventDispatcherInterface`.
+- **Secrets vault**: without a `config/secrets/` directory, env vars are no longer loaded from it, and the variable behind `framework.secret` is no longer derived from `SYMFONY_DECRYPTION_SECRET`: define it.
+- **Scheduler**: leaving `framework.scheduler.use_messenger_routing` unset is deprecated (true in 9.0), and `Schedule::with()` now returns an empty schedule.
+- **Serializer**: denormalizing a property from its PHP name when `#[SerializedName]` or a name converter maps it to another key is deprecated.
+- **RateLimiter**: `CompoundLimiter` stops at the first limiter that rejects, so list them from the most specific to the most global.
+
+Features announced for 8.2: a `concurrency` option on Messenger (parallel message processing) and faster workers, rate-limited Mailer transports, a `Cron` constraint, single-use signed URLs, OpenID Connect login, `IS_AUTHENTICATED_VERY_RECENTLY`, wildcards in the role hierarchy.
 
 Also worth watching, outside the core:
 
-- **VichUploader v3 imminent**: 2.10 is announced as the last minor of the 2 branch, and 3.0.0-rc4 is published. Plan the upgrade.
-- **Doctrine ORM 4**: no alpha published; the direction is confirmed (PHP 8.4 minimum, built entirely on native lazy objects), release hoped for late 2026 / early 2027.
-- **Twig 3.29** will bring documentation comments; **Twig 4 is still in alpha**, don't get ahead of it.
+- **VichUploader 3.0 is stable** (7 September 2026), and 2.x is in maintenance only: migrate. PHP ≥ 8.3; annotations are gone (attributes from `Mapping\Attribute` only); `NamerInterface::name()` and `DirectoryNamerInterface::directoryName()` take `object|array`; `PropertyMapping`, `PropertyMappingFactory` and the metadata readers are final, so a test mocks the new interfaces instead. New: a `vich:cleanup` command for orphaned files.
+- **Doctrine ORM 3.7** deprecates string sort directions in favour of the `SortDirection` enum, and `TypedExpression` in favour of `ExpressionWithReturnType`; it brings cursor-based pagination. It needs **EasyAdmin ≥ 5.6**, which silences the `SortDirection` deprecation. **DBAL 4.5** adds DateTime types stored in UTC and deprecates `SimpleArrayType` and `Column::getType()` (use `getTypeName()`).
+- **Doctrine ORM 4**: still no alpha, only a `4.0.x-dev` branch; the direction is confirmed (PHP 8.4 minimum, built entirely on native lazy objects), release hoped for late 2026 / early 2027.
+- **Twig 3.29** brings documentation comments and deprecates macro calls without parentheses and duplicate macro definitions. **Twig 4 is still in alpha**, don't get ahead of it.
 
 ---
 
@@ -1892,7 +1903,7 @@ Calls to external services (Hubspot, Discord, Slack, emails) are dispatched asyn
 ### Transport
 
 Doctrine (PostgreSQL, the `messenger_messages` table). The `SendEmailMessage`, `ChatMessage` and `SmsMessage` messages stay **sync**, because their templates receive Doctrine entities that don't serialize.
-Target PostgreSQL version: **≥ 17** (the CleverCloud default; 18.3 is available, with io_uring and UUIDv7). An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap.
+Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.4 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. **Pending on Clever**: upstream 18.6 / 17.11 (13 August 2026) fix 28 security vulnerabilities, and three issues need extra steps after the update (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes). Clever still lists 18.4 / 17.10.
 
 **`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (`clever ssh` + `dbal:run-sql`), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
