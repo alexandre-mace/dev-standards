@@ -16,14 +16,21 @@ take the widest window it will give you.
 
 ### CleverCloud, Sentry, Messenger
 
+clever-tools ≥ 5.0. Both commands stream by default: `--before` bounds the range and
+gives a finite tail.
+
 ```bash
-# both stream by default: --before bounds the range and gives a finite tail
-clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s
-clever logs       --alias <ALIAS> --since <PERIOD> --before 30s
+clever logs --alias <ALIAS> --since <PERIOD> --before 30s
 ```
 
-Pull the HTTP status with `awk` rather than a field index: `clever accesslogs` is alpha
-and its columns are positional.
+Read the access logs as JSON, never by column position. Since 5.0 they also carry TCP and
+SSH connections, which have no `http` field:
+
+```bash
+clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s -F json \
+  | jq -r '.[] | select(.http) | "\(.http.response.statusCode) \(.http.request.method) \(.http.request.path)"' \
+  | sort | uniq -c | sort -rn
+```
 
 Messenger state, from the prod `DATABASE_URL` in `clever env`:
 
