@@ -75,8 +75,8 @@ Name the tool the project actually runs behind those scripts, Biome on Next and 
 ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
 report nobody can act on.
 
-`pnpm test` is Vitest, mandated on all three stacks. Running it is what turns "the tests
-pass" into a fact. Use whatever flag the project needs for a single non-watch run.
+`pnpm test` is Vitest, mandated on all three stacks. Use whatever flag the project needs
+for a single non-watch run.
 
 **Not run here**: Playwright, which needs a browser and minutes, and which `/live-test`
 owns. Psalm taint analysis is a CI job. Say so rather than letting the report imply full

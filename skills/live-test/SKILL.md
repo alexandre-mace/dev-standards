@@ -5,9 +5,6 @@ description: Does the feature actually work? Drives it in a real browser - golde
 
 # Does it work?
 
-Static analysis proves it compiles. Tests prove what they cover. Only running it proves
-the user gets what the ticket asked for.
-
 Runs after `/quality`, before `/commit` and `/review-diff`.
 
 **Applies to**: all three stacks. Skip it when the change has no observable surface (a

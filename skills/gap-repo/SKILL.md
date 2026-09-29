@@ -5,10 +5,6 @@ description: Audits the dev-standards repository against itself - broken cross-r
 
 # Check the standards repo
 
-**This repo is the only one nothing audits.** `/gap-code` measures a project against
-the guidelines, `/gap-sota` measures the guidelines against the ecosystem, and neither
-looks at whether this repository still agrees with itself.
-
 ## 1. Run the checker
 
 `check-repo.py`, in this skill's own directory. With no argument it audits the repository

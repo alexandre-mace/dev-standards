@@ -15,9 +15,6 @@ The PR review of a flow with no PR. Runs twice:
   nothing moved, say so and give the verdict in three lines. When there was no pass 1,
   this one does the full review.
 
-A commit is a save point, the merge is irreversible. Nothing lands on `main` unreviewed,
-UAT fixes included.
-
 > **Arm's length, enforced.** This skill runs in a forked subagent with no access to the
 > conversation, which is the point: reviewing a diff with the context that wrote it is
 > the definition of a blind spot. The consequence is that `.claude/plan.md` is the only
