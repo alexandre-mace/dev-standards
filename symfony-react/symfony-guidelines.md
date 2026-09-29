@@ -1510,6 +1510,45 @@ Keep `@axe-core/playwright` at `^4.13`: every bump of the axe engine surfaces ne
 
 **Never call an external integration from an E2E**, same constraints as in `tests/`. Three ways: empty key environment variables so the services fall into their no-op branch, a service override in the `e2e` environment config, or an injected `MockHttpClient`.
 
+### Logging in from a browser agent, in dev only
+
+`/live-test` walks the feature in a real browser, and a page behind a login, a role or a
+captcha is where that walk stops: the agent falls back on functional tests and the
+screen never gets looked at. Give it a way in.
+
+- **A login link per role.** Symfony's `login_link` authenticator, declared under
+  `when@dev:` in `security.yaml` (`check_route`, `signature_properties: ['id']`), plus a
+  command that exists only in dev and prints a link for a seeded user of the requested role:
+
+    ```php
+    #[When(env: 'dev')]
+    #[AsCommand(name: 'app:dev:login', description: 'Prints a one-click login link for a seeded user')]
+    final class DevLoginCommand
+    {
+        public function __construct(
+            private readonly UserRepository $users,
+            private readonly LoginLinkHandlerInterface $loginLinkHandler,
+        ) {}
+
+        public function __invoke(SymfonyStyle $io, #[Argument] string $role = 'ROLE_USER'): int
+        {
+            $user = $this->users->findOneSeededWithRole($role); // an `__e2e__` user from app:e2e:seed
+            $io->writeln($this->loginLinkHandler->createLoginLink($user)->getUrl());
+
+            return Command::SUCCESS;
+        }
+    }
+    ```
+
+  With no request to take the host from, the link is built on `framework.router.default_uri`:
+  set it to the local server's URL in dev.
+- **Turnstile's test keys in dev**: site key `1x00000000000000000000AA`, secret
+  `1x0000000000000000000000000000000AA`. They always pass and work on `localhost`.
+- A third-party step with no test mode (a Typeform token, a real payment) stays out of the
+  walk: `/live-test` names it as unverified.
+
+A project behind a login with none of this is a gap for `/gap-code`.
+
 ### Contract drift: the OpenAPI diff in CI
 
 The frontend SDK is generated from `openapi.yaml` (Nelmio) through `make types`. If the backend runtime drifts from the checked-in dump, the frontend breaks silently. A free CI gate:

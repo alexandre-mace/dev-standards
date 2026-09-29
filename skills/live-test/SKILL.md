@@ -28,6 +28,10 @@ follows is what `/run` does not know.
   instead, which trusts it.
 - **`scrollIntoView({behavior: 'smooth'})` does not scroll a headless browser.** Use
   `'instant'` when a check depends on the element being in view.
+- **Behind a login, log in; do not fall back on tests.** On Symfony, `php bin/console
+  app:dev:login <ROLE>` prints a one-click link, and Turnstile runs on its test keys in dev
+  (symfony-guidelines §13). A project without them: say the walk stopped at the login, as
+  a limit of this check and a `/gap-code` finding, never as an equivalent verification.
 - Next and TanStack Start: one `pnpm dev`.
 - A server that will not start is the finding. Report it and stop, never work around it.
 
