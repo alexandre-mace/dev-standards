@@ -25,7 +25,7 @@ The steps, in order:
 ```
 
 After the UAT: fix, `/quality`, `/live-test`, `/commit`, `/review-diff` on the delta, then
-**the user** runs `/deploy`.
+`/deploy` once the user says to ship.
 
 ## Minor changes do not run the chain
 
@@ -112,4 +112,6 @@ and ask when changes are uncommitted, rather than stashing them.
   it to a dedicated pass means never.
 - Announce each step in one line as it starts ("5. Clean: /quality"), so the user knows
   where things stand and can interrupt.
-- Never run `/deploy` yourself. The merge is irreversible, and it is the user's call.
+- `/deploy` runs only on the user's explicit go. The merge is irreversible, and it is the
+  user's call. Ship through `/deploy`, never with hand-typed git commands: the skill is
+  where the checks live.

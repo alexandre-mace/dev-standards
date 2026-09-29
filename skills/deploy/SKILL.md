@@ -1,7 +1,6 @@
 ---
 name: deploy
-description: Merges the current feature branch into main and cleans up. The irreversible act, invoked by a human only.
-disable-model-invocation: true
+description: Merges the current feature branch into main and cleans up, which deploys to production. Triggers - "mets en prod", "tu peux déployer", "ship it", "merge dans main", once the user has given the go.
 allowed-tools: Bash(git *), Bash(gh *)
 ---
 
@@ -14,6 +13,9 @@ tracks, so this merge is the deploy.
 
 ## Rules
 
+- **Only on the user's explicit go, in this conversation.** A green review, a passed UAT or
+  a finished ticket is not a go. The merge is irreversible and the decision is theirs. The
+  one exception is a minor change as `/ticket` defines it, which ships without asking.
 - **Nothing reaches `main` without `/review-diff`**, UAT fixes included. If the last
   review predates the last commit, stop and review first.
 - Abort if the current branch is `main` or `preprod`.

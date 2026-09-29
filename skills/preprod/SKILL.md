@@ -1,7 +1,6 @@
 ---
 name: preprod
-description: Merges the current feature branch into preprod for UAT, then returns to it. Never touches main.
-disable-model-invocation: true
+description: Merges the current feature branch into preprod for UAT, then returns to it. Never touches main. Triggers - "pousse en preprod", "mets en preprod", "envoie en recette", once the user has given the go.
 allowed-tools: Bash(git *)
 ---
 
@@ -16,6 +15,8 @@ hand over the preview URL.
 
 ## Rules
 
+- **Only on the user's explicit go, in this conversation.** Preprod is shared: a merge
+  there replaces what someone else may be testing.
 - **Never delete the feature branch.** It stays for the UAT fixes and the eventual
   `/deploy`.
 - Abort if the current branch is already `main` or `preprod`.

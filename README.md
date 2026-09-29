@@ -99,14 +99,15 @@ What the diagram cannot show:
 - **The review runs at arm's length**, in a forked context with no access to the
   conversation, so the written plan is the only intent it gets. Reviewing a diff with the
   context that wrote it is the blind spot this closes.
-- **The debrief hands the code back.** Before the UAT, a ten-line debrief: what moved, the
+- **The debrief hands the code back.** Before the UAT, a short debrief: what moved, the
   decisions that were not obvious, where it is fragile, what was dropped, what you now
   own. Reviewing a diff tells you whether it is correct; the debrief is what keeps you
   the owner of code you did not type.
 - **The chain is not proven.** Nothing here has been measured against evaluations, and a
   prescription that has never been run is a hypothesis.
 - **Two gates belong to a human**: a blocking question from `/plan`, and the UAT.
-  `/deploy` is never run by the agent.
+  `/deploy` and `/preprod` run only on the user's explicit go, and always through the
+  skill, never through hand-typed git commands.
 - Commits are save points, the merge is the irreversible act.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-code`
