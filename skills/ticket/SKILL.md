@@ -8,7 +8,7 @@ description: Takes a pasted ticket, feature or bug, and runs it through the whol
 `$ARGUMENTS` holds the ticket. Run the chain on it. The order is not a suggestion: each
 step produces what the next one checks.
 
-Copy this checklist into your reply and tick as you go.
+The steps, in order:
 
 ```
 - [ ] 1. Plan            /plan  (bug instead of a feature: /diagnosing-bugs)
@@ -110,5 +110,6 @@ and ask when changes are uncommitted, rather than stashing them.
 - **Code you modify leaves covered.** When step 4 touches code whose behaviour no test
   pins, write that test in the same branch, following the guidelines' pyramid. Deferring
   it to a dedicated pass means never.
-- Announce each step in one line, so the user can interrupt and know where things stand.
+- Announce each step in one line as it starts ("5. Clean: /quality"), so the user knows
+  where things stand and can interrupt.
 - Never run `/deploy` yourself. The merge is irreversible, and it is the user's call.

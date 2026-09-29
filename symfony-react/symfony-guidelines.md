@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026, and 8.4.25; floor 8.4; security ≥ 8.5.9 / ≥ 8.4.24, 8.5.11 / 8.4.26 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026, and 8.4.25; floor 8.4; security ≥ 8.5.9 / ≥ 8.4.24, 8.5.11 / 8.4.26 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · zenstruck/messenger-monitor-bundle 0.6 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -1981,6 +1981,54 @@ routing:
     Symfony\Component\Notifier\Message\ChatMessage: sync
     'App\Message\*': async
 ```
+
+### Monitoring: `zenstruck/messenger-monitor-bundle`
+
+The `failed` transport only keeps what failed for good. The monitor bundle records every
+consumed message, with its duration, its retries and its failure, in a `processed_messages`
+table: that history is what `/check-logs` reads to tell a flaky handler from a broken one.
+
+```bash
+composer require zenstruck/messenger-monitor-bundle
+```
+
+1. An entity extending the bundle's model, read-only, on the `processed_messages` table:
+
+    ```php
+    #[ORM\Entity(readOnly: true)]
+    #[ORM\Table('processed_messages')]
+    class ProcessedMessage extends \Zenstruck\Messenger\Monitor\History\Model\ProcessedMessage
+    {
+        #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+        private ?int $id = null;
+
+        public function id(): ?int { return $this->id; }
+    }
+    ```
+
+2. `zenstruck_messenger_monitor.storage.orm.entity_class: App\Entity\ProcessedMessage`, then
+   a migration.
+3. **Purge daily**, or the table grows with every message. The commands belong to the
+   bundle, so they cannot carry `#[AsCronTask]` (§17): schedule them as `RunCommandMessage`
+   in the app's schedule.
+
+    ```php
+    #[AsSchedule]
+    final class MonitorPurgeSchedule implements ScheduleProviderInterface
+    {
+        public function getSchedule(): Schedule
+        {
+            return (new Schedule())->add(
+                // one month kept by default; scheduled runs are purged separately, keeping 10 per task
+                RecurringMessage::cron('30 4 * * *', new RunCommandMessage('messenger:monitor:purge --exclude-schedules')),
+                RecurringMessage::cron('35 4 * * *', new RunCommandMessage('messenger:monitor:schedule:purge')),
+            );
+        }
+    }
+    ```
+
+The bundle also ships a dashboard (workers, transports, schedules, history). Mount it
+behind `#[IsGranted('ROLE_ADMIN')]` like any admin route.
 
 ---
 

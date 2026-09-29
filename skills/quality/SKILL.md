@@ -7,7 +7,8 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 
 Everything a machine can settle on its own, fast and headless.
 
-- What needs a browser is `/live-test`. The full E2E suite is CI.
+- What needs a browser is `/live-test`, the whole Playwright suite included. CI runs it
+  again on every push.
 - The test suites make this the slow gate. That is the price of "the tests pass" being a
   fact rather than an assumption.
 

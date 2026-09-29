@@ -34,6 +34,17 @@ WHERE failure_type IS NOT NULL AND received_at > NOW() - INTERVAL '<PERIOD>'
 GROUP BY 1,2 ORDER BY n DESC;
 ```
 
+`processed_messages` comes from the monitor bundle the guidelines prescribe. A project
+without it only has the `failed` transport, which keeps the final failures and no history:
+count them per queue, then read them with `php bin/console messenger:failed:show` over `clever ssh`.
+
+```sql
+SELECT queue_name, COUNT(*) AS n, MAX(created_at) AS last
+FROM messenger_messages GROUP BY 1;
+```
+
+The missing bundle is itself a finding for `/gap-code`.
+
 Sentry issues come from its MCP.
 
 ### Vercel and Convex
