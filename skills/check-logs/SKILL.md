@@ -108,5 +108,5 @@ event count and a decision.
 
 **Close the loop.** For each real bug, one question in the report: *which step of the
 chain should have caught this, and why did it not?* A 500 on an unvalidated payload
-points at `/plan`; a regression on an untouched page points at a missing spec, so at
+points at `/investigate`; a regression on an untouched page points at a missing spec, so at
 `/live-test`; a pattern repeated across files points at `/gap-code`.

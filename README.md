@@ -51,7 +51,7 @@ with how the compiler is enabled.
 | Skill | Purpose |
 |---|---|
 | `ticket` | Takes a ticket and runs the whole chain in order, stopping at the gates that need a human |
-| `plan` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
+| `investigate` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
 | `live-test` | Does it work? Drives the feature in a real browser, then runs the Playwright suite |
@@ -75,19 +75,19 @@ so that "done" is a verified fact rather than a claim.
 stays callable on its own.
 
 ```
-/plan → branch → implement → /quality → /live-test → /commit → /review-diff¹ → debrief → /preprod → UAT → /review-diff² → /deploy
+/investigate → branch → implement → /quality → /live-test → /commit → /review-diff¹ → debrief → /preprod → UAT → /review-diff² → /deploy
   │                              │          │                    │                                  │
   │                              │          │                    └─ full review                   └─ delta + fresh /quality
   │                              │          └─ does it work?
   │                              └─ is it clean?
   └─ investigation, blast radius, assumed decisions, tests owed → .claude/plan.md
 
-Bug?  /diagnosing-bugs replaces /plan, the rest of the thread is identical.
+Bug?  /diagnosing-bugs replaces /investigate, the rest of the thread is identical.
 ```
 
 What the diagram cannot show:
 
-- **The plan is written down.** `/plan` leaves `.claude/plan.md` behind: the acceptance
+- **The plan is written down.** `/investigate` leaves `.claude/plan.md` behind: the acceptance
   criteria, the assumed decisions, and the tests the work owes. It survives a compacted
   context, and `/review-diff` reads it instead of trusting its own memory.
 - **Three different things have to be true**, each with its own step: it is clean
@@ -105,7 +105,7 @@ What the diagram cannot show:
   the owner of code you did not type.
 - **The chain is not proven.** Nothing here has been measured against evaluations, and a
   prescription that has never been run is a hypothesis.
-- **Two gates belong to a human**: a blocking question from `/plan`, and the UAT.
+- **Two gates belong to a human**: a blocking question from `/investigate`, and the UAT.
   `/deploy` and `/preprod` run only on the user's explicit go, and always through the
   skill, never through hand-typed git commands.
 - Commits are save points, the merge is the irreversible act.

@@ -76,7 +76,7 @@ Then the part no checklist of green ticks covers, **completeness**:
 - Run **`/quality`**, unless it already passed green on this exact commit with nothing
   moved since, in which case name the run you are relying on. Pass 2 always re-runs it,
   after the UAT fixes. A FAIL blocks the verdict either way.
-- Backstop on unfamiliar APIs: `/plan` should have read the docs for anything the
+- Backstop on unfamiliar APIs: `/investigate` should have read the docs for anything the
   guidelines do not cover. If the diff uses such an API and the plan shows no sign of it,
   check it against the official docs for the version in the lockfile. An invented
   signature that compiles is what a green build does not catch.
@@ -102,7 +102,7 @@ Every gap points at a file and a line. "Send back" lists actions, not impression
 ## Rules
 
 - **Changes nothing.** It diagnoses. Fixes come after, then re-run it.
-- Do not re-litigate the decisions settled in `/plan`. The review checks they were
+- Do not re-litigate the decisions settled in `/investigate`. The review checks they were
   honoured, not that they were right.
 - A perfect diff on a misunderstood ticket is a failure. Ticket coverage outranks
   elegance.

@@ -5,7 +5,7 @@ description: Disciplined bug-fix loop - reproduce, one hypothesis, instrument, r
 
 # Diagnosing bugs
 
-Takes the place of `/plan` as step 1 when the task is "fix this behaviour" rather than
+Takes the place of `/investigate` as step 1 when the task is "fix this behaviour" rather than
 "build this thing". Typical inputs: a bug ticket from the PM, a Sentry issue, a finding
 from `/check-logs`, something broken in UAT. The rest of the chain is unchanged:
 `/quality` → `/live-test` → `/commit` → `/review-diff` → debrief → `/preprod` → `/deploy`.

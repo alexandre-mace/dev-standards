@@ -1,5 +1,5 @@
 ---
-name: plan
+name: investigate
 description: The first step of the chain. Investigates a ticket in depth, settles everything the code can settle, names the tests owed, and writes .claude/plan.md. Raises only what would genuinely change the work to do. Use when a feature ticket needs investigating before any code, or when /ticket starts.
 ---
 

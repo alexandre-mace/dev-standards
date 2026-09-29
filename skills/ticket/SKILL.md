@@ -11,7 +11,7 @@ user, are not.
 
 ## Done means
 
-- **Understood.** `/plan` wrote `.claude/plan.md` (`/diagnosing-bugs` for a bug), and its
+- **Understood.** `/investigate` wrote `.claude/plan.md` (`/diagnosing-bugs` for a bug), and its
   assumed decisions and tests owed were announced before any code.
 - **On its own branch**, `feat/<scope>`, cut from an up-to-date `main`.
 - **Tested.** Every test the plan owed exists, and was seen failing before the change and
@@ -41,7 +41,7 @@ reason. A check skipped in silence is a check nobody ran.
 
 ## What belongs to the user
 
-- **A blocking question from `/plan`.** Announce the plan in a few lines and carry on,
+- **A blocking question from `/investigate`.** Announce the plan in a few lines and carry on,
   unless it raised something blocking. Twenty lines of plan cost nothing to read, a five
   hundred line diff built on a wrong premise costs the whole implementation.
 - **The UAT.** Hand over the URL and stop.
