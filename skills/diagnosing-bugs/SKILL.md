@@ -31,8 +31,8 @@ production.
 ## 2. Locate, and state one hypothesis
 
 - Read the error in full: the real message, the real line.
-- `git log -- <area>`: recent changes first. Half of all bugs are in the last commit
-  that touched the area.
+- `git log -- <area>`: recent changes first. The last commit that touched the area is
+  the first suspect.
 - State the hypothesis in one sentence, out loud in the conversation. An unstated
   hypothesis cannot be refuted.
 

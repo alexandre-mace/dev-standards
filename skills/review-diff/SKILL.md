@@ -20,9 +20,8 @@ UAT fixes included.
 
 > **Arm's length, enforced.** This skill runs in a forked subagent with no access to the
 > conversation, which is the point: reviewing a diff with the context that wrote it is
-> the definition of a blind spot. Anthropic's own `/code-review` forks for the same
-> reason. The consequence is that `.claude/plan.md` is the only record you get, for the
-> intent and for what `/live-test` found.
+> the definition of a blind spot. The consequence is that `.claude/plan.md` is the only
+> record you get, for the intent and for what `/live-test` found.
 
 ## 1. Gather both terms
 

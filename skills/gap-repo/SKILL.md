@@ -11,10 +11,11 @@ looks at whether this repository still agrees with itself.
 
 ## 1. Run the checker
 
-`check-repo.py`, in this skill's own directory, takes the repo root:
+`check-repo.py`, in this skill's own directory. With no argument it audits the repository
+that contains it:
 
 ```bash
-python3 check-repo.py ~/dev/dev-standards
+python3 <this skill's directory>/check-repo.py
 ```
 
 It settles what needs no judgement: a skill cited by name but absent, a README table out
@@ -41,8 +42,7 @@ only reading catches it.
 ## 3. Check what Claude Code has published since
 
 A skill goes obsolete from the outside too: a bundled command now does the job, a
-frontmatter field replaces a workaround, a name we chose is taken. Today's session found
-four such items in one afternoon.
+frontmatter field replaces a workaround, a name we chose is taken.
 
 - The bundled commands: does one of them already cover a skill of ours? A skill that
   restates a default adds context without adding value.

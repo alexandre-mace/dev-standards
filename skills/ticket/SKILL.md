@@ -51,7 +51,7 @@ chain applies, gates included. Unsure counts as not minor.
 
 ## Step 9, the debrief
 
-Ten lines, no more, written for a developer who did not type this code but owns it. The
+Short, written for a developer who did not type this code but owns it. The
 diff is in git and the plan is in `.claude/plan.md`; neither tells you what it was like
 to build.
 

@@ -1,6 +1,6 @@
 ---
 name: gap-code
-description: Audit a whole codebase against its stack's guidelines and write every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
+description: Audits a whole codebase against its stack's guidelines and writes every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
 **The guidelines are right, the code gets corrected.** The mirror skill is `/gap-sota`,

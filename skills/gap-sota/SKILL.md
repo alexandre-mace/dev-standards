@@ -1,6 +1,6 @@
 ---
 name: gap-sota
-description: Measure how far the dev-standards guidelines sit from the state of the art, judging them against the ecosystem's own sources. Triggers - veille, update guidelines, "are the guidelines still current?", state of the art.
+description: Measures how far the dev-standards guidelines sit from the state of the art, judging them against the ecosystem's own sources. Triggers - veille, update guidelines, "are the guidelines still current?", state of the art.
 ---
 
 # gap-sota
