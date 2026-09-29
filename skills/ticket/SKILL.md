@@ -1,59 +1,72 @@
 ---
 name: ticket
-description: Takes a pasted ticket, feature or bug, and runs it through the whole chain in order, stopping at the gates that need a human. Triggers - a pasted ticket, "prends ce ticket", "déroule la procédure".
+description: Takes a pasted ticket, feature or bug, and carries it to a branch ready for UAT, stopping only where a human decides. Triggers - a pasted ticket, "prends ce ticket", "déroule la procédure".
 ---
 
 # Ticket, end to end
 
-`$ARGUMENTS` holds the ticket. Run the chain on it. The order is not a suggestion: each
-step produces what the next one checks.
+`$ARGUMENTS` holds the ticket. Carry it until it is done, in the sense below. How to get
+there is yours to organise. What "done" means, and the three decisions that belong to the
+user, are not.
 
-The steps, in order:
+## Done means
 
-```
-- [ ] 1. Plan            /plan  (bug instead of a feature: /diagnosing-bugs)
-- [ ] 2. GATE            plan announced, no blocking question left
-- [ ] 3. Branch          feat/<scope>, cut from an up-to-date main
-- [ ] 4. Implement       playbook followed, tests named in step 1 written
-- [ ] 5. Clean           /quality
-- [ ] 6. Works           /live-test
-- [ ] 7. Saved           /commit
-- [ ] 8. Right           /review-diff
-- [ ] 9. Handover        the debrief, below
-- [ ] 10. UAT            /preprod, or push the branch for a Vercel preview
-- [ ] 11. GATE           a human tests it
-```
+- **Understood.** `/plan` wrote `.claude/plan.md` (`/diagnosing-bugs` for a bug), and its
+  assumed decisions and tests owed were announced before any code.
+- **On its own branch**, `feat/<scope>`, cut from an up-to-date `main`.
+- **Tested.** Every test the plan owed exists, and was seen failing before the change and
+  passing after. Code you modified whose behaviour no test pinned now has one, in the same
+  branch: deferring it to a dedicated pass means never.
+- **Clean.** `/quality` is green.
+- **Seen working.** `/live-test` walked the golden path and one edge case in a browser, or
+  named what it could not reach.
+- **Saved.** `/commit`.
+- **Right.** `/review-diff` found no gap against the plan.
+- **Handed over.** The debrief below is written, and the branch is in UAT: `/preprod`, or
+  the pushed branch for a Vercel preview.
 
-After the UAT: fix, `/quality`, `/live-test`, `/commit`, `/review-diff` on the delta, then
-`/deploy` once the user says to ship.
+A check with nothing to check (no browser surface, no test owed) is declared with its
+reason. A check skipped in silence is a check nobody ran.
 
-## Minor changes do not run the chain
+## Order, where it matters
 
-A wording fix, a colour, a label, a one-line correction with no logic behind it: eleven
-steps cost more than the change. `/quality`, look at the result, `/commit`, then ship it
-by whatever the repository's own flow is, in its `AGENTS.md`. No plan, no gate, and
-**no question before shipping**. Asking "shall I deploy?" on a two-line change is
-friction, not safety, and it trains the habit of not reading the ones that matter.
+- The plan before the branch, the branch before the code.
+- Cheapest check first: never drive a browser against code that does not compile.
+- `/live-test`, then `/commit`, then `/review-diff`. The review runs in a forked context
+  that sees only the committed branch and `.claude/plan.md`, where `/live-test` writes its
+  report.
+- Keep the three checks apart. `/quality` asks whether it is clean, `/live-test` whether it
+  works, `/review-diff` whether it is what was asked. Green checks on a feature nobody ran
+  and a working feature with red checks are two different failures.
+
+## What belongs to the user
+
+- **A blocking question from `/plan`.** Announce the plan in a few lines and carry on,
+  unless it raised something blocking. Twenty lines of plan cost nothing to read, a five
+  hundred line diff built on a wrong premise costs the whole implementation.
+- **The UAT.** Hand over the URL and stop.
+- **Shipping.** `/deploy` runs only on the user's explicit go, and always through the
+  skill, never with hand-typed git commands: the skill is where the checks live.
+
+After the UAT, the fixes meet the same definition of done, `/review-diff` runs on the
+delta, then `/deploy` on the go.
+
+## Minor changes
+
+A wording fix, a colour, a label, a one-line correction with no logic behind it: the full
+definition of done costs more than the change. `/quality`, look at the result, `/commit`,
+then ship it by whatever the repository's own flow is, in its `AGENTS.md`. No plan, no
+gate, and **no question before shipping**. Asking "shall I deploy?" on a two-line change
+is friction, not safety, and it trains the habit of not reading the ones that matter.
 
 It stops being minor the moment it touches money, permissions or personal data, changes a
 schema, adds a dependency, alters a shared component, or leaves you unsure. Then the full
-chain applies, gates included. Unsure counts as not minor.
+definition applies, gates included. Unsure counts as not minor.
 
-## The two gates
+## The debrief
 
-- **Step 2, the plan.** Announce the assumed decisions and the tests owed, a few lines,
-  before writing any code. Stop and wait only if `/plan` raised something blocking;
-  otherwise carry on without waiting for an answer. The point is that the user can
-  object cheaply: twenty lines of plan cost nothing to read, a five hundred line diff
-  built on a wrong premise costs the whole implementation. This is the only place a
-  wrong direction is cheap to catch.
-- **Step 11, the UAT.** It belongs to a human. Hand over the URL and stop.
-
-## Step 9, the debrief
-
-Short, written for a developer who did not type this code but owns it. The
-diff is in git and the plan is in `.claude/plan.md`; neither tells you what it was like
-to build.
+Short, written for a developer who did not type this code but owns it. The diff is in
+git and the plan is in `.claude/plan.md`; neither tells you what it was like to build.
 
 ```
 Debrief : <feature>
@@ -64,8 +77,6 @@ Debrief : <feature>
 - You own:   a new dependency, a new pattern, a config that will need attention later.
 ```
 
-Rules for it:
-
 - **Name what you are unsure about.** A place where you guessed, or where the tests are
   thinner than you would like, is the single most useful line in the whole debrief.
 - "Nothing non-obvious happened" is a valid debrief. Manufacturing interest is worse than
@@ -73,45 +84,16 @@ Rules for it:
 - No restating the ticket, no listing files, no commentary on the quality of the work.
 - Say it in the user's language, not in the language of the codebase.
 
-## The three questions, in order
-
-They are not interchangeable, which is why they are three steps:
-
-| Step | Question | Answered by |
-|---|---|---|
-| `/quality` | Is it clean? | The machine, in seconds |
-| `/live-test` | Does it work? | Running it, in minutes |
-| `/review-diff` | Is it what was asked? | Judgement, against `.claude/plan.md` |
-
-Cheapest first: never drive a browser against code that does not compile. And never let
-one step absorb another, because green checks on a feature nobody ran and a working
-feature with red checks are two different failures.
-
-## Step 3, cutting the branch
-
-Once the plan is clear, not before.
-
-```bash
-git checkout main && git pull && git checkout -b feat/<scope>
-```
-
-`<scope>` in kebab-case, two to four words, French or English following the repo. Stop
-and ask when changes are uncommitted, rather than stashing them.
-
 ## Rules
 
-- **Never skip a step.** A skipped step is a check nobody ran.
-- A red step stops the chain. Fix it, re-run that step, then move on.
-- Three attempts on the same red step, then stop and report: what is ruled out, what
+- Announce each check in one line as it starts ("Clean: /quality"), so the user knows
+  where things stand and can interrupt.
+- A red check stops the work. Fix it, re-run it, then move on.
+- Three attempts on the same red check, then stop and report: what is ruled out, what
   remains possible, what is missing to decide. An unbounded retry loop is how an hour
   disappears into a flapping test.
-- Step 4 is where the work is. The chain does not make implementing easier, it makes the
-  result checkable. Do not rush it because the surrounding steps are mechanical.
-- **Code you modify leaves covered.** When step 4 touches code whose behaviour no test
-  pins, write that test in the same branch, following the guidelines' pyramid. Deferring
-  it to a dedicated pass means never.
-- Announce each step in one line as it starts ("5. Clean: /quality"), so the user knows
-  where things stand and can interrupt.
-- `/deploy` runs only on the user's explicit go. The merge is irreversible, and it is the
-  user's call. Ship through `/deploy`, never with hand-typed git commands: the skill is
-  where the checks live.
+- The implementation is where the work is. The checks do not make it easier, they make the
+  result checkable. Do not rush it because the checks around it are mechanical.
+- The branch: `git checkout main && git pull && git checkout -b feat/<scope>`, `<scope>` in
+  kebab-case, two to four words, French or English following the repo. Stop and ask when
+  changes are uncommitted, rather than stashing them.

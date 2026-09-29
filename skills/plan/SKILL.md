@@ -1,11 +1,11 @@
 ---
 name: plan
-description: Step 1 of the chain. Investigates a ticket in depth, settles everything the code can settle, names the tests owed, and writes .claude/plan.md. Raises only what would genuinely change the work to do. Use when a feature ticket needs investigating before any code, or when /ticket reaches step 1.
+description: The first step of the chain. Investigates a ticket in depth, settles everything the code can settle, names the tests owed, and writes .claude/plan.md. Raises only what would genuinely change the work to do. Use when a feature ticket needs investigating before any code, or when /ticket starts.
 ---
 
 Investigate first. But investigating serves to decide, not to collect questions.
 
-Invoked by `/ticket` as step 1, or on its own.
+Invoked by `/ticket` first, or on its own.
 
 ## Ticket
 
