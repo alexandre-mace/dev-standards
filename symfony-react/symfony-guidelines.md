@@ -1972,7 +1972,7 @@ If the entity will be deleted right after the dispatch, pass the data you need a
 
 3 retries with exponential backoff (1s, 2s, 4s). After 3 failures the message goes to the `failed` transport. CRITICAL errors surface in Sentry.
 
-Since Symfony 8.1: **decoding** failures (a corrupted message, a renamed class) also go through the retry/failed pipeline instead of being silently lost; `messenger:consume --fetch-size=N` fetches in batches for high volumes; and the PostgreSQL Doctrine transport (LISTEN/NOTIFY) no longer blocks multi-transport consumption by priority.
+**Decoding** failures (a corrupted message, a renamed class) go through the retry/failed pipeline too. For high volumes, `messenger:consume --fetch-size=N` fetches in batches.
 
 ### Routing (`config/packages/messenger.yaml`)
 
