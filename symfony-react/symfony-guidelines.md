@@ -1171,8 +1171,11 @@ Version constraint: **Twig ≥ 3.27** is mandatory (it fixes CVE-2026-48805 thro
 <twig:ux:icon name="lucide:arrow-left" class="h-4 w-4" />
 ```
 
-Icons resolve on demand through Iconify and are cached in `var/`, so `lucide:*` works in
-tests and in CI too. **Target: 3.x.** A project still on 2.x is a `/gap-code` finding,
+**Lock the icons into the repository**: `bin/console ux:icons:lock` writes every icon the
+templates name into `assets/icons/`, and `ux:icons:import lucide:<name>` adds one whose name
+is built at runtime, which the lock cannot see. On demand, icons are fetched from Iconify: a
+test suite that mocks every HTTP client (§13) then renders none of them, and a cold CI cache
+turns every page with an icon into a 500. **Target: 3.x.** A project still on 2.x is a `/gap-code` finding,
 and until it migrates it needs at least 2.36.1 (June 2026), which sanitises the SVG
 Iconify returns.
 
