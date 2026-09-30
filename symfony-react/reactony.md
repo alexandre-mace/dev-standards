@@ -517,25 +517,14 @@ export default defineConfig({
   plugins: [
     "@hey-api/typescript",
     "@hey-api/client-fetch",
-    { name: "@hey-api/sdk", validator: { response: "zod" } }, // runtime response validation (optional)
+    { name: "@hey-api/sdk", validator: { response: "zod" } }, // runtime response validation: perf cost, opt-in
     "zod",                   // Zod 4 by default ({ name: "zod", compatibilityVersion: 3 | "mini" } otherwise)
     "@tanstack/react-query", // name of the bundled plugin, NOT an npm package
   ],
 });
 ```
 
-The five plugins:
-- `@hey-api/typescript`: TS types from the OpenAPI schema
-- `@hey-api/client-fetch`: HTTP client (handles fetch, headers, serialization, **multipart**)
-- `@hey-api/sdk`: typed functions per endpoint (`postProfileSave({ body })`); `validator: { response: 'zod' }` also validates responses at runtime using the already-generated schemas (perf cost, opt-in)
-- `zod`: Zod 4 schemas for client-side validation
-- `@tanstack/react-query`: generates `queryOptions()`, `queryKey` and `mutationOptions()` from the OpenAPI, removing the `lib/queries/` boilerplate
-
-When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating). Since 0.93: 0.95 no longer exports composite `Data` schemas (`shouldExtract: true` brings them back), 0.96 requires Node ≥ 22.13, 0.97 actually honours `throwOnError: false`, 0.98 refactors towards a declarative config (mostly affecting custom plugins), 0.99 renames `plugin.symbols` to `plugin.imports` and removes `plugin.external()`/`registerSymbol()` (and merges duplicated plugin configs). As of September 2026: 0.99.0 has been current since June (no 1.0); any project pinned below catches up through the Migrating page. On the backend end of the pipeline, nelmio/api-doc-bundle 5.11 hardens generation for persistent workers and supports the QUERY HTTP method, and 5.12 passes `#[Context]` data down to the property describers. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. Zod also ships `z.codec()` (4.1, typed bidirectional transforms, e.g. ISO string ↔ `Date`) and its inverse `z.invertCodec()` (4.4) for hand-written API ↔ domain conversions. Zod 4.5 adds `z.compile(schema)`: same API, parses 3 to 9 times faster, worth putting on the generated schemas you validate at runtime (SDK responses, large form objects). **Floor `^4.6`**: 4.5 runs out of memory on some recursive schemas, and 4.6 fixes it. 4.6 also adds `schema.validate(value)`, a boolean guard up to 35 times faster than `.safeParse().success` on a compiled schema: use it when only the verdict matters, not the errors.
-
-### SDK: typed API calls
-
-The functions generated into `sdk.gen.ts` give you typed calls per endpoint (`postProfileSave({ body })`), with autocomplete and a TS error when the body is invalid. The SDK also handles **multipart uploads** automatically through `formDataBodySerializer`.
+When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating) for every version crossed. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. Use `z.codec()` (typed bidirectional transforms, e.g. ISO string ↔ `Date`) and `z.invertCodec()` for hand-written API ↔ domain conversions. Put `z.compile(schema)` (same API, parses 3 to 9 times faster) on the generated schemas you validate at runtime (SDK responses, large form objects). **Floor `^4.6`**: 4.5 runs out of memory on some recursive schemas, and 4.6 fixes it. `schema.validate(value)` is a boolean guard up to 35 times faster than `.safeParse().success` on a compiled schema: use it when only the verdict matters, not the errors.
 
 ### Generation
 
@@ -553,7 +542,7 @@ In CI: `make types && git diff --exit-code openapi.yaml assets/lib/api/` catches
 
 ## 6. Infra: Vite + Symfony UX
 
-React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. (symfony/ux 3.4 is the active line, with `import.meta.glob()` support in ux-react; it requires PHP 8.4 / Symfony 7.4, and `react_component()` and `registerReactControllerComponents()` are unchanged, so the upgrade from 2.x is mechanical. Gotcha: the npm `latest` dist-tag of `@symfony/ux-react` still points at 2.36, so a default install does not give you 3.x; irrelevant when the JS package is linked `file:vendor/symfony/ux-react/assets`, the default wiring, which follows the composer version by itself. The 2.x line stays maintained.)
+React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. Link the JS package as `file:vendor/symfony/ux-react/assets` (the default wiring) so it follows the composer version: the npm `latest` dist-tag of `@symfony/ux-react` still points at 2.36, so a registry install does not give you 3.x.
 
 ### Layout
 
