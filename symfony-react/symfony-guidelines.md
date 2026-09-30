@@ -157,8 +157,8 @@ src/
 ├── Repository/          # Doctrine queries (specialised ones included)
 ├── Service/             # Execution: persist, API calls, uploads, PDF... (see section 5)
 ├── Api/                 # Authenticated external APIs (Hubspot, Discord...)
-├── Message/             # DTOs for Messenger (see section 15)
-├── MessageHandler/      # Async handlers for those messages (see section 15)
+├── Message/             # DTOs for Messenger (see section 16)
+├── MessageHandler/      # Async handlers for those messages (see section 16)
 ├── Command/             # Console commands (with #[AsCronTask] for the scheduler)
 ├── Form/                # Symfony Form types
 ├── EventListener/       # Doctrine/HTTP listeners
@@ -175,8 +175,6 @@ Command     →  Domain + Service + Api + Repository
 Service     →  Domain + Api + Repository
 Domain      →  Entity only (+ other Domain)
 ```
-
-Domain/ depends on nothing else. Service/ may call Domain/. The controller wires it all together.
 
 ---
 
@@ -264,7 +262,7 @@ private AdvertStatus $status = AdvertStatus::Pending;
 
 #### Enums exposed in the back office (EasyAdmin v5)
 
-Two rules to avoid fighting the framework:
+Three rules to avoid fighting the framework:
 
 1. **Let EA handle the round-trip.** As soon as the Doctrine column has `#[ORM\Column(enumType: MyEnum::class)]`, `ChoiceField::new('myField')` detects the cases on its own. Don't add `setChoices()` or `choice_value()`: it breaks the edit form. (We hit this: a redundant `setChoices()` forced a polymorphic `choice_value` to patch it back up.)
 
@@ -396,7 +394,8 @@ firewall and its session, with an explicit `#[IsGranted]` anyway. Nelmio only sc
 `config/packages/nelmio_api_doc.yaml` so the generated SDK and query options cover the
 back office like the rest.
 
-⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (GHSA-g2fm-8hr4-j82h, August 2026, CVSS 8.1): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here. In passing, EA 5.2 to 5.5 brought Twig components (Switch, Modal, Pagination, Sidebar), an official Theming API, filters and sorting on nested properties, and tab persistence.
+⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (GHSA-g2fm-8hr4-j82h, August 2026, CVSS 8.1): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here.
+
 ### Reference data
 
 For large data sets (departments, regions) that aren't enums:
@@ -410,6 +409,8 @@ final class Departments
 ```
 
 ### Business rules (conditions, validations)
+
+Conditions and thresholds, as methods returning a boolean or a decision (`isEligible()`, `shouldNotify()`).
 
 ```php
 class StepRules
@@ -458,11 +459,6 @@ class ScoreService
     }
 }
 ```
-
-### Reference data vs Rules
-
-- **Reference data**: static data with no logic (arrays, constants). A list of departments, region codes.
-- **Rules**: conditions and thresholds, with methods returning a boolean or a decision. `isEligible()`, `shouldNotify()`.
 
 ### Resolver
 
@@ -570,7 +566,7 @@ Options: `#[Serialize(code: 201, headers: [...], context: ['groups' => [...]])]`
 
 ### Targeted tools: reach for them on need, never by default
 
-Modern and correct, but adding them with no pressure betrays the "minimal code" principle. Listed so you know what to reach for when the **specific** pain shows up:
+Listed so you know what to reach for when the **specific** pain shows up:
 
 - **`JsonStreamer` (8.1)**: an encoder generated at cache warmup (no runtime reflection), 50% less RAM and roughly 2x faster. **For** a **large list endpoint under memory pressure** (farm search, map). Not before the profiler asks for it.
 - **`cuyz/valinor`**: the most type-safe hydrator around (`list<string>`, `positive-int`, `int<0,42>`, shaped arrays, recursive validation, "a valid object or a throw with a precise message"). **For** parsing **external or untrusted JSON into value objects** (data files, Airtable blobs, scrapers). NOT for HTTP requests, where `#[MapRequestPayload]` + `#[Assert]` is enough; avoid a third hydrator by default.
