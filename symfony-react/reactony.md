@@ -808,8 +808,6 @@ plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
 
 ### ESLint
 
-Lints the TypeScript/React code. Checks hook rules, React patterns, types.
-
 ```bash
 pnpm lint          # check
 pnpm lint:fix      # auto-fix
@@ -817,37 +815,25 @@ pnpm lint:fix      # auto-fix
 
 Flat config (`eslint.config.js`) with:
 - `@eslint/js` + `typescript-eslint`: TS rules
-- `eslint-plugin-react-hooks` ≥ 7 through `configs.flat.recommended`: hook rules **and React Compiler rules** (they entered the standard `recommended` in **v7.0**; v6 only exposed them behind the opt-in `recommended-latest`; `eslint-plugin-react-compiler` is obsolete). `set-state-in-effect` is inert in 7.0 and becomes an **error** in 7.1's recommended: expect the violations to surface only at that bump, and fix them as derivations or event-scoped code rather than disabling
+- `eslint-plugin-react-hooks` ≥ 7 through `configs.flat.recommended`: hook rules and React Compiler rules (see `react/react-guidelines.md` §2). `set-state-in-effect` is an **error** from 7.1's recommended (inert in 7.0, so violations surface at that bump): fix them as derivations or event-scoped code rather than disabling
 - `eslint-config-prettier`: disables the rules that conflict with Prettier
 
 ### Prettier
-
-Formats the code (indentation, quotes, trailing commas, Tailwind class sorting).
 
 ```bash
 pnpm format        # format
 pnpm format:check  # check without writing
 ```
 
-Config (`.prettierrc`) with `prettier-plugin-tailwindcss` for automatic class sorting (≥ 0.8 requires Prettier ≥ 3.7; sorting inside **Twig templates** has existed since 0.6, and 0.7 extends it to Twig **function calls**: turn it on for `templates/`).
+Config (`.prettierrc`) with `prettier-plugin-tailwindcss` (≥ 0.8, which requires Prettier ≥ 3.7) for automatic class sorting, turned on for `templates/` as well: it sorts classes in Twig templates, function calls included.
 
 ### TypeScript strict
-
-`tsc --noEmit` checks types without emitting files. It catches type errors ESLint can't see.
 
 ```bash
 pnpm tsc --noEmit
 ```
 
 **TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, eslint and hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
-
-### Summary
-
-| Tool | Role | When |
-|-------|------|------|
-| ESLint | Lints JS/TS/React, hook rules | `/quality` |
-| Prettier | Formatting, Tailwind class sorting | `/quality` |
-| `tsc --noEmit` | Type checking | `/quality` |
 
 > All of these are bundled in the global `/quality` skill, which auto-detects the project type. For the backend quality tools (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), see `docs/symfony-guidelines.md` section 14.
 
