@@ -1031,7 +1031,7 @@ export function renderWithQueryClient(ui: ReactElement) {
     ```
     Faster to write than a complex mock, slower to run (a real browser). Use it case by case. jsdom stays the default for light unit tests.
 
-**The shadcn `<Label>` is not wired through `htmlFor`.** `getByLabelText(/Nom/)` won't resolve. Helper:
+**Find fields by their label.** The prescribed `Field` pattern wires it (`<FieldLabel htmlFor>` + the control's `id`), so `getByLabelText(/Nom/)` resolves. A legacy form whose `<Label>` has no `htmlFor` won't: wire it in the component, and until then use this helper:
 
 ```ts
 function inputByLabel(labelText: RegExp): HTMLInputElement {
