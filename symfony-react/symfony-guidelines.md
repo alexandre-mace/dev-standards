@@ -795,7 +795,7 @@ public function upload(#[MapRequestPayload] UploadAvatarPayload $payload): Respo
 ```
 
 Rules:
-- **Flat DTO**: keep the upload payload flat, an `UploadedFile` inside a nested object remains a smell (flatten it). The historical bug that made it actually *break* ([#64571](https://github.com/symfony/symfony/issues/64571)) is **fixed** (PR #64576, merged 6.4 and up on 16/06/2026); the reason to keep the DTO flat is now style, not a technical blocker.
+- **Flat DTO**: keep the upload payload flat; an `UploadedFile` inside a nested object is a smell, flatten it.
 - The identifier goes in the route (`{fieldId}`), not in the payload.
 - `#[MapUploadedFile]` remains the fallback (a lone file with no text fields, or a case that doesn't fit the flat DTO). Never `$request->files->get()` or `$request->request->get()`.
 - Once adopted, check that Nelmio describes the multipart body properly in `openapi.yaml`: the drift gate catches an SDK regression.
@@ -964,14 +964,9 @@ final class RedactQueryStringSecretsProcessor
 }
 ```
 
-It cannot regress anything: the request goes out untouched, only the record written to the log is
-transformed. And it covers the leaks nobody has thought of yet.
-
 For `/gap-code`: an API client passing a credential in `query` is a **Haute** finding when no
 redaction processor exists in the project. Note that redaction protects the future only. A key
 already written to the logs is exposed and has to be rotated with whoever issued it.
-
-The rule: if you expect a human to react, it's `error`. Otherwise it's `warning` or `notice`.
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.
 
