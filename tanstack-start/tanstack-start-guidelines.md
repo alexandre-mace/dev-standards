@@ -179,7 +179,7 @@ The app sits inside both `ConvexProvider` and `QueryClientProvider`.
 **Reading and writing from a component:**
 
 ```tsx
-const { data } = useSuspenseQuery(convexQuery(api.tasks.listByOwner, { ownerId }));
+const { data } = useSuspenseQuery(convexQuery(api.tasks.listMine, {}));
 
 const toggle = useMutation({ mutationFn: useConvexMutation(api.tasks.setDone) });
 ```
