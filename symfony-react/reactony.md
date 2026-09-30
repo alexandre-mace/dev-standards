@@ -64,20 +64,25 @@ const { data, isLoading } = useQuery({
 On the Symfony side, filters are typed with `#[MapQueryString]` on a **DTO** (the one case where a DTO is justified: GET filters are not an entity):
 
 ```php
+/** @return array<int, Farm> */
 #[Route('/api/farms', methods: ['GET'], format: 'json')]
-public function list(#[MapQueryString] FarmFilterDto $filters = new FarmFilterDto()): JsonResponse
+#[Serialize(context: ['groups' => ['farm:read']])]
+public function list(#[MapQueryString] FarmFilterDto $filters = new FarmFilterDto()): array
 {
-    return $this->json($this->farmRepository->findByFilters($filters));
+    return $this->farmRepository->findByFilters($filters);
 }
 ```
 
 ### Serialization (API → React)
 
-By default, use the **Symfony Serializer + `#[Groups]`**:
+By default, use the **Symfony Serializer + `#[Groups]`**, through `#[Serialize]` on the action (`symfony-guidelines.md` §3):
 
 ```php
-// Simple: the Serializer handles everything
-return $this->json($adverts, context: ['groups' => ['advert:read']]);
+#[Serialize(context: ['groups' => ['advert:read']])]
+public function list(): array
+{
+    return $this->advertRepository->findPublished();
+}
 ```
 
 The `#[Groups]` on the entity control what gets exposed:
