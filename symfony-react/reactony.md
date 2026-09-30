@@ -672,7 +672,7 @@ public function configureAssets(): Assets
 
 #### ⚠️ Migrating Webpack Encore → Vite: the Flex trap that deletes files
 
-`composer remove symfony/webpack-encore-bundle` (or the `update` that drops it) triggers the **unconfigure of its Flex recipe**, and Flex **DELETES the files the recipe owned**: `package.json`, `assets/app.js`, `assets/styles/app.css`, `webpack.config.js`, **and removes `/node_modules/` + `/public/build/` from `.gitignore`** (they live in its `###> … ###` block). **Commit a clean state BEFORE**; **after** the removal: `git status` (look for unexpected `D` plus `grep node_modules public/build .gitignore`), restore with `git checkout <file>` and **re-apply** the lost Vite edits. Deployment stays transparent as long as the build hook runs `pnpm build` (unchanged script, `public/build` output).
+Removing `symfony/webpack-encore-bundle` deletes the files its Flex recipe owned and the `/node_modules/` + `/public/build/` lines of `.gitignore`: the procedure is in `symfony-guidelines.md` §14 (Removing a bundle). Afterwards, re-apply the lost Vite edits. Deployment stays transparent as long as the build hook runs `pnpm build`.
 
 ### When React, when Stimulus, when Turbo
 
@@ -703,7 +703,7 @@ One interactivity model:
   answers **422** on an invalid form, so the frame only covers the "valid form, processing
   failed" case. Give the success page the same frame id so it renders in place instead of
   as a bare page.
-- **RSC / React Server Components: we don't do them, on purpose.** Symfony + Twig **is** the server layer already, and the React islands are the intentional client leaves. Bolting RSC on would impose a Node rendering server next to PHP (dual role, broken CleverCloud deployment, extra RSC vulnerability surface) for a problem PHP already solves. `@vitejs/plugin-rsc` exists (2026) but stays experimental and outside Next, irrelevant to the islands-in-Symfony model. Re-open the question only if we dropped server-rendered HTML for a 100% JS frontend (a different architecture, not an evolution of this one).
+- **RSC / React Server Components: we don't do them, on purpose.** Symfony + Twig **is** the server layer already, and the React islands are the intentional client leaves. Bolting RSC on would impose a Node rendering server next to PHP (dual role, broken CleverCloud deployment, extra RSC vulnerability surface) for a problem PHP already solves. Re-open the question only if we dropped server-rendered HTML for a 100% JS frontend.
 
 ---
 
