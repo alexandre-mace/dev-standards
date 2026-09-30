@@ -1350,9 +1350,9 @@ return [
 </extensions>
 ```
 
-Every `KernelTestCase` / `WebTestCase` inherits the rollback automatically. Tests become **isolated** and **fast** for free. `#[SkipDatabaseRollback]` (dama 8.5+) disables the rollback on a test that genuinely has to commit.
+Every `KernelTestCase` / `WebTestCase` inherits the rollback automatically. `#[SkipDatabaseRollback]` (dama 8.5+) disables the rollback on a test that genuinely has to commit.
 
-PHPUnit constraint: **PHPUnit 13** is the current line (13.3.x). Verified against the sources (August 2026): dama's apparent "ceiling" only exists in the bundle's `require-dev` (its CI matrix), the only runtime constraint of the tagged v8.6.0 is `conflict: phpunit < 11`, and `master` carries **no code change** relative to it. So **dama v8.6.0 installs and works with `phpunit ^13`**; the earlier advice to pin a `master` commit was pointless, don't follow it. PHPUnit 12 stays supported (bugfixes until 5 February 2027): `^12.5` and `^13` are both viable lines, and dama is no longer a deciding factor. Moving to 13.3, note `#[Retry]`/`#[Repeat]` (and `--retry`/`--repeat`) for replaying tests, and the deprecation of `--cache-result`/`--do-not-cache-result` in favour of `--record-test-run-history`/`--do-not-record-test-run-history`. PHPUnit 11: bugfix support ended in February 2026; PHPUnit 12+ no longer accepts doc-comment annotations, attributes only.
+PHPUnit constraint: `^13` (13.3.x); `^12.5` stays viable (bugfixes until 5 February 2027). dama v8.6.0 works with `phpunit ^13`: its apparent ceiling only lives in its `require-dev`, so never pin a dama `master` commit. PHPUnit 12+ accepts attributes only, no doc-comment annotations. From 13.3, `--cache-result`/`--do-not-cache-result` are deprecated in favour of `--record-test-run-history`/`--do-not-record-test-run-history`.
 
 ### Unit example: a Domain calculator
 
@@ -1403,7 +1403,7 @@ final class InvestmentAmountComputerPropertyTest extends TestCase
 }
 ```
 
-Target: the **five to ten money-calculation services**, not the whole codebase. It is the most powerful tool there is for catching the financial bugs no hand-written test will ever cover.
+Target: the **five to ten money-calculation services**, not the whole codebase.
 
 For time-based rules (`"-18 years"`, deadlines), the date comparison constraints are clock-aware in Symfony 8.1: inject a `MockClock` into the test instead of computing dates relative to `now()`.
 
@@ -1471,8 +1471,6 @@ Worth the effort: a streamed endpoint is exactly where a 500 hides, since the E2
 usually stops before it and the response is non-deterministic.
 
 ### E2E with Playwright
-
-`tests/` covers the HTTP contract but doesn't catch multi-page regressions: a five-step funnel, interactive JS, redirects. Playwright drives the app in a real Chromium.
 
 ```bash
 pnpm add -D @playwright/test @axe-core/playwright
@@ -1546,8 +1544,6 @@ make types
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
-If the command fails, the PR either forgot to regenerate the SDK or introduced an unacknowledged breaking change. No extra Python or Node dependency.
-
 **In CI, call the `types` target, never recopy its commands.** The target ends with a `prettier --write` on the generated directory, since what is committed is formatted. A workflow that inlines the dump and the generator drops that step: the format check then fails on files nobody wrote, and the drift gate right after compares formatted committed code with unformatted output. The CI stays red on every commit, for a reason that has nothing to do with the commit.
 
 On top of that, [oasdiff](https://github.com/oasdiff/oasdiff) (a GitHub Action) classifies the `openapi.yaml` diff as breaking or non-breaking: `git diff` says there is drift, oasdiff says whether it breaks the contract.
@@ -1588,7 +1584,7 @@ For clients that don't go through `HttpClientInterface` (the Google SDK, say), m
 
 ### Safety net first, before a big refactor
 
-Before refactoring a large, fragile component (over 500 lines, many branches, no tests), first write the tests that pin its **current** visible behaviour: happy path, error cases, business guards. Refactor **afterwards**, keeping the suite green. Refactor first and you have no way of knowing you broke nothing.
+Before refactoring a large, fragile component (over 500 lines, many branches, no tests), first write the tests that pin its **current** visible behaviour: happy path, error cases, business guards. Refactor **afterwards**, keeping the suite green.
 
 That goes double for anything on a payment or subscription path: a silent regression costs revenue.
 
