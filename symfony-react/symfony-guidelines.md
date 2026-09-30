@@ -1627,7 +1627,7 @@ For Playwright on large suites: shard the matrix (`shardIndex: [1,2,3,4]`, `shar
 Static analysis replaces the IDE inspections (PHPStorm, the Symfony plugin). These tools are bundled in the **`/quality` skill** (Claude Code), to run before committing or to check quality mid-development.
 
 ### PHPStan: static analysis
-PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. Level 8 is no longer the standard. `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
+PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
 
 ```bash
 composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules
@@ -1648,16 +1648,9 @@ parameters:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
 ```
 
-What `phpstan-symfony` adds over plain PHPStan:
-- Correct types for `ContainerInterface::get()` and `AbstractController::getParameter()`
-- Analysis of Console commands (argument and option types)
-- Type inference for Messenger's `HandleTrait`
-
 ```bash
 vendor/bin/phpstan analyse
 ```
-
-Since PHPStan 2.2.6, **Turbo**: an optional native PHP extension (precompiled binaries shipped in the Composer package, loaded automatically on PHP 8.3+) speeds analysis up by 10 to 30% with bit-identical output. Nothing to configure, just update. (Phar users: `pie install phpstan/turbo`.)
 
 #### `class.nameCase` never goes in the baseline
 
@@ -1707,9 +1700,9 @@ private Collection $userActions;
 
 ### PHP-CS-Fixer: formatting
 
-Applies the formatting conventions automatically. On a **Symfony** project, use the **`@Symfony`** ruleset: it is the style Symfony uses internally, idiomatic to the ecosystem, and it already handles property hooks and asymmetric visibility. Add the migration set for the target PHP version, **`@PHP85Migration`** (stable since CS-Fixer 3.91; the runtime is on 8.5), placed **after** `@Symfony`. It doesn't touch `concat_space`, but if you stack another set on top, re-assert `concat_space: { spacing: 'none' }` explicitly to keep the Symfony style.
+On a **Symfony** project, use the **`@Symfony`** ruleset, then the migration set for the target PHP version, **`@PHP85Migration`** (the runtime is on 8.5), placed **after** `@Symfony`. It doesn't touch `concat_space`, but if you stack another set on top, re-assert `concat_space: { spacing: 'none' }` explicitly to keep the Symfony style.
 
-⚠️ **Do not stack `@PER-CS3x0` on top of `@Symfony`**: the two contradict each other on `concat_space` (`@Symfony` uses `'none'` → `'a'.'b'`; `@PER-CS3x0` uses `'one'` → `'a' . 'b'`). Stacked after `@Symfony`, `@PER-CS3x0` wins and reformats the whole repo into a non-Symfony style. `@PER-CS3x0` (the PHP-FIG standard, successor to PSR-12, released July 2025) is the right choice for **framework-agnostic libraries**, not for a Symfony project.
+⚠️ **Do not stack `@PER-CS3x0` on top of `@Symfony`**: the two contradict each other on `concat_space` (`@Symfony` uses `'none'` → `'a'.'b'`; `@PER-CS3x0` uses `'one'` → `'a' . 'b'`). Stacked after `@Symfony`, `@PER-CS3x0` wins and reformats the whole repo into a non-Symfony style. `@PER-CS3x0` is the right choice for **framework-agnostic libraries**, not for a Symfony project.
 
 ```bash
 composer require --dev friendsofphp/php-cs-fixer
@@ -1743,8 +1736,6 @@ vendor/bin/psalm --taint-analysis
 ```
 
 ### Composer audit: vulnerabilities
-
-Checks for known vulnerabilities in the PHP dependencies.
 
 ```bash
 composer audit
@@ -1792,22 +1783,9 @@ Both cost an hour every time they recur, and neither leaves a useful error messa
   it, and the husky hook fails on the symptom rather than the cause. `--memory-limit=1G`
   for PHPStan, `php -d memory_limit=512M` for the console and the test runner.
 
-### Summary
-
-| Tool | Role | When |
-|-------|------|-------|
-| PHPStan level 9-10 | Types, null-safety, logic, deprecations, Symfony/Doctrine inspections | `/quality` |
-| PHP-CS-Fixer | Formatting + PHPDoc to native type conversion | `/quality` |
-| `doctrine:schema:validate` | Doctrine mappings | `/quality` |
-| `lint:container` | DI compilation | `/quality` |
-| `composer audit` | Dependency vulnerabilities | `/quality` |
-| Psalm taint analysis | Security (SQLi, XSS) | CI |
-
-> All of these except Psalm are bundled in the global `/quality` skill, which auto-detects the project type (Symfony, Next.js, or both). For the frontend quality tools (ESLint, TypeScript), see `docs/reactony.md`, Quality Assurance section.
+> Frontend quality tools (ESLint, Prettier, `tsc`): `docs/reactony.md` §8.
 
 ### Pre-commit: husky + lint-staged
-
-The universal guardrail: **no commit gets through unless it respects the rules**, whether it comes from a human or an agent.
 
 ```bash
 pnpm add -D husky lint-staged
@@ -1833,7 +1811,7 @@ pnpm lint-staged
 }
 ```
 
-lint-staged only runs on **staged** files, so it stays fast even on a large project. The `fix` / `--write` steps re-stage the auto-corrected files.
+The `fix` / `--write` steps re-stage the auto-corrected files.
 
 > **PHP-CS-Fixer gotcha**: with several paths as arguments (the lint-staged case), you need an explicit `--config=<path>` and `--path-mode=intersection` so the config's finder correctly narrows to the files passed. The `--` separates options from paths.
 
@@ -1880,13 +1858,13 @@ Orders of magnitude observed on a mid-sized Symfony + React project:
 
 Not tolerable on a project where you commit ten times an hour, but at a normal feature rhythm (2 to 5 commits per feature) it is the price of a "no silent regression at commit time" guarantee. If the project grows and this passes ~30s, degrade to "PHPStan + tsc in CI only, the rest in the pre-commit hook".
 
-> **TypeScript 7** (the native Go port) has been GA since July 2026, published under the standard `typescript` npm package, `tsc` binary unchanged: `tsc --noEmit` drops from ~8s to ~1s. Migrate in two steps from `^5.9`: 5.9 → 6.0 (absorb the new defaults) → 7.0. Details in reactony §8.
+> With TypeScript 7 (native, GA; migration in reactony §8), `tsc --noEmit` drops from ~8s to ~1s.
 
 **Only the tests (unit + functional) stay OUT of the pre-commit hook**: they can climb to several minutes. Those belong in CI.
 
 ### When to run `/quality` during a session
 
-In an AI-assisted dev session, run `/quality` **before declaring a task finished** whenever code changed. It catches errors during the session (immediate feedback) instead of letting them show up only at commit time (delayed feedback, expensive to debug). The pre-commit hook stays the final net, not the first resort.
+In an AI-assisted dev session, run `/quality` **before declaring a task finished** whenever code changed. The pre-commit hook stays the final net, not the first resort.
 
 ---
 
