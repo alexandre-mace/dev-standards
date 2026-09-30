@@ -18,7 +18,8 @@ It settles what needs no judgement: a skill cited by name but absent, a README t
 of step with the skills on disk, an installation path hardcoded into a skill, a cross-
 reference to a guideline section that does not exist, an em dash, CRLF line endings.
 
-It exits non-zero on findings, so it also works as a pre-commit hook.
+It also runs before every commit in this repository (`.githooks/pre-commit`, enabled by
+`install.sh`), which refuses the commit on a finding.
 
 ## 2. Read what a script cannot see
 

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Refuses a commit that leaves the repository inconsistent with itself: a skill cited
+# but absent, a README out of step, a broken section reference. Bypass: --no-verify.
+set -euo pipefail
+root="$(git rev-parse --show-toplevel)"
+if ! python3 "$root/skills/gap-repo/check-repo.py" "$root"; then
+  echo "Commit refused: fix the findings above, or commit with --no-verify." >&2
+  exit 1
+fi

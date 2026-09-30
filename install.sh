@@ -112,6 +112,9 @@ prune_links "$TARGET_DIR"
 prune_links "$RULES_DIR"
 prune_links "$STYLES_DIR"
 
+# The repository's own consistency check runs before every commit made here.
+git -C "$ROOT_DIR" config core.hooksPath .githooks
+
 echo
 echo "Done. Skills available:"
 ls -1 "$TARGET_DIR" | grep -vE '^\.' | sed 's/^/  - /'
