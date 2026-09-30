@@ -93,6 +93,10 @@ yet can sit next to it.
 After approval: edit, then update the "Last watch" header, date and versions. A watch
 that does not move its own date sends the next run to the wrong starting point.
 
+Then the dev-playbook project, the cheat sheet derived from these guidelines: every screen
+whose `source` cites a section you changed is re-read against the new text. Nothing else
+keeps it in step, and a stale screen teaches the old rule to whoever reads it to stay sharp.
+
 ## Rules
 
 - **Prescriptive, not descriptive.** Never weaken a guideline because the code does not
