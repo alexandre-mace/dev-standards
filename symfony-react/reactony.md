@@ -801,7 +801,6 @@ plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
 - ✅ `useWatch({ control, name })`, `useFormState({ control })`, `useController` / `<Controller>` (explicit subscriptions); `getValues()` reserved for handlers and effects
 - Transitional escape hatch: a `'use no memo'` directive on a problematic form component
 
-
 ---
 
 ## 8. Quality Assurance: frontend
@@ -1091,7 +1090,7 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 - `watch()` or reading the `formState` proxy at render with the compiler on: use `useWatch` / `useFormState({ control })` / `useController` (the `incompatible-library` lint rule)
 
 **Styling / UI kit**
-- A raw `<button>` for an **action** or a **link**: use `<Button>` (a variant for the action, composition with a real `<a>` for the link). _NB: a raw `<button>` stays correct for bespoke cases (tile, clickable card, absolute micro-icon, dropzone), and toggles go to `Toggle`/`ToggleGroup`, see the "shadcn components" section._
+- A raw `<button>` for an **action** or a **link**: `<Button>` for the action, `<ButtonLink>` for the link. _NB: a raw `<button>` stays correct for bespoke cases (tile, clickable card, absolute micro-icon, dropzone), and toggles go to `Toggle`/`ToggleGroup`, see `react/react-guidelines.md` §3._
 - `className={...ternary...}` inside a template literal: use shadcn's `cn()` for conditional classes
 - `alert()` or `window.confirm()`: use sonner's `toast` and shadcn's `Dialog` / `AlertDialog`
 - A `lucide-react` icon hand-mounted into a button with a loading state: use the loading state the shadcn component provides
