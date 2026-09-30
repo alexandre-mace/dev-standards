@@ -25,7 +25,9 @@ $ARGUMENTS
   tests covering the area and plan to run them. Say it explicitly when the code is
   shared across pages, components or product lines. A small change in shared code is
   not a small change.
-- Read the stack's guidelines and `AGENTS.md`.
+- Read `AGENTS.md`, then the stack's guidelines. The Symfony stack's two files open on a
+  routing table: read the sections it names for this task, not the whole file. The shorter
+  guidelines (React, Next, TanStack Start) are read in full.
 - Read the docs of anything the guidelines do not cover: a library new to the repo, an
   API never used here, a framework feature absent from this codebase. Training memory
   has a cutoff and invents plausible signatures.
