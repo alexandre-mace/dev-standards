@@ -846,7 +846,7 @@ In an AI-assisted dev session, run `/quality` before calling a task done wheneve
 ---
 
 ## 9. Tests
-The standard stack, shared by every Symfony + React project. No "light" or "heavy" variant: the same thing everywhere, so a dev moving between projects learns it once.
+The standard stack, the same on every Symfony + React project, with no "light" or "heavy" variant.
 
 | Layer | Tool | Role |
 |---|---|---|
@@ -862,8 +862,6 @@ pnpm test:e2e            # Playwright
 pnpm test:e2e:ui         # Playwright in interactive UI mode
 ```
 
-> **Why Vitest and not Jest**: the project runs on Vite, so Vitest shares the same config (the `@/` alias, plugins, TS/TSX transformers). Native ESM means `lucide-react`, the hey-api SDK and other ESM modules work without `transformIgnorePatterns`. React 19 compatible, 5 to 28 times faster than Jest depending on the suite. The API is near-identical: `vi` instead of `jest`, `vi.mock()` hoisted like `jest.mock()`, the same matchers through `@testing-library/jest-dom` (Vitest compatible).
-
 > **Vitest 5** (stable since September 2026) requires Node ≥ 22.12 and takes `vite` as a peer dependency. What bites when migrating from 4:
 > - `clearMocks: true` is the default: call counts reset before every test, so a test that counted calls made by a previous one now fails.
 > - An un-`await`ed async assertion (`resolves`, `rejects`) fails the test instead of passing silently.
@@ -876,11 +874,7 @@ pnpm test:e2e:ui         # Playwright in interactive UI mode
 
 ### What to test, by return on investment
 
-1. **Pure functions** (business calculations, domain helpers, formatters, Zod transforms). No mocks, no DOM. Bugs here shift the numbers shown to the customer: visible, and expensive.
-2. **Form components** with Zod / RHF validation. Hit every invalid field, the happy path, and the server-side 422s. Mock the SDK through MSW.
-3. **E2E journeys** for the critical flows: the full purchase or subscription funnel, login, a signature flow. **One journey, one Playwright spec.**
-4. **Complex components before a refactor** (multi-step wizards, components over 500 lines). Write the tests that pin the **current** visible behaviour before changing the internals.
-5. **The rest: skip.** A presentational component passing 3 props to 3 shadcn children needs no test. TypeScript and ESLint are enough.
+The order is in `react/react-guidelines.md` §5. On this stack, forms are tested with the SDK mocked through MSW (setup below), and "fragile" means a multi-step wizard or a component over 500 lines.
 
 ### Vitest setup
 
@@ -994,13 +988,7 @@ export function renderWithQueryClient(ui: ReactElement) {
 
 `retry: false` + `gcTime: 0` give you immediate errors and no cache bleeding between tests.
 
-### Safety net first, before a big refactor
-
-Before migrating a large, fragile component (over 500 lines, `useState` → RHF + Zod say), first write the tests that pin its **current** visible behaviour: happy path, guards, server errors. Then refactor, keeping the suite green. If a test breaks, that is a real behaviour change: either intentional, or a regression.
-
 ### Vitest + React 19 + shadcn gotchas
-
-Each of these costs 30 minutes to an hour to diagnose the first time. Vitest + ESM removes several (lucide, the hey-api SDK), but the rest remain.
 
 **Portal-based primitives (Select, Dialog, Popover) are fragile in jsdom.** Portals, pointer events and focus traps all misbehave without a real layout engine. Two options:
 
@@ -1053,8 +1041,6 @@ function inputByLabel(labelText: RegExp): HTMLInputElement {
 }
 ```
 
-**Always prefer MSW over `vi.mock('@/lib/api')`.** Module mocking works, but MSW intercepts at the right level (the network) and stays consistent when you move to E2E. If a test really does nothing but `vi.mock` the SDK, that is a sign it should be a pure-function test, not a component test.
-
 ### E2E with Playwright
 
 Full details in `symfony-guidelines.md` §13 (Playwright shares the backend's DB infrastructure: the `app:e2e:seed` command, a pre-logged `storageState`, and so on). On the React side, what to know:
@@ -1062,23 +1048,11 @@ Full details in `symfony-guidelines.md` §13 (Playwright shares the backend's DB
 1. **One spec per user journey**, not per page. The granularity is "what a user is trying to do". So `checkout.spec.ts`, not `step-amount.spec.ts` + `step-identity.spec.ts`.
 2. **Semantic locators**: `page.getByRole('button', {name: /valider/i})` rather than `page.locator('.btn-submit')`. It survives Tailwind refactors.
 3. **shadcn forms**: `await page.getByLabel(/Nom/i).fill('Dupont')`. If the `Label` isn't wired, fall back to `getByPlaceholder` or `getByRole('textbox', {name: ...})`.
-4. **Inline a11y in every spec** (plus structure: `await expect(page).toMatchAriaSnapshot()`, full-page aria snapshots since Playwright 1.61):
-    ```ts
-    import AxeBuilder from '@axe-core/playwright';
-
-    test('the amount step is accessible', async ({page}) => {
-        await page.goto('/tunnel');
-        const results = await new AxeBuilder({page}).analyze();
-        expect(results.violations).toEqual([]);
-    });
-    ```
+4. **Inline a11y in every spec**: the `AxeBuilder` check shown in `symfony-guidelines.md` §13, plus structure with `await expect(page).toMatchAriaSnapshot()` (full-page aria snapshots since Playwright 1.61).
 
 ### What is NOT worth testing on the frontend
 
-- A component that only calls an SDK and displays the result: the backend contract test (functional PHPUnit) already covers the API contract, TypeScript covers the typing, ESLint the structure.
-- Full-render snapshot tests: they break on any Tailwind class change and carry no useful signal. Prefer `toHaveTextContent` + `toBeVisible`.
-- UI kit components (shadcn passthrough).
-- Testing a component's rendering just because you happen to be in the file. Add a test because the component's *complexity* justifies it, not by reflex.
+The list is in `react/react-guidelines.md` §5; the SDK-and-display case is covered by the functional PHPUnit contract test. Assert with `toHaveTextContent` + `toBeVisible` rather than a snapshot, and add a test because the component's complexity justifies it, not by reflex.
 
 ---
 
