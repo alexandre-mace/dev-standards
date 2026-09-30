@@ -115,8 +115,9 @@ dependencies.
 - Escape hatch `buttonVariants({variant})` for an element you cannot compose through
   `<Button>`, a third-party `Link` for instance.
 
-Use the compound components (`Dialog` + `DialogContent` + `DialogHeader`). Loading spinner
-from lucide-react, notifications through sonner's `toast`, never `alert()`.
+Use the compound components (`Dialog` + `DialogContent` + `DialogHeader`). A loading
+indicator is shadcn's `Spinner` (lucide's `Loader2` with `role="status"`), notifications go
+through sonner's `toast`, never `alert()`.
 
 **A `Select` whose values differ from their labels needs `items` on the root.** Radix
 resolved the trigger label from the selected `SelectItem`'s children; Base UI does not,

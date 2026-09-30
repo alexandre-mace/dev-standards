@@ -2006,7 +2006,7 @@ composer require zenstruck/messenger-monitor-bundle
     #[ORM\Table('processed_messages')]
     class ProcessedMessage extends \Zenstruck\Messenger\Monitor\History\Model\ProcessedMessage
     {
-        #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+        #[ORM\Id, ORM\GeneratedValue(strategy: 'IDENTITY'), ORM\Column]
         private ?int $id = null;
 
         public function id(): ?int { return $this->id; }

@@ -1098,7 +1098,7 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 - A raw `<button>` for an **action** or a **link**: `<Button>` for the action, `<ButtonLink>` for the link. _NB: a raw `<button>` stays correct for bespoke cases (tile, clickable card, absolute micro-icon, dropzone), and toggles go to `Toggle`/`ToggleGroup`, see `react/react-guidelines.md` §3._
 - `className={...ternary...}` inside a template literal: use shadcn's `cn()` for conditional classes
 - `alert()` or `window.confirm()`: use sonner's `toast` and shadcn's `Dialog` / `AlertDialog`
-- A `lucide-react` icon hand-mounted into a button with a loading state: use the loading state the shadcn component provides
+- A `lucide-react` icon hand-mounted and animated as a loading indicator: use shadcn's `Spinner` (`react/react-guidelines.md` §3)
 
 **Imports / structure**
 - Relative imports `../../components/...`: use the `@/` alias
