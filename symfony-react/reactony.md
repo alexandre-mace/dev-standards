@@ -61,8 +61,6 @@ const { data, isLoading } = useQuery({
 });
 ```
 
-What `queryOptions()` buys you: the definition is shareable between `useQuery`, `queryClient.invalidateQueries`, `queryClient.prefetchQuery` and the rest, with type safety preserved.
-
 On the Symfony side, filters are typed with `#[MapQueryString]` on a **DTO** (the one case where a DTO is justified: GET filters are not an entity):
 
 ```php
@@ -185,22 +183,6 @@ When the payload updates many fields on an existing entity (a User profile with 
 The DTO acts as an **allowlist of accepted fields**: without it, a direct mapping would let someone send `{ "roles": ["ROLE_ADMIN"] }`. The ObjectMapper only maps the DTO properties that are **initialized** (fields absent from the JSON stay uninitialized, so they are ignored).
 
 ```php
-// src/Dto/SaveProfilePayload.php: explicit allowlist
-use Symfony\Component\ObjectMapper\Attribute\Map;
-
-#[Map(target: User::class)]
-class SaveProfilePayload
-{
-    public ?string $firstName;          // Uninitialized if absent from the JSON, so ignored
-    public ?string $lastName;
-    public ?string $phone;
-    // ... allowed fields only
-}
-```
-
-**Important**: no constructor, no `= null`, no `readonly`. The properties stay **uninitialized** when the JSON doesn't carry them, which is what lets the ObjectMapper skip them.
-
-```php
 #[IsGranted('ROLE_USER')]
 #[Route('/api/profile/save', methods: ['POST'], format: 'json')]
 public function save(
@@ -231,24 +213,7 @@ public function save(
 ### File uploads: `UploadedFile` in the DTO (SF 8.1)
 > Backend upload conventions are detailed in `symfony-guidelines.md` section 4.
 
-Since Symfony 8.1, the default pattern is a **flat DTO** behind `#[MapRequestPayload]` holding both the file and the text fields: one parameter, one validation surface:
-
-```php
-class UploadAvatarPayload
-{
-    public ?string $caption = null;
-
-    #[Assert\NotNull]
-    #[Assert\Image(maxSize: '5M')]
-    public ?UploadedFile $avatar = null;
-}
-
-#[IsGranted('ROLE_USER')]
-#[Route('/api/avatar/upload', methods: ['POST'], format: 'json')]
-public function uploadAvatar(#[MapRequestPayload] UploadAvatarPayload $payload): Response { /* ... */ }
-```
-
-Limits: keep the DTO **flat** (a nested upload payload is a smell, flatten it; the historical bug [#64571](https://github.com/symfony/symfony/issues/64571) that made it actually *break* was **fixed** in June 2026, so the reason is style); identifiers go in the route (`{fieldId}`). `#[MapUploadedFile]` remains the fallback for a lone file:
+Backend: a flat `#[MapRequestPayload]` DTO holding `?UploadedFile` plus the text fields, identifiers in the route (rules in `symfony-guidelines.md` §4). `#[MapUploadedFile]` remains the fallback for a lone file:
 
 ```php
 #[IsGranted('ROLE_USER')]
@@ -345,12 +310,6 @@ Add Groups **only when needed**: when the entity has fields to exclude (relation
 // Only when needed
 #[MapRequestPayload(serializationContext: ['groups' => ['alert:create']])]
 ```
-
-### When to create a DTO
-
-> Full decision tree in `symfony-guidelines.md` section 4.
-
-Auth forms (login, registration, password) stay in **Twig / Symfony Form**: out of scope here.
 
 ---
 
