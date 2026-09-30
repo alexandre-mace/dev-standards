@@ -85,7 +85,6 @@ The standard sequence for implementing a full-stack feature. Following it in ord
 - **React form component** (Zod + RHF) → Vitest + RTL + MSW for the 422 violations
 - **Simple React component** (shadcn passthrough) → skip
 - **Refactoring a fragile component** → safety net first: tests that pin the current behaviour **before** touching it
-- **OpenAPI diff** in CI: `make types && git diff --exit-code openapi.yaml assets/lib/api/`
 
 Details and setup: section 13.
 
@@ -112,9 +111,9 @@ A feature is only "done" when **every** one of these is green:
 
 ## PHP 8.4+ (CleverCloud runtime)
 
-**The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer. Two sources, at every watch: the "PHP version" table of the runtime doc (`clever.cloud/developers/doc/applications/php/`), which lists the accepted `CC_PHP_VERSION` values and what the bare `8` resolves to, and the changelog (`clever.cloud/developers/changelog/`) for the announcements. Neither gives the patch number: only `php -v` on an instance does. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. At the 29 September 2026 watch: Clever's images serve 8.5.10 and 8.4.25 (update of 23 September), and **8.5 becomes the default** with the first image release after 1 October 2026: an app deployed without `CC_PHP_VERSION`, or with the bare `8`, moves to 8.5 on its next deployment. Clever warns that a few PECL extensions are not packaged for 8.5 yet, so check `php -m` against the app's needs before switching.
+**The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer. Two sources, at every watch: the "PHP version" table of the runtime doc (`clever.cloud/developers/doc/applications/php/`), which lists the accepted `CC_PHP_VERSION` values and what the bare `8` resolves to, and the changelog (`clever.cloud/developers/changelog/`) for the announcements. Neither gives the patch number: only `php -v` on an instance does. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. At the 29 September 2026 watch, **8.5 becomes Clever's default** with the first image release after 1 October 2026: an app deployed without `CC_PHP_VERSION`, or with the bare `8`, moves to 8.5 on its next deployment. Clever warns that a few PECL extensions are not packaged for 8.5 yet, so check `php -m` against the app's needs before switching.
 
-PHP 8.5 is the **current stable upstream** (GA 20 Nov. 2025); the `composer.json` floor stays `>= 8.4`, with `config.platform.php` pinned on that floor so dependency resolution cannot outrun it. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
+The `composer.json` floor stays `>= 8.4`, with `config.platform.php` pinned on that floor so dependency resolution cannot outrun it. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
 **PHP 8.5 features usable now**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
 
@@ -127,7 +126,7 @@ Deprecations and behaviour changes **already merged** on the 8.2 branch (UPGRADE
 - **Hardened Serializer**: union-typed collections now denormalize their elements, and arrays denormalized into `list`-typed properties will have to satisfy `array_is_list()` (an exception in 9.0). Worth testing on our collection-carrying `#[MapRequestPayload]` DTOs.
 - `#[IsCsrfTokenValid]` will return a **403** (`InvalidCsrfTokenException`) instead of redirecting to the login page.
 - `File` constraint: `mimeTypes` and `extensions` will be checked independently (no more MIME restriction inferred from the extension).
-- `Schedule::with()` deprecated (clone or build a new schedule); `framework.ide` deprecated in favour of the `SYMFONY_IDE` variable.
+- `framework.ide` deprecated in favour of the `SYMFONY_IDE` variable.
 
 Merged since, still on the 8.2 branch (no beta tag at the 29 September watch):
 
@@ -135,18 +134,16 @@ Merged since, still on the 8.2 branch (no beta tag at the 29 September watch):
 - **HTTP errors below 500 are logged at `warning`**, no longer `error`: a `fingers_crossed` handler with `action_level: error`, and the Sentry alerting built on it, stop firing on 4xx. Check that no alert relied on them.
 - **EventDispatcher**: `addListener()` / `addSubscriber()` on the container's dispatcher are deprecated, tests included (register a listener service, or use a `ScopedEventDispatcher`). The autowiring alias `Symfony\Component\EventDispatcher\EventDispatcherInterface` is deprecated: type `Symfony\Contracts\EventDispatcher\EventDispatcherInterface`.
 - **Secrets vault**: without a `config/secrets/` directory, env vars are no longer loaded from it, and the variable behind `framework.secret` is no longer derived from `SYMFONY_DECRYPTION_SECRET`: define it.
-- **Scheduler**: leaving `framework.scheduler.use_messenger_routing` unset is deprecated (true in 9.0), and `Schedule::with()` now returns an empty schedule.
+- **Scheduler**: leaving `framework.scheduler.use_messenger_routing` unset is deprecated (true in 9.0), and `Schedule::with()` is deprecated (clone or build a new schedule) and now returns an empty schedule.
 - **Serializer**: denormalizing a property from its PHP name when `#[SerializedName]` or a name converter maps it to another key is deprecated.
 - **RateLimiter**: `CompoundLimiter` stops at the first limiter that rejects, so list them from the most specific to the most global.
-
-Features announced for 8.2: a `concurrency` option on Messenger (parallel message processing) and faster workers, rate-limited Mailer transports, a `Cron` constraint, single-use signed URLs, OpenID Connect login, `IS_AUTHENTICATED_VERY_RECENTLY`, wildcards in the role hierarchy.
 
 Also worth watching, outside the core:
 
 - **VichUploader 3.0 is stable** (7 September 2026), and 2.x is in maintenance only: migrate. PHP ≥ 8.3; annotations are gone (attributes from `Mapping\Attribute` only); `NamerInterface::name()` and `DirectoryNamerInterface::directoryName()` take `object|array`; `PropertyMapping`, `PropertyMappingFactory` and the metadata readers are final, so a test mocks the new interfaces instead. New: a `vich:cleanup` command for orphaned files.
 - **Doctrine ORM 3.7** deprecates string sort directions in favour of the `SortDirection` enum, and `TypedExpression` in favour of `ExpressionWithReturnType`; it brings cursor-based pagination. It needs **EasyAdmin ≥ 5.6**, which silences the `SortDirection` deprecation. **DBAL 4.5** adds DateTime types stored in UTC and deprecates `SimpleArrayType` and `Column::getType()` (use `getTypeName()`).
 - **Doctrine ORM 4**: still no alpha, only a `4.0.x-dev` branch; the direction is confirmed (PHP 8.4 minimum, built entirely on native lazy objects), release hoped for late 2026 / early 2027.
-- **Twig 3.29** brings documentation comments and deprecates macro calls without parentheses and duplicate macro definitions. **Twig 4 is still in alpha**, don't get ahead of it.
+- **Twig 3.29** brings documentation comments and deprecates macro calls without parentheses and duplicate macro definitions.
 
 ---
 
