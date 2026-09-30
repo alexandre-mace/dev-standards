@@ -40,7 +40,7 @@ the stack.
 - **Reading server data**: a Convex query through `@convex-dev/react-query`, consumed with `useSuspenseQuery` so fetching starts during SSR.
 - **Writing server data**: a Convex mutation. Nothing else touches the database.
 - **A one-off server-side operation** (a third-party call, a secret): a server function, not an API route.
-- **A form**: TanStack Form with the same Zod schema that validates the server side.
+- **A form**: TanStack Form with a Zod schema, and the server validates with that same schema: a Convex mutation built with `zCustomMutation` from `convex-helpers/server/zod4`, or a server function's `.validator()`.
 
 ## Current patterns
 
@@ -123,27 +123,40 @@ export default defineSchema({
   tasks: defineTable({
     title: v.string(),
     done: v.boolean(),
-    ownerId: v.id("users"),
+    ownerId: v.string(), // the owner's identity.tokenIdentifier
   }).index("by_owner", ["ownerId"]),
 });
 ```
 
-**A query reads, a mutation writes**, both validating their arguments at the boundary:
+**A query reads, a mutation writes**, both validating their arguments at the boundary. The owner
+comes from the session, never from the arguments: an `ownerId` the client sends is one the client
+chose.
 
 ```ts
 // convex/tasks.ts
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const listByOwner = query({
-  args: { ownerId: v.id("users") },
-  handler: (ctx, args) =>
-    ctx.db.query("tasks").withIndex("by_owner", q => q.eq("ownerId", args.ownerId)).collect(),
+export const listMine = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const tasks = await ctx.db.query("tasks")
+      .withIndex("by_owner", q => q.eq("ownerId", identity.tokenIdentifier)).collect();
+    return tasks.map(({ _id, title, done }) => ({ _id, title, done })); // fields, not rows (§3 bis)
+  },
 });
 
 export const setDone = mutation({
   args: { id: v.id("tasks"), done: v.boolean() },
-  handler: (ctx, args) => ctx.db.patch(args.id, { done: args.done }),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    const task = await ctx.db.get(args.id);
+    if (task?.ownerId !== identity.tokenIdentifier) throw new Error("Forbidden");
+    await ctx.db.patch(args.id, { done: args.done });
+  },
 });
 ```
 
@@ -185,10 +198,11 @@ The framework makes the client and the server look like the same file, which is 
 the boundary easy to lose sight of.
 
 **A server function is a public endpoint.** It compiles to a route anyone can call with any payload.
-Guarding the route that renders the UI guards nothing: the check belongs **inside** the function, in
-this order, session, then authorization for the specific object, then validation of the input. Same
-for a Convex `query` or `mutation`: `ctx.auth.getUserIdentity()` first, and an identity is not an
-authorization, the ownership of the document still has to be checked.
+Guarding the route that renders the UI guards nothing: the check belongs **inside** the function. The input is
+validated by the function's own validator (`args` on Convex, `.validator()` on a server function),
+which runs before the handler; the handler then checks the session, then the authorization for the
+specific object it names. On Convex, `ctx.auth.getUserIdentity()` comes first, and an identity is not
+an authorization: the ownership of the document still has to be checked.
 
 **The session is not in `context` by default.** A server function's `context` starts empty and holds
 only what a middleware put there, so a handler that reads `context.userId` without one reads

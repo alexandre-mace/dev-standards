@@ -154,7 +154,8 @@ boundary of any file that touches one, transitively.
 
 **A server action is a public endpoint.** It compiles to a POST route anyone can call with any
 payload, whatever the form around it looked like. It therefore starts by checking the session, then
-the authorization for the specific object, then validates its input with the schema, in that order.
+validates its input with the schema, then checks the authorization for the specific object the
+validated input names, in that order: the object's identifier cannot be trusted before it is validated.
 Being called from a form the user could only reach when logged in proves nothing.
 
 **Never `dangerouslySetInnerHTML` on anything a user can influence**, directly or through the CMS.
