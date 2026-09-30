@@ -324,6 +324,10 @@ Sweep, in this order:
 A render test on the show and edit pages catches the crashes. It does not catch the
 comparisons gone false, which need an assertion on what the page displays.
 
+#### EasyAdmin version floor
+
+⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (GHSA-g2fm-8hr4-j82h, August 2026, CVSS 8.1): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here.
+
 #### Custom actions (EasyAdmin v5): never read `entityId` from the query
 
 With EA v5's *pretty URLs*, the `entityId` of a custom action (`#[AdminRoute(path: '/{entityId}/…')]`) is a **route parameter**, not a query param. Reading it from the query always returns `null` (symptom: the action believes no entity is selected). (Since EA **5.1**, pretty URLs are the **default mode** and `usePrettyUrls()` has been removed, so stop calling it.)
@@ -393,8 +397,6 @@ firewall and its session, with an explicit `#[IsGranted]` anyway. Nelmio only sc
 `^/api` by default: add `^/admin/api` to `path_patterns` in
 `config/packages/nelmio_api_doc.yaml` so the generated SDK and query options cover the
 back office like the rest.
-
-⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (GHSA-g2fm-8hr4-j82h, August 2026, CVSS 8.1): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here.
 
 ### Reference data
 
@@ -1090,6 +1092,12 @@ private string $description;
   `createFromFormat('!Y-m', $value)`, which anchors everything else at zero.
 - **Simple computed getters**: fine as long as they only depend on `$this` (`isExpired()`, `getFullName()`)
 - Logic that depends on other entities or services goes in Domain/
+
+### PostgreSQL version and `server_version`
+
+Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.4 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. **Pending on Clever**: upstream 18.6 / 17.11 (13 August 2026) fix 28 security vulnerabilities, and three issues need extra steps after the update (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes). Clever still lists 18.4 / 17.10.
+
+**`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (`clever ssh` + `dbal:run-sql`), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
 ### Id generation on Postgres: `IDENTITY`, explicitly
 
@@ -1904,9 +1912,6 @@ Calls to external services (Hubspot, Discord, Slack, emails) are dispatched asyn
 ### Transport
 
 Doctrine (PostgreSQL, the `messenger_messages` table). The `SendEmailMessage`, `ChatMessage` and `SmsMessage` messages stay **sync**, because their templates receive Doctrine entities that don't serialize.
-Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.4 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. **Pending on Clever**: upstream 18.6 / 17.11 (13 August 2026) fix 28 security vulnerabilities, and three issues need extra steps after the update (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes). Clever still lists 18.4 / 17.10.
-
-**`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (`clever ssh` + `dbal:run-sql`), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
 ### Message: the DTO
 
