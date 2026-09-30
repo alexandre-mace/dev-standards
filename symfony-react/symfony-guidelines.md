@@ -1163,9 +1163,9 @@ Version constraint: **Twig ≥ 3.27** is mandatory (it fixes CVE-2026-48805 thro
 ```
 
 Icons resolve on demand through Iconify and are cached in `var/`, so `lucide:*` works in
-tests and in CI too. **Floor: 2.36.1 or 3.x** (2.36.1, June 2026, sanitises the SVG
-Iconify returns). The 3.x line requires PHP 8.4, which our projects have, so a project
-still on 2.x is a `/gap-code` finding.
+tests and in CI too. **Target: 3.x.** A project still on 2.x is a `/gap-code` finding,
+and until it migrates it needs at least 2.36.1 (June 2026), which sanitises the SVG
+Iconify returns.
 
 Gotcha when asserting on an icon in a test: Iconify returns a normalised combined path,
 not the source shape. Assert on the rendered `d` attribute or simply on the presence of
