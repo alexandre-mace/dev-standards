@@ -51,6 +51,7 @@ The standard sequence for implementing a full-stack feature. Following it in ord
   - Subset of a large entity → allowlist DTO (`#[Map(target: Entity::class)]`) + `ObjectMapper`
   - No entity → plain DTO
 - **File upload**: a **flat** DTO with a `?UploadedFile` property + `#[Assert\File(maxSize: 'XM')]` through `#[MapRequestPayload]` (SF 8.1). `#[MapUploadedFile]` as the fallback. The identifier goes in the route.
+- **Schema change**: read `bin/console doctrine:schema:update --dump-sql` before committing, since that SQL is what the deploy hook applies (§19). A column that tightens (non-null, a new unique) on existing rows needs its back-fill command wired **before** the schema line.
 
 ### 2. Controller route
 
