@@ -35,6 +35,8 @@ only reading catches it.
   order, same steps.
 - An artifact one skill writes and another reads (`.claude/plan.md`): does the writer
   produce every section the reader expects?
+- `technical-writing` repeats `agent/writing.md` on purpose, so the skill stands alone
+  under any agent. The two must still agree: a rule changed in one is changed in the other.
 
 ## 3. Check what Claude Code has published since
 
