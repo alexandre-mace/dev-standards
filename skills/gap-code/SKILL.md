@@ -102,7 +102,7 @@ except the accepted deviations.
 
 ### Sous-catégorie
 
-- [ ] `chemin/vers/Fichier.php` : description de l'écart
+- [ ] `chemin/vers/Fichier.php` : description de l'écart (sûr | probable | à vérifier)
   - Détail, ce qu'il faut extraire, déplacer ou renommer
 
 ## Écarts assumés
@@ -128,8 +128,10 @@ Findings per priority, then the most critical items, then one line on what to do
 - Every finding names a file and a line or a method. "Some controllers are too big" is
   worthless, "`AdvertController.php:245` maps icons inline" is actionable.
 - Something that looks wrong in the guidelines themselves goes to `/gap-sota`.
-- Do not invent problems. Flag what genuinely deviates, or what is plainly a bug or a
-  security issue.
+- **Report everything you saw, each finding with its confidence**: `sûr` (the code
+  plainly contradicts a rule), `probable` (it looks wrong, one thing left to check),
+  `à vérifier` (a doubt worth a look). Do not drop a doubtful finding: the user sorts, not
+  the scan. A confidence is not a severity, which the priority already carries.
 - **Read the code before calling it a deviation.** Code that does not follow the canonical
   pattern is sometimes right for its situation, and forcing the pattern makes it worse.
   Seen: mutation hooks flagged for not using `useMutation`, in islands mounted without a
