@@ -331,19 +331,17 @@ Symfony returns this automatically:
 - **Any other error (403, 500…)** → `throw new Error(...)` (caught by `onError`)
 - **No error** → returns `null`
 
-> **Upload gotcha (SAPI drop)**: when PHP drops the upload at the SAPI level (`upload_max_filesize` exceeded), the resolver, `RequestPayloadValueResolver` (flat DTO) as much as `MapUploadedFile`, throws an `HttpException(422)` **with an empty body**, no `violations`. The toast stays mute. Fix: guard `file.size` on the frontend (see the convention above). See also `symfony-guidelines.md` section 4 for the backend.
-
 > **Nullable enum gotcha**: react-hook-form defaults enum selects to `""` when left empty. On the backend, `Enum::from('')` throws a `ValueError`, so a 500. Either the controller coerces `'' → null` before denormalizing (see `symfony-guidelines.md` section 4), or the frontend omits the key. Do both, to be safe.
 
 ### Choosing the form library (re-validated June 2026)
 
-`react-hook-form` + `zod` + `@hookform/resolvers` is the confirmed stack. The question comes up often; here is the decision, so it doesn't have to be made twice (re-checked against the web in June 2026: TanStack Form v1 is mature but its server-error mapping is still less clean than `setError`; still no `useActionState` tooling outside Next, so the decision holds):
+`react-hook-form` + `zod` + `@hookform/resolvers` is the confirmed stack. TanStack Form v1 is mature but its server-error mapping is still less clean than `setError`, and `useActionState` has no tooling outside Next:
 
 - **No migration to TanStack Form.** Non-trivial cost (rewriting `handleSdkError`, porting every `setError`), marginal gain given that openapi-ts + Zod already cover end-to-end type safety. RHF stays.
 - **No migration to React 19 Actions** (`useActionState`) for forms with structured server validation. Mapping `violations[].propertyPath` to per-field errors isn't native to Actions, and Actions wants to own the `pending`/`error` state that TanStack Query already owns. Awkward double ownership.
 - **Yes to `useOptimistic`** for instant-UI mutations (toggle favourite, add to list, reorder). It composes cleanly with RHF + TanStack Query.
 - **`useFormStatus`: no, not in this pattern.** It only reports `pending` for a `<form action={...}>` (React Actions). With RHF + `useMutation` (submit through `onSubmit`) it would stay `false` forever. Submission state comes from `mutation.isPending`, or from `useFormState({ control }).isSubmitting` for a deeply nested button.
-- **RHF floor: ≥ 7.85** (official `<Activity/>` support, indispensable if a form lives inside a `mode="hidden"` panel); 7.86 adds the type-safe `getErrors` method. v8 (compiler-first rewrite) is still in frozen beta, so "wait for stable" holds (re-checked August 2026).
+- **RHF floor: ≥ 7.85** (official `<Activity/>` support, indispensable if a form lives inside a `mode="hidden"` panel); 7.86 adds the type-safe `getErrors` method. v8 (the compiler-first rewrite) is still in beta (`8.0.0-beta.4`, September 2026): don't adopt it before stable.
 
 ```tsx
 // useOptimistic: instant UI while a TanStack Query mutation is in flight
@@ -363,27 +361,7 @@ const toggle = (id: number) => {
 };
 ```
 
-Use it for reversible, non-critical mutations. Not for creating an entity that can visibly fail on the backend.
-
-```tsx
-const mutation = useMutation({
-  mutationFn: async (values: FormValues) => {
-    const result = await postMyEndpoint({ body: values });
-    const errors = handleSdkError(result); // null if OK, Record if 422, throws otherwise
-    if (errors) {
-      Object.entries(errors).forEach(([field, msg]) => form.setError(field as any, { message: msg }));
-      throw new Error("Validation failed");
-    }
-  },
-  onError: (error: Error) => {
-    if (error.message !== "Validation failed") {
-      form.setError("root", { message: "Une erreur est survenue. Réessaie plus tard." });
-    }
-  },
-});
-```
-
-In the JSX, render the root error through `useFormState`, not by reading the `form.formState` proxy at render time (React Compiler rule, see section 7):
+The mutation is the one in §4's `FarmAlertForm`: per-field `setError` on a 422, `setError("root")` otherwise. Render the root error through `useFormState`, not by reading the `form.formState` proxy at render time (React Compiler rule, see section 7):
 
 ```tsx
 const { errors } = useFormState({ control: form.control });
@@ -400,7 +378,7 @@ const { errors } = useFormState({ control: form.control });
 
 For a form with several fields and client-side validation: **RHF `Controller` + shadcn `Field` family + generated Zod + `useMutation`**.
 
-Since October 2025, shadcn **recommends** the agnostic **`Field`** components (`npx shadcn@latest add field`) over the older `<Form>/<FormField>/<FormMessage>` wrapper (an RHF-coupled black box). The old one is **not formally deprecated**, but `Field` is the pattern for anything new. Canonical shape:
+Use shadcn's agnostic **`Field`** components (`npx shadcn@latest add field`), not the RHF-coupled `<Form>/<FormField>/<FormMessage>` wrapper. Canonical shape:
 
 ```tsx
 import { useForm, Controller } from "react-hook-form";
@@ -874,7 +852,6 @@ plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
 - ✅ `useWatch({ control, name })`, `useFormState({ control })`, `useController` / `<Controller>` (explicit subscriptions); `getValues()` reserved for handlers and effects
 - Transitional escape hatch: a `'use no memo'` directive on a problematic form component
 
-RHF v8 (the compiler-first rewrite) is still in beta (`8.0.0-beta.4`, September 2026): don't adopt it before stable.
 
 ---
 
