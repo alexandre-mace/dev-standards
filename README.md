@@ -136,7 +136,9 @@ like any other skill, and it does not leave the machine.
 This repo is the source and has no `docs/` of its own. Clone it as a sibling of your
 projects, then link the stack's files into the project's `docs/`, with a **relative**
 path: an absolute one carries your username and breaks on any other machine, and in CI.
-`ln -s` does not check its target, so confirm with `cat`.
+`ln -s` does not check its target, so confirm with `cat`. A relative link only resolves at
+the depth it was made for: create a git worktree of the project at that same depth (next to
+the checkout, not in a subfolder), or its `docs/` links point nowhere.
 
 ```bash
 mkdir -p docs

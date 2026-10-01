@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026; floor 8.5; security ≥ 8.5.9, 8.5.11 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP85Migration` available) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · zenstruck/messenger-monitor-bundle 0.6 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026; floor 8.5; security ≥ 8.5.9, 8.5.11 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · zenstruck/messenger-monitor-bundle 0.6 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -1525,6 +1525,9 @@ screen never gets looked at. Give it a way in.
     {
         public function __construct(
             private readonly UserRepository $users,
+            // The autowired interface picks its firewall from the current request,
+            // and a console command has none: name the firewall's handler instead.
+            #[Autowire(service: 'security.authenticator.login_link_handler.main')]
             private readonly LoginLinkHandlerInterface $loginLinkHandler,
         ) {}
 
@@ -1712,7 +1715,7 @@ private Collection $userActions;
 
 ### PHP-CS-Fixer: formatting
 
-On a **Symfony** project, use the **`@Symfony`** ruleset, then the migration set for the target PHP version, **`@PHP85Migration`** (the runtime is on 8.5), placed **after** `@Symfony`. It doesn't touch `concat_space`, but if you stack another set on top, re-assert `concat_space: { spacing: 'none' }` explicitly to keep the Symfony style.
+On a **Symfony** project, use the **`@Symfony`** ruleset, then the migration set for the target PHP version, **`@PHP8x5Migration`** (the runtime is on 8.5; `@PHP85Migration` is its deprecated alias since 3.95), placed **after** `@Symfony`. It doesn't touch `concat_space`, but if you stack another set on top, re-assert `concat_space: { spacing: 'none' }` explicitly to keep the Symfony style.
 
 ⚠️ **Do not stack `@PER-CS3x0` on top of `@Symfony`**: the two contradict each other on `concat_space` (`@Symfony` uses `'none'` → `'a'.'b'`; `@PER-CS3x0` uses `'one'` → `'a' . 'b'`). Stacked after `@Symfony`, `@PER-CS3x0` wins and reformats the whole repo into a non-Symfony style. `@PER-CS3x0` is the right choice for **framework-agnostic libraries**, not for a Symfony project.
 
