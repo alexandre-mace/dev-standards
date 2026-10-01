@@ -848,7 +848,9 @@ External APIs with authentication. URLs and credentials in `.env`, injected thro
 
 ### Retry configured at the DI level, not in the service
 
-`config/packages/http_client.yaml` already configures scoped clients (`webflow.client`, `discord.client`…) with `retry_failed`: 3 attempts, exponential backoff from 1s to 10s on status codes `[0, 429, 500, 502, 503, 504]`.
+`config/packages/http_client.yaml` already configures scoped clients (`webflow.client`, `discord.client`…) with `retry_failed`: 3 attempts, exponential backoff from 1s to 10s.
+
+Leave `http_codes` out. Symfony's default (`GenericRetryStrategy::DEFAULT_RETRY_STATUS_CODES`) retries 429, 502 and 503 for every method, but a transport failure (0), 500 and 504 for idempotent methods only: after a timeout or a 500 the server may well have done the work, and replaying a POST submits the HubSpot form or creates the Airtable record twice. A flat list such as `[0, 429, 500, 502, 503, 504]` loses that distinction and replays every method. When the list has to be written out, keep the restriction with the map form: `http_codes: { 0: [GET, HEAD, PUT, DELETE], 429: ~, 500: [GET, HEAD, PUT, DELETE], … }`.
 
 **Do not re-implement** a retry loop on top: not with `RetryableHttpClient` inside the service, not with a hand-rolled `while`. Services inject the scoped client directly and let the DI layer own the retries:
 
@@ -986,15 +988,17 @@ To add a class to the ignore list, avoid broad categories (ignoring every `HttpE
 
 The pattern for non-critical external APIs (Webflow, Hubspot, Airtable): catch, log at `error`, don't rethrow. The next cron will retry naturally.
 
+The exception goes under the `exception` key, the only one the Sentry handler reads to attach the stack trace: under `error` with `getMessage()`, Sentry receives a line of text and no trace.
+
 ```php
 try {
     $this->hubspotApi->updateContact($email, $data);
 } catch (\Exception $e) {
     $this->logger->error('HubSpot updateContact failed', [
         'email' => $email,
-        'error' => $e->getMessage(),
+        'exception' => $e,
     ]);
-    // swallow: don't block the user flow, Sentry already captured it through the monolog handler
+    // swallow: don't block the user flow; the Monolog Sentry handler sends the event with its stack trace
 }
 ```
 
