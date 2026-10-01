@@ -1605,35 +1605,69 @@ That goes double for anything on a payment or subscription path: a silent regres
 
 ### CI: orchestrating the pyramid
 
-**On every push, not only on pull requests.** A flow that merges branches directly, with
-no PR, never fires a `pull_request` trigger: the suite is then configured for an event
-that never happens. Trigger on `push` to the feature branches, `preprod` and `main`, and
-add `pull_request` on top if the project ever uses them.
+**On every push, and only on push.** A flow that merges branches directly, with no PR,
+never fires a `pull_request` trigger. Adding `pull_request` next to `push` runs every
+commit of a PR twice: the checks of the `push` run already show on the PR, since they
+are attached to the commit.
 
 ```yaml
 on:
   push:
     branches: ['**']
-  pull_request:
 ```
 
-Jobs (GitHub Actions):
+Jobs (GitHub Actions), all in parallel: the run lasts as long as its longest job, so no
+job waits on another and no job carries two slow suites.
 
 ```yaml
 jobs:
-  quality:
-    # PHPStan, CS-Fixer, lint:container, doctrine:schema:validate, ESLint, tsc
-  contract-drift:
-    # make types && git diff --exit-code openapi.yaml assets/lib/api/
-  phpunit:
-    # vendor/bin/phpunit (Unit + Integration + Functional + property-based through Eris)
+  backend:
+    # PHPStan, CS-Fixer, lint:container, doctrine:schema:validate, PHPUnit
+  frontend:
+    # make types + drift check, tsc, ESLint, Prettier
   vitest:
-    # pnpm test
-  playwright:
-    # pnpm test:e2e (with sharding past 20 specs)
+    # pnpm test, alone: it is the slowest front step
+  e2e:
+    # Playwright, sharded across jobs (matrix), each with its own PostgreSQL service
+  e2e-report:
+    # playwright merge-reports on the blob reports of the shards
 ```
 
-For Playwright on large suites: shard the matrix (`shardIndex: [1,2,3,4]`, `shardTotal: 4`) then add a `merge-reports` job aggregating the blob reports.
+**Measure on the runner, not on your machine.** The standard runner of a private
+repository has a fraction of a laptop's cores: a suite that takes seconds locally takes
+minutes there, and the cost is usually setup (installing, booting jsdom, compiling), not
+the number of tests. Read the step timings before cutting any test.
+
+- **Cache results, not only dependencies**: the PHPStan result cache (its `tmpDir`), the
+  PHP-CS-Fixer cache file, ESLint's (`--cache --cache-strategy content`). Key them on the
+  lockfile and the tool's config, with `restore-keys` so a near miss still helps.
+- **Every job that runs `pnpm install` installs Composer first** when `package.json`
+  points into `vendor/` (`file:vendor/symfony/stimulus-bundle/assets`): without it the
+  install fails before any test.
+- **Playwright shards across jobs, not workers.** Each shard job gets its own database
+  service, so `workers: 1` (§13, E2E) still holds inside it; a `merge-reports` job
+  rebuilds one HTML report from the blob reports.
+- **Vitest shares one jsdom per worker** (`isolate: false`, `pool: 'threads'`), except for
+  the files that call `vi.mock`: without isolation the module graph is shared, and a
+  module already imported by an earlier file keeps its real dependencies. Two projects:
+
+    ```ts
+    // vitest.config.ts
+    const MOCKING_FILES = readdirSync('assets', {recursive: true, encoding: 'utf8'})
+        .filter((file) => /\.(test|spec)\.tsx?$/.test(file))
+        .map((file) => `assets/${file}`)
+        .filter((file) => readFileSync(file, 'utf8').includes('vi.mock('));
+
+    projects: [
+        {extends: true, test: {name: 'shared', include: [TESTS], exclude: MOCKING_FILES, isolate: false, pool: 'threads'}},
+        {extends: true, test: {name: 'isolated', include: MOCKING_FILES}},
+    ],
+    ```
+
+    The price: a test that leaves state behind (DOM appended by hand, a global, an
+    animation frame still running) hands it to the next file. Prove the suite green in
+    random order (`--sequence.shuffle`) before switching, and mock in the setup file any
+    library that keeps drawing after its test (a canvas animation, a confetti).
 
 ---
 
