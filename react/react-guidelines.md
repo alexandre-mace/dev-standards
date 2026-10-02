@@ -63,19 +63,24 @@ Write the simplest React you can, and let the compiler optimize.
 
 ### Never pass a library instance down as a prop
 
-TanStack Table's `useReactTable` returns a **stable** object whose internals it mutates in
-place. The compiler knows the hook is incompatible and skips the component that calls it
-(`react-hooks/incompatible-library`, plugin ≥ 7), so a table rendered inline is safe. Pass
-that same `table` instance to a child and the safety ends: the child never calls the hook,
-so the compiler memoizes it on a prop reference that never changes, and it **stops
-re-rendering when the filtered data changes**.
+A library object that stays identical while it mutates in place defeats the compiler: a
+child that receives it is memoized on a reference that never changes, and **stops
+re-rendering when the data does**. The tell is a counter bound to `filtered.length`
+updating while the rows stay put.
 
-The tell is a counter bound to `filtered.length` updating while the rows stay put.
+TanStack Table v9 (`useTable`) is built for the compiler: with the default selector it
+returns a fresh table reference on every state change, so a table rendered inline, or a
+child handed `table`, re-renders as it should. The hazard is narrower. A nested component
+that receives only a stable `row`, `cell`, `column` or `header` and reads state through
+one of its methods (`row.getIsSelected()`) hides that read from the compiler. Keep a
+`Subscribe` inside that component, or pass it the selected value as a changing prop
+(TanStack's own guide, `docs/framework/react/guide/react-compiler.md`, shipped with the
+package as the `table-state` skill). Do not wrap every cell in `Subscribe` preemptively.
 
-The fix is not `"use no memo"`, it is passing **derived data**: `getHeaderGroups()` and
-`getRowModel().rows` produce a fresh reference whenever the data changes. That is also
-what React and TanStack recommend. The same reasoning applies to any library object that
-stays identical while mutating.
+v8 (`useReactTable`) predates this: the compiler skips the component that calls the hook
+(`react-hooks/incompatible-library`), and the fix for a child is to pass derived data,
+`getHeaderGroups()` and `getRowModel().rows`, never the instance. Migrate rather than work
+around it.
 
 **No unit test can catch this**, because Vitest runs its own config without the compiler
 plugin. Only an end-to-end test on a real build sees it, so a table with filtering owes a
