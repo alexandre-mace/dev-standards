@@ -640,7 +640,7 @@ At least 1 entry point: `app` (the main one). Add more for heavy bundles loaded 
 import Symfony from "@symfony/reprise/vite";
 
 export default defineConfig({
-  input: { app: "./assets/app.ts", admin: "./assets/admin.ts" }, // Vite ≤ 8.1: build.rollupOptions.input
+  input: { app: "./assets/app.ts", admin: "./assets/admin.ts" }, // sans input de premier niveau : build.rolldownOptions.input (rollupOptions n'en est qu'un alias déprécié sous Vite 8)
   plugins: [react(), Symfony({ stimulus: "assets/controllers.json" })],
 });
 ```
