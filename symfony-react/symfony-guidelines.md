@@ -988,14 +988,14 @@ To add a class to the ignore list, avoid broad categories (ignoring every `HttpE
 
 The pattern for non-critical external APIs (Webflow, Hubspot, Airtable): catch, log at `error`, don't rethrow. The next cron will retry naturally.
 
-The exception goes under the `exception` key, the only one the Sentry handler reads to attach the stack trace: under `error` with `getMessage()`, Sentry receives a line of text and no trace.
+The exception goes under the `exception` key, the only one the Sentry handler reads to attach the stack trace: under `error` with `getMessage()`, Sentry receives a line of text and no trace. The record is named by its id, never by an email or a name: the log context leaves for Sentry and the host's log drain, where personal data has no business.
 
 ```php
 try {
-    $this->hubspotApi->updateContact($email, $data);
+    $this->hubspotApi->updateContact($user->getEmail(), $data);
 } catch (\Exception $e) {
     $this->logger->error('HubSpot updateContact failed', [
-        'email' => $email,
+        'userId' => $user->getId(),
         'exception' => $e,
     ]);
     // swallow: don't block the user flow; the Monolog Sentry handler sends the event with its stack trace
