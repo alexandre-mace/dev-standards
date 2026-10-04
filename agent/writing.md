@@ -6,8 +6,9 @@ as in English.
 
 ## Typography
 
-- No dash as a separator, whatever its length: no em dash (`—`), no en dash (`–`), no
-  hyphen doing their job. Use a colon, a comma, parentheses, or a new sentence.
+- No em dash (`—`) as a separator, and no hyphen standing in for a dash. Use a colon, a
+  comma, parentheses, or a new sentence. The en dash (`–`) is allowed: in a page title
+  (« Annonces – La Grange ») and in a range (« 10–20 ha »).
 - No middle dot (`·`) as a separator.
 - Bold only what should catch a scanning eye, never to punctuate a paragraph.
 
