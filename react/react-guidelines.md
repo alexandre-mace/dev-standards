@@ -250,5 +250,45 @@ without a real layout engine. Either mock the primitive down to its contract, or
 spec in Vitest Browser Mode, stable since Vitest 4. jsdom stays the default for light unit
 tests.
 
+**A global is replaced with `vi.stubGlobal` or `vi.spyOn`**, never with
+`Object.defineProperty` or an assignment. The configuration undoes the first two after
+every test (`unstubGlobals` and `restoreMocks`, or `vi.unstubAllGlobals()` and
+`vi.restoreAllMocks()` in an `afterEach` of the setup file), even when an assertion
+stopped the test halfway; nothing undoes the others. A `navigator.clipboard` defined by
+hand stays for every later file sharing the same jsdom. A getter-only property takes
+`vi.spyOn(navigator, 'clipboard', 'get')`.
+
+**Time goes through the project's one clock helper, never through a real wait.** The
+helper turns on the fake timers and hands back a `userEvent` that advances them
+(`vi.useFakeTimers({ shouldAdvanceTime: true })` and
+`userEvent.setup({ advanceTimers: vi.advanceTimersByTime })`); the setup file puts the
+real timers back after each test. Recopied inline, the pair drifts from one file to the
+next. A `setTimeout(50)` awaited in a test bets on how long the code takes, and the bet
+gets lost on a slower runner.
+
 **Not worth testing**: a component that only calls an API and displays the result, a
 full-render snapshot that breaks on any class change, a passthrough of the UI kit.
+
+## 6. Accessibility
+
+Forms have their own rules in each stack's file: focus on the error, error linked to the
+control, required state. What follows holds for any component.
+
+- **A confirmation that replaces the button just clicked takes the focus, or is announced
+  from a `role="status"` region.** Unmounting the focused button drops the focus on
+  `<body>`, and a screen reader says nothing: an alert created, a suggestion sent, a
+  thank-you screen, all silent. Move the focus to the confirmation's heading
+  (`tabIndex={-1}`), or put the message in a `role="status"` region.
+- **An image inside a link whose text already names it takes `alt=""`.** A card whose
+  title is the link text and whose photo has that title as `alt` is read twice (WCAG
+  1.1.1).
+- **A decorative emoji is `aria-hidden`**: `<span aria-hidden="true">📍</span> Région`.
+  Left in the label, its name is read before the word.
+- **A touch target is at least 24 × 24 CSS pixels** (WCAG 2.2, criterion 2.5.8, level
+  AA). A chip's « Retirer » button at `h-4 w-4` is 16 pixels. axe's `target-size` rule
+  measures it but is off by default (axe-core 4.13): turn it on in the E2E check,
+  `new AxeBuilder({page}).options({rules: {'target-size': {enabled: true}}})`.
+- **No `outline-hidden` without a visible focus indicator in its place.** Tailwind's
+  `outline-hidden` removes the outline outside forced-colours mode. A field that takes it
+  needs its own `focus-visible:` ring, or its wrapper a `focus-within:` one, or a keyboard
+  user cannot tell where they are (WCAG 2.4.7): a site's main search box had neither.
