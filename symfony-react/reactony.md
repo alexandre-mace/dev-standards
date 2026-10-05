@@ -149,7 +149,7 @@ public function create(#[MapRequestPayload] SearchFarmNotification $notification
 ```php
 #[IsGranted('ROLE_USER')]
 #[Route('/api/search-farm/alert', methods: ['PUT'], format: 'json')]
-public function update(#[MapRequestPayload] SearchFarmNotification $updated): JsonResponse
+public function update(#[MapRequestPayload] SearchFarmNotification $updated): Response
 {
     $existing = $this->getUser()->getSearchFarmNotification();
     $existing->setCanals($updated->canals);
@@ -157,7 +157,7 @@ public function update(#[MapRequestPayload] SearchFarmNotification $updated): Js
     $existing->setPriceMin($updated->priceMin);
     // ...
     $this->entityManager->flush();
-    return $this->json(['ok' => true]);
+    return new Response(null, Response::HTTP_NO_CONTENT);
 }
 ```
 
@@ -169,7 +169,10 @@ const mutation = useMutation({
     const result = await putAlert({ body: values });
     const errors = handleSdkError(result);
     if (errors) {
-      Object.entries(errors).forEach(([field, msg]) => form.setError(field as any, { message: msg }));
+      const first = FIELD_ORDER.find((name) => name in errors); // the fields in screen order, see §4
+      Object.entries(errors).forEach(([field, msg]) =>
+        form.setError(field as any, { message: msg }, { shouldFocus: field === first }),
+      );
       throw new Error("Validation failed");
     }
   },
@@ -225,7 +228,7 @@ Backend: a flat `#[MapRequestPayload]` DTO holding `?UploadedFile` plus the text
 #[Route('/api/parcours/upload-image/{fieldId}', methods: ['POST'], format: 'json')]
 public function uploadProjectImage(
     string $fieldId,
-    #[MapUploadedFile(name: 'image', constraints: [new Assert\NotNull(), new Assert\Image()])]
+    #[MapUploadedFile(name: 'image', constraints: [new Assert\NotNull(), new Assert\Image(mimeTypes: ['image/jpeg', 'image/png', 'image/webp'])])]
     UploadedFile $file,
 ): Response {
     // ...
@@ -239,11 +242,11 @@ const mutation = useMutation({
   mutationFn: async (file: File) => {
     const result = await postAvatarUpload({ body: { avatar: file } });
     const errors = handleSdkError(result);
-    if (errors) throw new Error(Object.values(errors)[0]);
+    if (errors) throw new UserFacingError(Object.values(errors)[0]);
     return result.data;
   },
   onSuccess: () => toast.success("Avatar mis à jour"),
-  onError: (error: Error) => toast.error(error.message),
+  onError: (error: Error) => toast.error(sdkErrorMessage(error)),
 });
 ```
 
@@ -276,14 +279,14 @@ The backend keeps its `Assert\File(maxSize)` constraint as the last line of defe
 ```php
 #[IsGranted('ROLE_USER')]
 #[Route('/api/search-farm/alert', methods: ['DELETE'], format: 'json')]
-public function delete(): JsonResponse
+public function delete(): Response
 {
     $notification = $this->getUser()->getSearchFarmNotification();
     if ($notification) {
         $this->entityManager->remove($notification);
         $this->entityManager->flush();
     }
-    return $this->json(['ok' => true]);
+    return new Response(null, Response::HTTP_NO_CONTENT);
 }
 ```
 
@@ -331,10 +334,26 @@ Symfony returns this automatically:
 }
 ```
 
-`handleSdkError` (`lib/parseViolations.ts`) covers both cases:
-- **422** → returns `Record<string, string>` (per-field errors, parsed from `violations`)
-- **Any other error (403, 500…)** → `throw new Error(...)` (caught by `onError`)
+`handleSdkError` (`lib/parseViolations.ts`) sorts the SDK result:
 - **No error** → returns `null`
+- **422** → returns `Record<string, string>` (per-field errors, parsed from `violations`)
+- **No response** (network down, CORS, abort: hey-api leaves `response` undefined) → throws a `UserFacingError` saying, in French, that the server cannot be reached
+- **Any other error (401, 403, 429, 500…)** → throws, caught by `onError`: a `UserFacingError` carrying the problem's `detail` when that `detail` is more than the status text, a plain `Error` otherwise
+
+`UserFacingError` is the error class whose message the member may read. `onError` shows
+`sdkErrorMessage(error)`, which returns that message and a generic fallback for anything
+else, never a fixed text: « Une erreur est survenue » written by hand in a dozen `onError`
+announced an expired session, a 429 from the limiter or a refusal the server had explained
+as a breakdown.
+
+**A `detail` reaches the member, so it is written for them, in French.** Outside debug,
+Symfony's `ProblemNormalizer` fills `detail` with the HTTP status text: a `#[RateLimit]`
+refusal comes back with « Too Many Requests ». The front never shows that text. A refusal
+meant for the user needs its message in `detail` in production too, where Symfony only
+writes the exception message in debug: a dedicated exception class, and a normalizer that
+copies its message. A maintenance 503 carries its message in `detail` as well. Written in
+`title` alone, it never reached the front, which reads `detail` only, and every island
+showed « Une erreur est survenue » for the whole maintenance.
 
 > **Nullable enum gotcha**: react-hook-form defaults enum selects to `""` when left empty. On the backend, `Enum::from('')` throws a `ValueError`, so a 500. Either the controller coerces `'' → null` before denormalizing (see `symfony-guidelines.md` section 4), or the frontend omits the key. Do both, to be safe.
 
@@ -366,7 +385,7 @@ const toggle = (id: number) => {
 };
 ```
 
-The mutation is the one in §4's `FarmAlertForm`: per-field `setError` on a 422, `setError("root")` otherwise. Render the root error through `useFormState`, not by reading the `form.formState` proxy at render time (React Compiler rule, see section 7):
+The mutation is the one in §4's `FarmAlertForm`: per-field `setError` on a 422, `setError("root")` with `sdkErrorMessage(error)` otherwise. Render the root error through `useFormState`, not by reading the `form.formState` proxy at render time (React Compiler rule, see section 7):
 
 ```tsx
 const { errors } = useFormState({ control: form.control });
@@ -392,10 +411,13 @@ import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zSearchFarmNotification } from "@/lib/api/zod.gen"; // generated (see section 5)
 import { postAlert } from "@/lib/api";
-import { handleSdkError } from "@/lib/parseViolations";
+import { handleSdkError, sdkErrorMessage } from "@/lib/parseViolations";
 import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field";
 
 type FormValues = z.infer<typeof zSearchFarmNotification>;
+
+// The fields in the order the screen shows them: the first one in error takes the focus
+const FIELD_ORDER = ["canals", "departements", "priceMin"] as const;
 
 export function FarmAlertForm() {
   const form = useForm<FormValues>({
@@ -408,13 +430,16 @@ export function FarmAlertForm() {
       const result = await postAlert({ body: values });
       const errors = handleSdkError(result);
       if (errors) {
-        Object.entries(errors).forEach(([field, msg]) => form.setError(field as any, { message: msg }));
+        const first = FIELD_ORDER.find((name) => name in errors);
+        Object.entries(errors).forEach(([field, msg]) =>
+          form.setError(field as any, { message: msg }, { shouldFocus: field === first }),
+        );
         throw new Error("Validation failed");
       }
     },
     onError: (error: Error) => {
       if (error.message !== "Validation failed") {
-        form.setError("root", { message: "Une erreur est survenue." });
+        form.setError("root", { message: sdkErrorMessage(error) });
       }
     },
   });
@@ -426,9 +451,12 @@ export function FarmAlertForm() {
         control={form.control}
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>Canaux</FieldLabel>
-            {/* shadcn component, with id={field.name} and aria-invalid={fieldState.invalid} */}
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            <FieldLabel htmlFor={field.name}>
+              Canaux <span aria-hidden="true">*</span>
+            </FieldLabel>
+            {/* shadcn component, with ref={field.ref}, id={field.name}, aria-required,
+                aria-invalid={fieldState.invalid} and aria-describedby="canals-error" */}
+            {fieldState.invalid && <FieldError id="canals-error" errors={[fieldState.error]} />}
           </Field>
         )}
       />
@@ -442,13 +470,55 @@ The two keys: `data-invalid` on `<Field>` (flips the whole block into its error 
 
 **Flow**: Zod validates on the client → SDK → Symfony validates on the server → the 422 is rendered per field through `form.setError` + `<FieldError>`.
 
+### Leading the user to the error
+
+RHF can only move the focus to a field it holds a focusable `ref` for, and a screen reader
+only reads an error linked to the control. One audit found 11 `Controller`s out of 67
+that no failed submit could reach, and five multi-step flows where a 422 on another step
+left the focus on the step heading or on `<body>`.
+
+- **Every `Controller` passes `ref={field.ref}`** to the element that takes the focus. A
+  hand-made group (pills, cards, a row of buttons) is not focusable itself: give it a
+  handle, `useImperativeHandle(ref, () => ({ focus: () => (chosen ?? first)?.focus() }))`,
+  and pass it `field.ref`. RHF calls nothing but `focus()` on what it receives.
+- **Every validated field goes through a `Controller` or `register`.** A value kept by
+  `setValue` alone is not among RHF's fields: neither `handleSubmit`, nor `trigger`, nor
+  `setError` can lead to it.
+- **`setError` and `trigger` called by hand pass `{ shouldFocus: true }`.** Only
+  `handleSubmit` focuses the first invalid field by default; without the option, the
+  focus stays on the button that was clicked.
+- **Field lists follow the screen order.** `trigger(names, { shouldFocus: true })`
+  focuses the first invalid field in the order of the array it receives: a step listing
+  `lastName` before `firstName` lands on the second field of the screen. On a 422, the
+  field to focus is chosen by the screen order too, not by the order of the violations.
+- **In a multi-step flow, change the step first, focus second.** `setError` focuses at
+  once, so on a field of another step it reaches an unmounted element and does nothing.
+  Set the errors without focus, switch to the step holding the first one, then call
+  `setFocus` on that field once the step has rendered (an effect that runs on the step
+  change). Any other
+  step change sends the focus to the new step's heading (`tabIndex={-1}`): the button
+  that held it has just unmounted, and the focus would fall on `<body>`.
+- **The error is linked to the element that takes the focus**: `aria-invalid`, and
+  `aria-describedby` pointing to the `FieldError`'s `id`, on the input, on the
+  `SelectTrigger` rather than the `Select` root, on the `role="group"` container of a
+  hand-made group. A
+  `Field` that passes its error id through context only reaches the controls that read
+  that context: not a `FieldSet`, not a raw `SelectTrigger`, not a hand-made group. An
+  explicit `id` on a `FieldError` overrides the context, so the control must point to
+  that one.
+- **A required field shows the asterisk and carries `aria-required`; an optional field
+  carries neither.** Required means what the DTO or the schema requires (`NotBlank`,
+  `Count(min: 1)`) for this form: an edit form whose payload requires nothing marks
+  nothing. The same audit found both: ten required fields without the mark, and an edit
+  form marking seven optional ones.
+
 ### Simple action / inline edit: `useMutation` + SDK + toast
 
 For a single action (date picker, toggle, one field), RHF is overkill. `useMutation` + SDK + `handleSdkError` + toast is enough:
 
 ```tsx
 import { useMutation } from "@tanstack/react-query";
-import { handleSdkError } from "@/lib/parseViolations";
+import { handleSdkError, sdkErrorMessage, UserFacingError } from "@/lib/parseViolations";
 import { toast } from "sonner";
 import { postFieldUpdate } from "@/lib/api";
 
@@ -456,10 +526,10 @@ const mutation = useMutation({
   mutationFn: async (data: { id: string; value: string }) => {
     const result = await postFieldUpdate({ body: data });
     const errors = handleSdkError(result);
-    if (errors) throw new Error(Object.values(errors)[0]);
+    if (errors) throw new UserFacingError(Object.values(errors)[0]);
   },
   onSuccess: () => toast.success("Enregistré"),
-  onError: (error: Error) => toast.error(error.message),
+  onError: (error: Error) => toast.error(sdkErrorMessage(error)),
 });
 ```
 
@@ -1076,6 +1146,8 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 - The shadcn `<Form>/<FormField>/<FormMessage>` for **new** code: legacy pattern, use `Controller` + the `Field` family (`data-invalid`, `<FieldError>`)
 - A hand-written Zod schema for an API payload: import it from `zod.gen`
 - A bespoke 422 catch: use `handleSdkError` + a per-field `form.setError`
+- A fixed text in `onError` (« Une erreur est survenue »), or `error.message` shown as is: show `sdkErrorMessage(error)` (§3)
+- A `Controller` without `ref={field.ref}`, a validated field held by `setValue` alone, a `setError` or `trigger` without `shouldFocus`: the failed submit cannot lead to the field (§4)
 - An auth form (login, registration, password) in React: keep it in Twig + Symfony Form
 - A React form that manipulates the entity directly instead of a derived payload: go through a backend DTO when the form edits a subset of fields
 
@@ -1126,7 +1198,7 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 | Delete (DELETE) | `useMutation` + `DELETE` + `invalidateQueries` |
 | Filtered read (GET) | `#[MapQueryString]` on a filter DTO |
 | 422 errors | `handleSdkError` + per-field `form.setError()` |
-| 403/404/500 errors | `form.setError("root", ...)` + a global message |
+| 403/404/500 errors | `form.setError("root", { message: sdkErrorMessage(error) })` |
 | Group naming | `entity:read`, `entity:create`, `entity:update` |
 | TS types + Zod v4 + SDK + queryOptions/mutationOptions | Generated by `make types` → `assets/lib/api/` |
 | Auth / security | Twig + Symfony Form (not React) |
