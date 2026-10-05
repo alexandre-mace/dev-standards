@@ -29,20 +29,47 @@ test doctrine apply to all three.
 
 The guidelines are the checklist. Their forbidden anti-patterns section lists, rule by
 rule, exactly what a scan looks for, and the rest of the file gives the patterns those
-rules protect. Turn each one into a search and run it across every file.
+rules protect. A pass that leaks shows up at the next one as "new" findings that were
+there all along; four measures keep the first pass close to complete.
 
-- Agents in parallel, one per area of the codebase. Every file, not a sample.
-- **Each agent returns its findings and edits no file.** Several agents writing
-  `docs/gap-analysis.md` at once race each other, and the one that behaved, returning its
-  text instead of writing, sees its section left at the previous scan. The orchestrator
-  writes the file once, at the end, from everything it got back.
-- `Glob` and `Grep` systematically: most rules become one pattern each.
-- A rule that cannot be turned into a search still gets read for: architecture
-  boundaries, business logic in the wrong layer, a pattern that diverges between two
-  files that should match.
-- Beyond the guidelines, flag what is incoherent, fragile, surprising or plainly broken
-  even when no rule covers it: suspicious logic, security smells, dead code, hardcoded
-  URLs that belong in the environment.
+**Mechanical rules first, run by the orchestrator, not by the agents.** Every rule that
+reduces to a pattern (a raw palette colour, `target="_blank"` without `rel`, an email in a
+log context, an API route without `#[IsGranted]`, an em dash in visible text) is one
+search over the whole repository, listed exhaustively before any agent starts. An agent
+reading for it finds most of the hits; the search finds all of them. A rule that keeps
+coming back pass after pass is also a gap in the quality gate: say so, and name the lint
+rule or script that would close it in the hook and the CI.
+
+**Coverage is proven, not declared.**
+
+- Zones of at most 60 files, each handed its explicit file list. Past that, an agent's
+  context fills up and the end of its zone gets skimmed.
+- The agent returns one line per file of its list, findings or "rien", then its findings.
+- The orchestrator checks every listed file is in the return, and relaunches the zone on
+  what is missing.
+- **Each agent returns its findings as text and edits no file.** Several agents writing
+  `docs/gap-analysis.md` at once race each other. The orchestrator keeps each return and
+  writes the file once, at the end.
+
+**Themes cut across zones.** Some defects are scattered thin: each zone sees one instance
+and none sees the pattern. Next to the zones, one agent per theme reads the whole
+repository for it alone:
+
+- personal data in logs, error monitoring, URLs and fixtures;
+- twins that must stay aligned (PHP and TS rules, copied lists, constants);
+- the API contract end to end (DTO, controller, OpenAPI, generated client, form);
+- calls to action and links (where each one leads a visitor and a member);
+- form accessibility (names, errors, required state on the control).
+
+**Judgement where no search reaches.** A rule that cannot be turned into a search still
+gets read for: architecture boundaries, business logic in the wrong layer, a pattern that
+diverges between two files that should match. Beyond the guidelines, flag what is
+incoherent, fragile, surprising or plainly broken even when no rule covers it: suspicious
+logic, security smells, dead code, hardcoded URLs that belong in the environment.
+
+**What only the data can tell is checked in the data.** A finding that depends on what
+production holds (a duplicate, a value outside an enum, a dead branch) is confirmed by a
+read-only query before it is written, and its priority follows the answer.
 
 ## 3. Scan config, tooling and the quality gate
 
@@ -81,7 +108,14 @@ Then read them for what a script cannot see:
   matches.
 - Length: past roughly 200 lines the file stops being read carefully. Say so.
 
-## 5. Write the gap analysis
+## 5. Verify before writing
+
+Every Haute and Moyenne finding goes to a second agent whose only job is to refute it: read
+the code, the callers, the tests, the data, and say whether the defect is real. A refuted
+finding is dropped, a confirmed one keeps its confidence or gains one. A false positive
+costs a fix lot an hour of work and sometimes breaks code that was right.
+
+## 6. Write the gap analysis
 
 Overwrite `docs/gap-analysis.md` with the current state. Nothing is carried forward
 except the accepted deviations.
@@ -117,9 +151,26 @@ Priorities:
 - **Moyenne**: convention violations, naming, missing patterns.
 - **Basse**: style, dead code, cosmetics.
 
-## 6. Present the summary
+## 7. Present the summary
 
 Findings per priority, then the most critical items, then one line on what to do first.
+
+## 8. What the fixing has to honour
+
+This skill fixes nothing, but the fixes decide whether the next pass finds anything. Hand
+the fix lots these rules with the findings:
+
+- **Fix the family, not the line.** Before closing a finding, search for every place with
+  the same defect and fix them all. Half of what a pass finds is the sibling of something
+  the previous fix lot repaired in one place only.
+- **Re-check on the current main.** Other lots merge while one works; a finding may
+  already be fixed, or moved.
+- **Review your own diff against the audit grid** before opening the pull request, so the
+  fix does not hand the next pass new findings.
+- **Data first, constraint second.** A unique index or a stricter enum on a table that
+  holds offending rows fails the deploy; clean production first, then ship the constraint.
+- **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the
+  commits then skip every check without a word.
 
 ## Rules
 
