@@ -5,12 +5,17 @@ description: >-
   skills, the reports the other skills produce, commit messages, a note to a colleague.
   Use when a text is about to be committed, published or sent, or when asked to relire,
   réécrire or clean up a text. Not for product or marketing copy, which has its own reviewer.
+  `--chat` switches to the register of a message between colleagues.
+argument-hint: "[--chat] <text>"
 ---
 
 # Technical writing
 
+$ARGUMENTS
+
 Rewrite the text to the rules below. The meaning does not change. French and English
-alike.
+alike. When the arguments start with `--chat`, the text is a message between colleagues:
+apply the rules below, then the **Chat register** section on top of them.
 
 ## Formatting
 
@@ -57,6 +62,21 @@ alike.
   discussed?", "you had probably seen it". That is information about the author, not
   filler.
 - Stop once no rule applies any more. Rewriting past that point only flattens the voice.
+
+## Chat register
+
+Only with `--chat`. The reader is a colleague reading between two other messages, and
+the text has to sound typed, not drafted.
+
+- Write the way the thread is written: the colleague's own shortcuts are fair game
+  ("10j", "auto", "+", "genre"), and so is spoken French ("ça touche à aucun montant").
+- An arrow for a consequence: "match corrigé -> lettré dans la minute".
+- Short paragraphs, one idea each. No heading, no bold. A list only when the messaging
+  tool renders it, never numbers or markers it would print as raw text.
+- First person singular when the author did the work.
+- At most one emoji, at the end, and only when the tone of the thread allows it.
+- The substance rules still hold in full: a casual tone never licenses an invented
+  number or a "rarely" nobody measured.
 
 ## Two tests before returning the text
 
