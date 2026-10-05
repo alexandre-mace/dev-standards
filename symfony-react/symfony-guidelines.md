@@ -640,6 +640,38 @@ $request->attributes->get('id');    // route params (also available as a typed p
 
 Prefer the mapping attributes (`#[MapRequestPayload]`, `#[MapQueryString]`) over direct bag access.
 
+### A GET never writes
+
+A route that creates, updates or deletes answers POST (or PUT, DELETE), with a CSRF token
+when a session authenticates it. A GET that writes runs again for every copied link,
+bookmark and reload: a step link that created a record on each visit, and a quiz results
+page that recomputed and saved the score from its query string, so a link sent to someone
+else overwrote that member's result. When a third party imposes the GET (a provider's
+return URL that cannot POST), the route writes only what a complete, verified answer
+justifies, and the exception goes to the accepted deviations of the gap analysis with its
+reason.
+
+### Route parameters carry their `requirements`
+
+`{id}` with no requirement matches `abc`, and `find('abc')` reaches PostgreSQL, which
+refuses the cast: a 500 for a forged URL, logged as a bug. Constrain each parameter so that
+URL never matches the route and answers 404:
+
+```php
+#[Route('/api/adverts/{id}', requirements: ['id' => Requirement::DIGITS], methods: ['GET'], format: 'json')]
+#[Route('/alerts/{token}', requirements: ['token' => Requirement::UUID])]
+```
+
+`Symfony\Component\Routing\Requirement\Requirement` holds the usual patterns, and a backed
+enum parameter takes `new EnumRequirement(MyEnum::class)`.
+
+### A success with no content answers 204
+
+`return new Response(null, Response::HTTP_NO_CONTENT);`, never a 200 carrying `{ok: true}`.
+One convention, because a client that reads the body has to know whether there is one: a
+project ended with 17 routes answering 200 and 29 answering 204, both inside one
+controller.
+
 ### Catching around a flush leaves you with a closed EntityManager
 
 `UnitOfWork::commit()` closes the EntityManager in a `finally` block, and not only for
@@ -780,6 +812,23 @@ public function save(Request $request, DenormalizerInterface $denormalizer): Res
 
 The frontend alternative is to omit the key when it is empty. The backend stays defensive either way.
 
+### A password's upper bound counts bytes
+
+The hasher refuses a password longer than `PasswordHasherInterface::MAX_PASSWORD_LENGTH`,
+4096 bytes measured with `strlen`, by throwing `InvalidPasswordException`. `Length` counts
+code points by default, so with `Length(max: 4096)` a password of 2,102 accented
+characters (4,202 bytes) passed the DTO of a public login route and the hash turned it into
+a 500. Bound it the way the hasher counts:
+
+```php
+#[Assert\Length(max: PasswordHasherInterface::MAX_PASSWORD_LENGTH, countUnit: Assert\Length::COUNT_BYTES)]
+public string $password;
+```
+
+The lower bound stays in characters, and its TypeScript twin counts the same unit:
+`value.length` counts UTF-16 code units, `[...value].length` code points, so a password of
+emojis passed the button and then took a 422.
+
 ### File uploads: `UploadedFile` in the DTO (SF 8.1)
 
 Since Symfony 8.1, `#[MapRequestPayload]` maps `UploadedFile` objects straight into the DTO on `multipart/form-data` requests (`$request->request` and `$request->files` are merged before denormalization). That is the default pattern for an endpoint taking a file plus text fields: one parameter, one validation surface:
@@ -790,7 +839,7 @@ class UploadAvatarPayload
     public ?string $caption = null;
 
     #[Assert\NotNull]
-    #[Assert\Image(maxSize: '5M')]
+    #[Assert\Image(maxSize: '5M', mimeTypes: ['image/jpeg', 'image/png', 'image/webp'])]
     public ?UploadedFile $avatar = null;
 }
 
@@ -798,6 +847,17 @@ public function upload(#[MapRequestPayload] UploadAvatarPayload $payload): Respo
 ```
 
 Rules:
+- **An `Image` constraint lists its `mimeTypes`.** Without them it accepts `image/*`, SVG
+  included, and with no dimension option it never opens the file. A photo takes the
+  formats of a photo (JPEG, PNG, WebP, and `image/heic` and `image/heif` where phones send
+  them), never SVG: an SVG is an XML document, and the renderer ImageMagick picks for it
+  may follow the files and URLs it references. The type is guessed from the content, not
+  the extension.
+- **Imagick is the fallback for the formats GD cannot read (HEIC), not for whatever GD
+  refused.** A member's SVG passed the constraint, GD could not decode it, and the fallback
+  handed it to `new \Imagick()`. On the server, ImageMagick runs behind a `policy.xml` that
+  refuses the `URL`, `MSL`, `MVG` and `MSVG` coders; `convert -list policy` on the instance
+  shows the one actually loaded.
 - **Flat DTO**: keep the upload payload flat; an `UploadedFile` inside a nested object is a smell, flatten it.
 - The identifier goes in the route (`{fieldId}`), not in the payload.
 - `#[MapUploadedFile]` remains the fallback (a lone file with no text fields, or a case that doesn't fit the flat DTO). Never `$request->files->get()` or `$request->request->get()`.
@@ -974,6 +1034,28 @@ redaction processor exists in the project. Note that redaction protects the futu
 already written to the logs is exposed and has to be rotated with whoever issued it.
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.
+
+### A personal-data mask covers the copies the libraries make
+
+A mask that strips personal data before it leaves (a `before_send` on Sentry events, a
+Monolog processor) has to reach the places the libraries copy data to on their own, not
+only the request and the log message:
+
+- **The event's `extra`.** sentry-symfony's `ConsoleListener`, registered unconditionally
+  (5.13), sets `extra['Full command']` to the whole command line, arguments included, and
+  the scope copies it onto every error and every sampled transaction of that command. A
+  command taking emails as arguments sent them in clear. Mask `extra` recursively, like the
+  rest of the event.
+- **The message Messenger copies into `ErrorDetailsStamp`.** On `WorkerMessageFailedEvent`,
+  `AddErrorDetailsStampListener` (priority 200) copies the exception message before
+  `SendFailedMessageForRetryListener` (priority 100) logs it: a processor that rewrites the
+  message when it is logged comes too late, and the raw message stays in the
+  `messenger_messages` row through every retry and in `failed`. Mask the exception from a
+  listener on the same event above priority 200.
+- **The `failed` transport is purged.** It keeps a message until someone retries or removes
+  it, and `messenger:failed:remove` takes ids or `--all`, never an age. Schedule a purge by
+  age (a `DELETE` on `messenger_messages` where `queue_name` is the failure queue and
+  `created_at` is older than the retention), next to the monitor's own purge (§16).
 
 ### Globally ignored exceptions
 
@@ -1466,6 +1548,20 @@ final class ValidateSharesTest extends WebTestCase
     }
 }
 ```
+
+**A refusal is asserted on the field it refuses.** `assertResponseStatusCodeSame(422)` alone
+passes for any 422: a payload refused for another reason, a field the fixture forgot or a property
+renamed, keeps the test green while the rule it claims to cover is gone. Assert the
+`propertyPath` of the violation (one shared helper reading `violations` keeps it to a
+line), and give the refusal its accepted twin: the same payload with that one field fixed,
+answering 2xx. One form's tests refused four payloads and never created a valid record.
+
+**An assertion of absence comes with the response status and a positive control.** « The
+button is not on the page » also holds for an error page. And an absence the code can
+never produce proves nothing: one test checked that a name was not followed by « Autres »,
+when the mapper always writes « Situation : » right after the name. Assert the status,
+then assert in the same test that the text does appear when the condition holds, or count
+the occurrences (`assertSame(1, substr_count(…))`) instead of asserting a string absent.
 
 ### Functional test of a `StreamedResponse` (SSE)
 
@@ -2116,6 +2212,9 @@ Hard rules, everywhere. If you find them in existing code, that code is to refac
 - An `/api/` route without `#[IsGranted]` on the method or the class
 - `$request->get()`: removed in Symfony 8. Use `$request->query`, `$request->request`, `$request->attributes`, or the mapping attributes
 - Controllers extending `AbstractController` directly and typing `getUser()` as `UserInterface`: write an `AbstractAppController` returning the typed `User` entity and extend it everywhere
+- A GET that writes: POST with a CSRF token, a third party's imposed GET going to the accepted deviations with its reason
+- A route parameter without `requirements`: a forged URL turns into a 500 instead of a 404
+- A 200 `{ok: true}` for a success with nothing to return: 204
 
 **Domain / Service**
 - A `Domain/` class that **injects (in its constructor)** a Repository, EntityManager, HttpClient, Logger, Filesystem, another Service, an `Api/` class or `UrlGeneratorInterface`: Domain receives its data as parameters. Framework attributes (`Assert`, `OA`, `Groups`) stay allowed.
@@ -2128,6 +2227,8 @@ Hard rules, everywhere. If you find them in existing code, that code is to refac
 - An allowlist DTO (`ObjectMapper`) with a `constructor`, `= null`, or `readonly` properties: it breaks partial mapping (fields absent from the JSON must stay **uninitialized**)
 - A GET filter read through `$request->query->get()` instead of a DTO + `#[MapQueryString]`
 - A file upload through `$request->files->get()`: use `UploadedFile` in the `#[MapRequestPayload]` DTO (SF 8.1, flat DTO) or `#[MapUploadedFile]` with the `Assert` constraints
+- An `Assert\Image` without `mimeTypes`: it accepts SVG
+- A password bounded by `Length(max:)` in characters: the hasher counts bytes (`countUnit: Assert\Length::COUNT_BYTES`)
 
 **HttpClient / external API**
 - `new RetryableHttpClient($client)` inside a service: retry is configured at the DI level (`scoped_clients` + `retry_failed`)
@@ -2160,6 +2261,7 @@ Hard rules, everywhere. If you find them in existing code, that code is to refac
 - A test hitting a real external API: mock at the DI level with `MockHttpClient`
 - A refactor over 500 lines with no test on the existing behaviour: write the safety net **before** touching anything
 - A snapshot test on a full render: it breaks on any class change and carries no useful signal
+- A 422 asserted on its status alone, or an absence asserted without the response status and a positive control
 
 ---
 
