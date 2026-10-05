@@ -171,6 +171,9 @@ the fix lots these rules with the findings:
   holds offending rows fails the deploy; clean production first, then ship the constraint.
 - **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the
   commits then skip every check without a word.
+- **A fix never cites the finding's identifier in the code.** The next audit rewrites
+  `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
+  to one points to nothing. It says the cause in plain words, or names the commit.
 
 ## Rules
 
