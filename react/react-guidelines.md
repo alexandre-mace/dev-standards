@@ -132,21 +132,23 @@ unlisted values fall back to the value itself), or give `SelectValue` a render f
 A post-Radix-migration sweep of every `<SelectValue`: one report showed nine components
 leaking sentinels into the UI.
 
-**Declare the `data-horizontal` / `data-vertical` variants in your CSS.** The Base UI
-components style themselves by orientation through those Tailwind variants, and shadcn
-ships no CSS to define them. Base UI exposes orientation as
-`data-orientation="horizontal|vertical"`, so a bare `data-horizontal:` variant matches
-nothing and every orientation rule silently drops. Seen on a `Tabs`: the root kept
-`flex-row`, the tab list took a column down the left and the panel collapsed to zero
-pixels wide, on every page using tabs. Add both lines once:
+**Bring in shadcn's `tailwind.css`.** The registry components assume the project imports
+`shadcn/tailwind.css`, shipped in the `shadcn` npm package (`dist/tailwind.css`, 4.21.1): it
+declares the `data-open`, `data-closed`, `data-checked`, `data-unchecked`, `data-selected`,
+`data-disabled`, `data-active`, `data-horizontal` and `data-vertical` variants, plus the
+accordion keyframes. The CLI does not add the import to an existing stylesheet. Without it,
+Tailwind's native `data-*` variants apply, and they read differently:
+- Base UI exposes orientation as `data-orientation="horizontal|vertical"`, so a bare
+  `data-horizontal:` matches nothing and every orientation rule silently drops. Seen on a
+  `Tabs`: the root kept `flex-row`, the tab list took a column down the left and the panel
+  collapsed to zero pixels wide, on every page using tabs.
+- cmdk writes `data-selected="false"` on the rows it does not highlight, and the native
+  `data-selected:` matches `[data-selected]` whatever its value: every row of a `Command`
+  list looks highlighted.
 
-```css
-@custom-variant data-horizontal (&[data-orientation='horizontal']);
-@custom-variant data-vertical (&[data-orientation='vertical']);
-```
-
-`grep -rl 'data-horizontal\|data-vertical' components/ui/` names the components that
-depend on them; it found eight, from `tabs` to `slider` and `separator`.
+Either `@import "shadcn/tailwind.css";` with `shadcn` as a dev dependency, or vendor the file
+next to `app.css` as the components are vendored, which avoids pulling the whole CLI into
+`node_modules` and into `pnpm audit`.
 
 ### Scoping a theme to one screen
 
