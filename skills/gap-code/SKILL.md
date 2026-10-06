@@ -182,10 +182,17 @@ the fix lots these rules with the findings:
 - Every finding names a file and a line or a method. "Some controllers are too big" is
   worthless, "`AdvertController.php:245` maps icons inline" is actionable.
 - Something that looks wrong in the guidelines themselves goes to `/gap-sota`.
-- **Report everything you saw, each finding with its confidence**: `sûr` (the code
-  plainly contradicts a rule), `probable` (it looks wrong, one thing left to check),
-  `à vérifier` (a doubt worth a look). Do not drop a doubtful finding: the user sorts, not
-  the scan. A confidence is not a severity, which the priority already carries.
+- **Settle what you can, then report it with its confidence**: `sûr` (the code plainly
+  contradicts a rule), `probable` (it looks wrong, one thing left to check), `à vérifier`
+  (a doubt nothing in the repository could settle). A doubt the code, the tests or the
+  commit that introduced the line can settle is settled by the scan, not passed on. A
+  confidence is not a severity, which the priority already carries.
+- **A product question reaches the user only when nothing answers it.** Before listing a
+  behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
+  cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
+  choice, recorded under the accepted deviations, not a question. Seen: a member already
+  installed flagged for not seeing the installation path in the menu, a choice obvious to
+  anyone who knows the product.
 - **Read the code before calling it a deviation.** Code that does not follow the canonical
   pattern is sometimes right for its situation, and forcing the pattern makes it worse.
   Seen: mutation hooks flagged for not using `useMutation`, in islands mounted without a
