@@ -216,7 +216,7 @@ public function save(
 > **Which one when?**
 > - Few fields / dedicated entity → `#[MapRequestPayload]` on the entity + manual copy (see PUT above)
 > - Many fields / existing entity → allowlist DTO + `ObjectMapper`
-> - Payload ≠ entity (computed fields, aggregates, no matching entity) → DTO in `src/Dto/`
+> - Payload ≠ entity (computed fields, aggregates, no matching entity) → DTO in `src/Dto/<Context>/` (symfony-guidelines §2, « Where a DTO and a helper live »)
 
 ### File uploads: `UploadedFile` in the DTO (SF 8.1)
 > Backend upload conventions are detailed in `symfony-guidelines.md` section 4.

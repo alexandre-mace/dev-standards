@@ -153,7 +153,7 @@ Also worth watching, outside the core:
 src/
 ├── Controller/          # Orchestration: wires Domain + Service + Api
 ├── Domain/              # Pure business rules (see section 2)
-├── Dto/                 # DTOs for API requests (MapRequestPayload, MapQueryString)
+├── Dto/                 # What crosses HTTP: payloads, GET queries, responses (section 4)
 ├── Entity/              # Doctrine entities
 ├── Repository/          # Doctrine queries (specialised ones included)
 ├── Service/             # Execution: persist, API calls, uploads, PDF... (see section 5)
@@ -201,26 +201,20 @@ That is declarative metadata, not a runtime dependency. The project is Symfony a
 
 **If a class needs to go and fetch data** (repository, API, filesystem), it belongs in Service/. If it also holds pure business rules, extract those rules into a separate Domain/ class and call them from the Service.
 
-### Business DTOs in Domain
+### Where a DTO and a helper live
 
-DTOs that represent **business data structures** (an endpoint's input or output, a cron payload, an exchange format with a partner) belong in `Domain/<Context>/`, next to the Rules and Calculators of the same context. They are domain objects, just like an entity. They can carry `#[Assert\…]`, `#[OA\…]` and `#[Groups]` without a problem.
+The split follows what the object depends on, not how business-like it feels.
 
-```php
-// src/Domain/Import/FarmImportRequestInput.php
-namespace App\Domain\Import;
-
-use OpenApi\Attributes as OA;
-use Symfony\Component\Validator\Constraints as Assert;
-
-class FarmImportRequestInput
-{
-    #[Assert\NotBlank, Assert\Uuid]
-    #[OA\Property(type: 'string', format: 'uuid')]
-    public string $farmUuid;
-}
-```
-
-`src/Dto/` stays in use for **generic technical DTOs** with no clear business context (GET filters reused across several entities, cross-cutting orchestration payloads). When in doubt: `Domain/<Context>/` when the DTO describes a business exchange, `src/Dto/` when it describes a technical one.
+- **`src/Dto/<Context>/`**: everything that enters or leaves through HTTP. The payloads of
+  `#[MapRequestPayload]`, the queries of `#[MapQueryString]`, the responses an endpoint
+  returns. They carry `#[Assert\…]`, `#[OA\…]` and `#[Groups]`.
+- **`Domain/<Context>/`**: the business that does not depend on HTTP. Rules, calculators,
+  enums, and the data structures exchanged with a partner or a cron, which no route
+  receives.
+- **A pure technical helper** (text, HTML, Slack mrkdwn, reflection over DTOs) goes in
+  `Domain/Support/<Theme>/`, callable from the domain without injection. A helper that needs
+  an injected service goes in `Service/`. `EventListener/` and `MessageHandler/` hold only
+  listeners and handlers.
 
 ### PHP enums
 
