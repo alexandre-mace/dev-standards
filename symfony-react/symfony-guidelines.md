@@ -161,7 +161,7 @@ src/
 ├── Message/             # DTOs for Messenger (see section 16)
 ├── MessageHandler/      # Async handlers for those messages (see section 16)
 ├── Command/             # Console commands (with #[AsCronTask] for the scheduler)
-├── Form/                # Symfony Form types
+├── Form/                # Symfony Form types: authentication only (reactony principle 6)
 ├── EventListener/       # Doctrine/HTTP listeners
 ├── Factory/             # Entity creation with complex initialisation
 ├── Twig/                # Twig extensions
@@ -2033,7 +2033,7 @@ In an AI-assisted dev session, run `/quality` **before declaring a task finished
 | Query on an entity | `Repository/MyRepository.php` |
 | Complex entity creation | `Factory/MyFactory.php` |
 | HTTP route | `Controller/MyController.php` |
-| Twig form | `Form/MyFormType.php` |
+| Auth form (login, registration, password) | `Form/MyFormType.php`; any other form is a React island (reactony principle 6) |
 | Scheduled job | `Command/MyCommand.php` + `#[AsCronTask]` |
 | Async external call | `Message/MyMessage.php` + `MessageHandler/MyHandler.php` |
 | API route security | `#[IsGranted('ROLE_USER')]` on the method or class |

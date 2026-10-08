@@ -30,7 +30,7 @@ Read the **Principles** (below) and the **anti-patterns (§10)** for every task;
 3. **One form pattern**: RHF `Controller` + shadcn `Field` + Zod + `useMutation` (simple actions: `useMutation` + toast, see section 4)
 4. **Entity or DTO**: the entity directly when the payload maps 1:1; a DTO when it is a subset of a large entity (security: allowlist, mapping through `ObjectMapper`) or when the payload has no matching entity
 5. **Auth and security in Twig**: login, registration and password stay classic Symfony forms
-6. **React means Reactony, Twig means Symfony Form**: if the page is React and dynamic, the form follows Reactony. If the page is Twig without React and the form is simple (nothing dynamic), a classic Symfony Form is enough
+6. **Every form is a React form**: a form, however simple, is a React island that follows Reactony, even on a page otherwise rendered by Twig: RHF + shadcn `Field` + generated Zod + SDK, on a JSON route documented for OpenAPI. No new Symfony Form type and no hand-written HTML form, the authentication forms of principle 5 aside. The read-only parts of a Twig page stay Twig
 7. **SDK everywhere**: always use the generated SDK functions, uploads included (the SDK handles multipart through `formDataBodySerializer`)
 8. **pnpm**: the frontend package manager
 9. **React for interactivity, Stimulus for mounting only**: no new custom Stimulus controller, Turbo Drive disabled (see section 6)
@@ -755,7 +755,7 @@ One interactivity model:
 
 - **A page is static Twig by default. Interactivity is a React island** (`react_component()`), however small: the pipeline (types, SDK, shadcn) makes an island cheaper to maintain than a Stimulus controller living outside that ecosystem.
 - **Stimulus is mounting infrastructure only.** The `symfony/ux-react` bridge is itself a Stimulus controller, invisible, and untouched. **Do not write new custom Stimulus controllers**: no state, no fetch, no business logic in Stimulus. Tolerance: stateless micro DOM behaviour (under ~30 lines, copy-to-clipboard say) where an island would be disproportionate. Existing custom controllers are legacy, not a model to copy.
-- **Special case, enriching a classic Symfony Form field** (rich editor, datepicker, autocomplete on a server-rendered `<input>`/`<textarea>`): that is a *legitimate* Stimulus use in itself (progressive enhancement, the Symfony UX model). BUT if the React equivalent already exists (a `Wysiwyg` component, say), **reuse it as an island** rather than maintaining a parallel Stimulus controller that duplicates it: mount the React component and have it **sync into the hidden field** (`document.getElementById(targetId).value = ...` on update) so it goes out with the POST. One editor for the whole app, the Symfony field stays the submitted source.
+- **Special case, a field of an existing Symfony Form** (rich editor, datepicker, autocomplete on a server-rendered `<input>`/`<textarea>`): the form itself is legacy (principle 6), and the lasting fix is to move it to a React island. Until then, if the React equivalent already exists (a `Wysiwyg` component, say), **reuse it as an island** rather than writing a Stimulus controller that duplicates it: mount the React component and have it **sync into the hidden field** (`document.getElementById(targetId).value = ...` on update) so it goes out with the POST. One editor for the whole app, the Symfony field stays the submitted source.
 - **Turbo Drive: disabled globally (`<body data-turbo="false">`), on purpose.** Turbo navigation remounts React islands (state lost, double mount). Do not re-enable it without an explicit decision; for navigation polish, the route is native View Transitions (cross-document CSS). `ux-turbo` stays installed for possible Turbo Streams / Mercure use, not for the drive.
 
   Note that `<body data-turbo="false">` only covers the templates that carry it. An admin
@@ -1149,6 +1149,7 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 - A fixed text in `onError` (« Une erreur est survenue »), or `error.message` shown as is: show `sdkErrorMessage(error)` (§3)
 - A `Controller` without `ref={field.ref}`, a validated field held by `setValue` alone, a `setError` or `trigger` without `shouldFocus`: the failed submit cannot lead to the field (§4)
 - An auth form (login, registration, password) in React: keep it in Twig + Symfony Form
+- Any other form in Twig, a Symfony Form type or hand-written HTML, simple or not: make it a React island (principle 6)
 - A React form that manipulates the entity directly instead of a derived payload: go through a backend DTO when the form edits a subset of fields
 
 **Upload**
@@ -1201,6 +1202,7 @@ Hard rules on the frontend. If you find them in existing code, that code is to r
 | 403/404/500 errors | `form.setError("root", { message: sdkErrorMessage(error) })` |
 | Group naming | `entity:read`, `entity:create`, `entity:update` |
 | TS types + Zod v4 + SDK + queryOptions/mutationOptions | Generated by `make types` → `assets/lib/api/` |
+| Any form but auth | React island (RHF + shadcn `Field` + generated Zod + SDK), even on a Twig page |
 | Auth / security | Twig + Symfony Form (not React) |
 | API route security | `#[IsGranted('ROLE_USER')]` on the method or class |
 | Frontend infra | Vite + Symfony Reprise + Symfony UX React |
