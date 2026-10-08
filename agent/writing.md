@@ -26,6 +26,14 @@ as in English.
 - Give the number or the cause, not the impression. "Considerably faster" says nothing,
   "ten times faster" says something.
 - Explain a term the first time it appears, or do not use it.
+- A report for a reader outside the code (a manager, a partner) gives the current state:
+  no PR number, no date of the work. It keeps the technical reason behind each choice,
+  which is what that reader weighs.
+
+## Structure
+
+- A sentence that lines up several items, each with its own detail, becomes a short
+  lead-in followed by a bulleted list.
 
 ## Say it once
 
