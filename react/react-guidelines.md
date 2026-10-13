@@ -82,9 +82,11 @@ v8 (`useReactTable`) predates this: the compiler skips the component that calls 
 `getHeaderGroups()` and `getRowModel().rows`, never the instance. Migrate rather than work
 around it.
 
-**No unit test can catch this**, because Vitest runs its own config without the compiler
-plugin. Only an end-to-end test on a real build sees it, so a table with filtering owes a
-spec: filter down to the empty state, clear, come back.
+**A unit test catches this only if Vitest runs the compiler.** It does when its config
+inherits the Vite plugins (`mergeConfig` over `vite.config.ts`, as reactony §9 asks): then a
+Vitest case on the real table, filtered down to the empty state, cleared, and back, is the
+test the table owes. Where Vitest has its own config without the compiler plugin, only an
+end-to-end test on a real build sees it, and the same scenario goes into a spec.
 
 ## 3. shadcn and Base UI
 
