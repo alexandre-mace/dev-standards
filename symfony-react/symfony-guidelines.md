@@ -1761,7 +1761,12 @@ the current checkout or worktree. One line per step with its status and duration
   Playwright it misses its timeouts (five seconds a test, one second a `findBy`): fourteen
   red tests in one measured pass, none when it runs alone.
 - **PHPUnit runs on ParaTest**, one process per core, each on its own SQLite file; the
-  `postgres` group, which shares one database, stays sequential.
+  `postgres` group, which shares one database, stays sequential. Before switching, check
+  how the test base prepares the schema: one that drops and recreates every table inside
+  the per-test transaction (DAMA) takes a lock per table in every process. Measured on a
+  second project: 2 131 locks for one recreation, against about 6 400 slots on a local
+  PostgreSQL, and `out of shared memory` once ParaTest and the E2E ran together. The
+  recreation is rolled back anyway: build the schema once, outside the transaction.
 - **Prettier keeps its cache** (`--cache`, in `var/`); ESLint and PHPStan keep theirs. Not
   Psalm's: measured, a warm run after merging main took 674 s instead of about 30.
 - **A dev server already running in the folder stops the run before the E2E** with a clear
