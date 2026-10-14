@@ -93,11 +93,15 @@ Details and setup: section 13.
 
 `/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`.
 
+**`make ci-local` must be green before merge** (CI section below): it replays every CI job,
+the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
+
 ### Definition of Done
 
 A feature is only "done" when **every** one of these is green:
 
 - [ ] `/quality` passes
+- [ ] `make ci-local` passes on the branch merged with main
 - [ ] `make types` produces no drift in `assets/lib/api/` (CI gate: `git diff --exit-code`)
 - [ ] `doctrine:schema:validate --skip-sync` OK
 - [ ] `lint:container` OK
@@ -1585,11 +1589,30 @@ pnpm exec playwright install --with-deps chromium
 
 The only choices in `playwright.config.ts` you can't guess:
 
-- **`fullyParallel: false` and `workers: 1`.** The DB is shared, so parallelism makes it non-deterministic.
+- **One database per worker, then four workers.** A shared database makes parallel specs
+  non-deterministic, so each worker gets its own: a fixture sets an `X-E2E-Worker` header
+  (Playwright's `parallelIndex`, which a worker restarted after a failure keeps) on every
+  request, and a Doctrine middleware, registered in the dev and test config only and only
+  when the E2E runs offline, points the connection at `<database>_w<n>`. Sessions, rate
+  limiters and locks live in the database, so they follow. `bin/ci-local` creates the
+  databases and passes `--workers=4`; the config keeps `workers: 1` and
+  `fullyParallel: false`, so the tests of one file stay on one worker, in order.
+- **`reducedMotion: 'reduce'`** for the whole suite, and the app honours it: a delay
+  written for an animation drops to zero, and a test that checks the animation sets
+  `no-preference` back for itself.
+- **No fixed wait.** Time-driven UI (a fake calculation, a countdown) runs on
+  `page.clock`, not on a `waitForTimeout`.
 - **Three projects**: a `setup` that seeds and authenticates once, saving its `storageState`; a public project for the specs that need no auth; and an authenticated project declaring `dependencies: ['setup']` and reusing that `storageState`.
 - `trace: 'on-first-retry'` and `screenshot: 'only-on-failure'`, otherwise a CI failure can't be diagnosed.
 
 **The seed command** (`app:e2e:seed`) is idempotent, wipes then inserts, prefixes its rows with `__e2e__` so they stay isolable, and depends on no external API.
+
+**One journey per page, not one test per check.** Each test pays a page load and often a
+login: a page's checks run in one journey, with `expect.soft` around each audit or
+independent check so one failure does not hide the next. An E2E that only repeats what a
+functional test or a Vitest case already proves goes; keep the ones only a browser can
+prove (an island's behaviour, focus, a multi-page flow, an audit of the rendered page).
+Measured on one project: 94 specs down to 51, 1 min 40 to 49 s, with no check lost.
 
 **Accessibility is checked inside the spec**, not in a separate pass: a violation fails the test.
 
@@ -1699,16 +1722,55 @@ That goes double for anything on a payment or subscription path: a silent regres
 
 ### CI: orchestrating the pyramid
 
-**On every push, and only on push.** A flow that merges branches directly, with no PR,
-never fires a `pull_request` trigger. Adding `pull_request` next to `push` runs every
-commit of a PR twice: the checks of the `push` run already show on the PR, since they
-are attached to the commit.
+**`make ci-local` is the gate before any merge; the hosted CI is a light safety net.** A
+hosted run is billed per job and per started minute, so a workflow fired on every push of
+every branch, eight jobs each, emptied a private organisation's free Actions allowance in
+two days once agents pushed dozens of branches in parallel. The full check runs on the
+developer's machine, where it is free and faster (no install per job); the hosted CI runs
+the fast jobs once per pull request and the E2E at night.
 
 ```yaml
 on:
-  push:
-    branches: ['**']
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, ready_for_review]   # not on every push
+    paths-ignore: ['docs/**', '**/*.md']
+  schedule:
+    - cron: '0 3 * * 1-5'                         # the E2E, on main, on weekday nights
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 ```
+
+The fast jobs skip a draft (`if: ${{ !github.event.pull_request.draft }}`); the E2E jobs
+never run on a pull request (`if: ${{ github.event_name != 'pull_request' }}`). Widen a
+trigger only after weighing it against the allowance.
+
+#### `bin/ci-local`: the same jobs, on the machine
+
+`bin/ci-local` (`make ci-local`) replays every job of `ci.yml`, with the same options, on
+the current checkout or worktree. One line per step with its status and duration, logs in
+`var/ci-local/`, `--fast` without the E2E, `--only <group>` to rerun one group.
+
+- **Groups run in parallel, each stopping at its first failure**: the PHP analysis, the
+  front checks, the E2E preparation (build, schema), then the suites. A common
+  preparation step (dependencies, generated types) runs first, since the others read it.
+- **Vitest runs alone**, between the analyses and the heavy suites. Next to ParaTest or
+  Playwright it misses its timeouts (five seconds a test, one second a `findBy`): fourteen
+  red tests in one measured pass, none when it runs alone.
+- **PHPUnit runs on ParaTest**, one process per core, each on its own SQLite file; the
+  `postgres` group, which shares one database, stays sequential.
+- **Prettier keeps its cache** (`--cache`, in `var/`); ESLint and PHPStan keep theirs. Not
+  Psalm's: measured, a warm run after merging main took 674 s instead of about 30.
+- **A dev server already running in the folder stops the run before the E2E** with a clear
+  message: Symfony accepts one server per folder, and the E2E step failed without saying
+  why. Run the gate in a worktree, or stop the dev server.
+
+Measured on one Symfony and React project (3 369 PHPUnit tests, 1 559 Vitest, 51 E2E):
+7 min 51 sequential, 2 min 28 with the groups in parallel, Playwright on four workers and
+ParaTest.
 
 Jobs (GitHub Actions), all in parallel: the run lasts as long as its longest job, so no
 job waits on another and no job carries two slow suites.
@@ -1722,9 +1784,9 @@ jobs:
   vitest:
     # pnpm test, alone: it is the slowest front step
   e2e:
-    # Playwright, sharded across jobs (matrix), each with its own PostgreSQL service
+    # Playwright, one job, nightly and on demand only
   e2e-report:
-    # playwright merge-reports on the blob reports of the shards
+    # the HTML report, uploaded as an artifact
 ```
 
 **Measure on the runner, not on your machine.** The standard runner of a private
@@ -1738,9 +1800,9 @@ the number of tests. Read the step timings before cutting any test.
 - **Every job that runs `pnpm install` installs Composer first** when `package.json`
   points into `vendor/` (`file:vendor/symfony/stimulus-bundle/assets`): without it the
   install fails before any test.
-- **Playwright shards across jobs, not workers.** Each shard job gets its own database
-  service, so `workers: 1` (§13, E2E) still holds inside it; a `merge-reports` job
-  rebuilds one HTML report from the blob reports.
+- **Playwright runs one job on the hosted CI.** Sharding it across jobs reinstalled
+  everything for each shard, for under a minute of tests each, and billed every shard;
+  locally, the parallelism comes from workers (§13, E2E).
 - **Vitest shares one jsdom per worker** (`isolate: false`, `pool: 'threads'`), except for
   the files that call `vi.mock`: without isolation the module graph is shared, and a
   module already imported by an earlier file keeps its real dependencies. Two projects:

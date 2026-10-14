@@ -7,14 +7,14 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 
 Everything a machine can settle on its own, fast and headless.
 
-- What needs a browser is `/live-test`, the whole Playwright suite included. CI runs it
-  again on every push.
-- **The full suites belong to CI.** When the repository's CI runs PHPUnit and Vitest in
-  full on every push, run here only the tests the change can reach: the test files the
-  branch touches, the tests that mirror the source files it touches, and Vitest's
-  `related` on the changed sources. Running the whole suite locally, then again in CI,
-  then again on main, is the same fact paid for three times. With no such CI, run them
-  in full here.
+- What needs a browser is `/live-test` for the change at hand, and the whole Playwright
+  suite runs in `make ci-local`, the gate before any merge.
+- **The full suites belong to `make ci-local`.** Where the repository has one (it replays
+  every CI job, PHPUnit, Vitest and Playwright in full), run here only the tests the
+  change can reach: the test files the branch touches, the tests that mirror the source
+  files it touches, and Vitest's `related` on the changed sources. Running the whole
+  suite here, then again in `make ci-local`, is the same fact paid for twice. With no
+  `make ci-local` and no hosted CI running the suites in full, run them in full here.
 - **Run once per commit.** A check that passed on this exact tree does not run again
   before something moves; say which run you rely on.
 
@@ -88,12 +88,12 @@ ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran 
 report nobody can act on.
 
 `pnpm test` is Vitest, mandated on all three stacks. Use whatever flag the project needs
-for a single non-watch run. When CI runs it in full, run here
+for a single non-watch run. When `make ci-local` runs it in full, run here
 `pnpm vitest related --run <changed source files>` instead; same rule as PHPUnit for a
 change to shared setup (`test-setup.ts`, a provider, the Vite config): the whole suite.
 
-**Not run here**: Playwright, which needs a browser and minutes, and which `/live-test`
-owns. Psalm taint analysis is a CI job. Say so rather than letting the report imply full
+**Not run here**: Playwright, which needs a browser and minutes, and which `make ci-local`
+and `/live-test` own. Psalm taint analysis runs in `make ci-local`. Say so rather than letting the report imply full
 coverage.
 
 ## Report

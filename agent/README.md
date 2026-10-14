@@ -2,7 +2,8 @@
 
 Behaviour, true on every project whatever the stack. `writing.md` governs how
 anything gets written, files included. `writing-things-down.md` governs where it
-goes. `output-styles/` governs the shape of a reply, and modifies the system prompt
+goes. `long-running-checks.md` governs a slow check run in a loop (a full CI, an E2E
+suite). `output-styles/` governs the shape of a reply, and modifies the system prompt
 rather than being read as context.
 
 `install.sh` links both into `~/.claude/`. A new rule or style is a new file plus
