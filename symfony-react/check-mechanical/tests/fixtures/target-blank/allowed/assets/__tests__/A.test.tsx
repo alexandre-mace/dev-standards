@@ -1,0 +1,1 @@
+render(<a target="_blank">x</a>);
