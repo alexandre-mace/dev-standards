@@ -2077,11 +2077,13 @@ Not tolerable on a project where you commit ten times an hour, but at a normal f
 
 Every forbidden anti-pattern that reduces to a pattern in the text is refused by the gate, not left for `/gap-code` to find pass after pass: a raw palette colour, `target="_blank"` without `rel`, an email in a log context, island props read by hand in a test, an em dash in visible text, a finding's identifier cited in the code. A rule that only an audit enforces comes back with the next feature.
 
-- **The tool that owns the language first.** An ESLint rule for TS and TSX (the `guards/*` rules of reactony), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `bin/check-mechanical`, a script of the project.
-- **Two kinds of rule.** A file rule reads every line of the files it sees. An addition rule reads only the lines added since the merge base: it lands the day the family is found, refusing new occurrences while the old stock is cleaned, then becomes a file rule.
-- **Where it runs**: the pre-commit hook on the staged files, in their staged version, and `make ci-local` on every tracked file. Not in the hosted CI on its own: `make ci-local` is the gate.
-- **Each rule carries** its reason, its exceptions by path and why, and a test that feeds it a violating file and a clean one. Frozen code is excluded by path, once, at the top.
-- **Where rules come from**: every finding of `/gap-code` or `/review-diff` that reduces to a pattern, in the pull request that fixes it.
+- **The tool that owns the language first.** An ESLint rule for TS and TSX (the `guards/*` rules of reactony), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `check-mechanical`.
+- **One script for every project of the stack**, in `dev-standards` (`symfony-react/check-mechanical/`), with its rules and their tests. A project's `bin/check-mechanical` only calls it, through the same relative path as the `docs/` symlinks. No project keeps its own copy, rule list or config file: copies diverge (two of them had, at 499 and 669 lines), and a rule worth having in one project of the stack is worth having in all of them. A rule that holds for one project only does not belong in the script.
+- **Two kinds of rule.** A file rule reads every line of the files it sees. An addition rule reads only the lines added since the merge base. A new rule starts as an addition rule, so it refuses new occurrences without turning every project red on its old stock, and becomes a file rule once each project has cleaned that stock.
+- **An exception lives in the code, with its reason**, never in a list: `check-mechanical-ignore <rule>: <reason>` on the line above, or at the top of a file for the whole file (the prompts sent to a language model, whose punctuation changes the answers). It goes away with the code it covers, so it never goes stale.
+- **Frozen code is a folder with a `FROZEN.md`** saying why it is frozen; the script skips the folder, and no frozen file is touched to mark it. What every project shares is skipped by the script itself: `docs/gap-analysis.md`, which quotes the deviations, and the shadcn registry components.
+- **Where it runs**: the pre-commit hook on the staged files, in their staged version, and `make ci-local` on every tracked file. `make ci-local` is the gate; the hosted CI can clone `dev-standards`, which is public, if it runs it too.
+- **Where rules come from**: every finding of `/gap-code` or `/review-diff` that reduces to a pattern, added to the shared script in the same pull request that fixes it, with a test that feeds it a violating file and a clean one.
 
 ### When to run `/quality` during a session
 
