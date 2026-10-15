@@ -1,10 +1,34 @@
 ---
 name: gap-code
-description: Audits a whole codebase against its stack's guidelines and writes every deviation into docs/gap-analysis.md. Works on the three stacks - Symfony+React, Next, TanStack Start.
+description: Audits a codebase against its stack's guidelines and writes every deviation into docs/gap-analysis.md, aiming at zero. Reads what changed since the previous pass by default, the whole codebase on the first one. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
 **The guidelines are right, the code gets corrected.** The mirror skill is `/gap-sota`,
 where the ecosystem is right and the guidelines get corrected.
+
+## 0. The target, and how much to read
+
+**The target is zero findings, every priority included.** Between two passes each finding
+is fixed or recorded as an accepted deviation with its reason; nothing stays open. A
+Basse finding therefore has to be worth a commit: a docblock that now says the wrong
+thing, dead code, a visible text error, a twin that will drift. A matter of taste nobody
+would fix is not a finding, and listing it only keeps the count from reaching zero.
+
+**A delta by default.** The header of `docs/gap-analysis.md` names the commit the previous
+pass audited. From it:
+
+- every file changed since that commit is read in full, not only its diff: a defect in
+  an untouched part of a touched file counts;
+- the whole repository is still searched for the mechanical rules (section 2), and
+  scanned for config and the gate (section 3) and the agent files (section 4);
+- every rule added or changed in the guidelines since that commit's date
+  (`git log --since` in `dev-standards`) is searched across every file, since a new rule
+  applies to old code too.
+
+A full pass, every file read, is for the first audit, a header without a commit, a large
+rewrite of the guidelines, or when the user asks for one. Seen: a delta review of a
+week's work, 287 files, found 35 findings, each of which a full pass would have reported
+among thousands of re-read lines that had not moved.
 
 ## 1. Identify the stack, read its guidelines in full
 
@@ -19,9 +43,9 @@ test doctrine apply to all three.
 
 - Report a missing guidelines file as the first gap and stop: without the symlink into
   `dev-standards` there is nothing to audit against.
-- Read the existing `docs/gap-analysis.md` for one thing only: the deviations that were
-  deliberately accepted. A fresh scan finds everything else on its own, and git holds the
-  history.
+- Read the existing `docs/gap-analysis.md` for two things only: the commit the previous
+  pass audited (section 0), and the deviations that were deliberately accepted. A fresh
+  scan finds everything else on its own, and git holds the history.
 - Stop on an archived repository, rather than auditing a corpse: a last commit saying
   "archive", a redirect to a successor, an archived flag on the remote.
 
@@ -36,9 +60,11 @@ there all along; four measures keep the first pass close to complete.
 reduces to a pattern (a raw palette colour, `target="_blank"` without `rel`, an email in a
 log context, an API route without `#[IsGranted]`, an em dash in visible text) is one
 search over the whole repository, listed exhaustively before any agent starts. An agent
-reading for it finds most of the hits; the search finds all of them. A rule that keeps
-coming back pass after pass is also a gap in the quality gate: say so, and name the lint
-rule or script that would close it in the hook and the CI.
+reading for it finds most of the hits; the search finds all of them. A rule that reduces to a pattern and is not yet refused by the
+gate is a finding of its own, Moyenne, against the gate: name the rule that will close it
+(`bin/check-mechanical`, an ESLint rule, a PHPStan rule) and where it runs (the hook and
+`make ci-local`). A family that comes back from a previous pass is that finding by
+definition.
 
 **Coverage is proven, not declared.**
 
@@ -65,7 +91,9 @@ repository for it alone:
 gets read for: architecture boundaries, business logic in the wrong layer, a pattern that
 diverges between two files that should match. Beyond the guidelines, flag what is
 incoherent, fragile, surprising or plainly broken even when no rule covers it: suspicious
-logic, security smells, dead code, hardcoded URLs that belong in the environment.
+logic, security smells, dead code, hardcoded URLs that belong in the environment, a
+comment or docblock the code has since contradicted. The bar is the one of section 0: a
+defect someone would fix.
 
 **What only the data can tell is checked in the data.** A finding that depends on what
 production holds (a duplicate, a value outside an enum, a dead branch) is confirmed by a
@@ -126,6 +154,7 @@ except the accepted deviations.
 > Ecarts entre les guidelines de la stack et le code actuel, à la date de l'audit.
 > Organisé par priorité. Les cases servent le temps d'une session de nettoyage :
 > le prochain audit réécrit le fichier.
+> Audit de main à <commit complet>, le <date>. Le prochain audit relit ce qui a changé depuis.
 
 ---
 
@@ -163,10 +192,16 @@ the fix lots these rules with the findings:
 - **Fix the family, not the line.** Before closing a finding, search for every place with
   the same defect and fix them all. Half of what a pass finds is the sibling of something
   the previous fix lot repaired in one place only.
+- **Close the family in the gate.** When the defect reduces to a pattern, the same pull
+  request adds the rule that refuses it (`bin/check-mechanical`, ESLint, PHPStan), run by
+  the hook and `make ci-local`, with a test of the rule. A fix without the rule is undone
+  by the next feature: seen, the hand-read island props and the stale oasdiff exceptions,
+  fixed in one pass and back in new files at the next.
 - **Re-check on the current main.** Other lots merge while one works; a finding may
   already be fixed, or moved.
-- **Review your own diff against the audit grid** before opening the pull request, so the
-  fix does not hand the next pass new findings.
+- **Run `/review-diff` before opening the pull request**: it reads every touched file in
+  full against the audit grid, as the next delta pass will, so the fix does not hand that
+  pass new findings.
 - **Data first, constraint second.** A unique index or a stricter enum on a table that
   holds offending rows fails the deploy; clean production first, then ship the constraint.
 - **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the
