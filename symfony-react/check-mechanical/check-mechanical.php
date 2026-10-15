@@ -35,6 +35,15 @@ const FILE_HEADER_LINES = 3;
 
 const DIRECTIVE = 'check-mechanical-ignore';
 
+/*
+ * An emoji, as the rules about emojis read it. Not the marks of a legal text (©, ®, ™),
+ * nor the ballot boxes ☐ ☑ ☒ that a PDF form draws as its checkboxes: those are symbols.
+ * The ballot boxes are excluded by name because the PCRE versions disagree on them: the
+ * 10.49 of PHP 8.5 leaves ☐ and ☒ out of Extended_Pictographic, the one of the GitHub
+ * runners puts them in, and a rule must give the same answer on every machine.
+ */
+const EMOJI = '/(?![\x{00A9}\x{00AE}\x{2122}\x{2610}-\x{2612}])\p{Extended_Pictographic}/u';
+
 $argv0 = array_shift($argv);
 $mode = 'staged';
 $root = null;
@@ -498,6 +507,7 @@ function hyphenAsDash(string $content, string $path): array
     ];
 }
 
+
 /**
  * An emoji a screen reader spells in the middle of the sentence: outside a hidden
  * `<span>` (`aria-hidden="true"`) or a named one (`role="img"` and `aria-label`). The
@@ -511,7 +521,7 @@ function visibleEmoji(string $content): array
     $searched = blank($content, '/\{#.*?#\}|\{%.*?%\}/s');
     $searched = blank($searched, '/<span\b[^>]*\b(?:aria-hidden="true"|role="img"[^>]*aria-label="[^"]+")[^>]*>[^<]*<\/span>/');
 
-    return matches('/(?![\x{00A9}\x{00AE}\x{2122}])\p{Extended_Pictographic}/u', $content, $searched);
+    return matches(EMOJI, $content, $searched);
 }
 
 /**
@@ -757,7 +767,7 @@ function rules(): array
             'ext' => ['ts'],
             'paths' => '#^assets/controllers/[^/]+\.ts$#',
             'kind' => 'fichier',
-            'find' => static fn (string $c, string $p): array => matches('/\p{Extended_Pictographic}/u', $c, withoutComments($c, $p)),
+            'find' => static fn (string $c, string $p): array => matches(EMOJI, $c, withoutComments($c, $p)),
         ],
 
         // The organisation's addresses, in one place.
