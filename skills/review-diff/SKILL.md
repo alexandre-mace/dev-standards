@@ -37,14 +37,31 @@ The PR review of a flow with no PR. Runs twice:
   creep: flag it, offer to extract it.
 - **Do the assumed decisions hold?** Re-read them against the final code.
 
-## 3. Diff against the guidelines
+## 3. Touched files against the audit grid
 
-The diff only, not the project: that is `/gap-code`. Flag only what the diff
-introduces or worsens.
+Whatever this review lets through, the next `/gap-code` finds: its delta pass reads every
+file changed since the previous one, in full, against the same grid. The aim is that this
+branch hands it nothing.
 
-- Symfony and React: DTO patterns, `format: 'json'` and `#[IsGranted]` on API routes, a
-  pure Domain/, the SDK rather than a hand-written fetch, RHF + Zod, `@/` imports.
-- Next and TanStack Start: Base UI, the kit rather than a copy, typed routes, baked data.
+- **Read every touched file in full, not only its hunks.** A docblock, a comment, a test
+  name or an OpenAPI description that the change made false counts as introduced by the
+  diff. So does a sibling left behind: the same constant or rule in a TS twin, a second
+  caller that still does it the old way.
+- **The forbidden anti-patterns of the stack's guidelines, rule by rule**, against those
+  files. Symfony and React: DTO placement, `format: 'json'` and `#[IsGranted]` on API
+  routes, `requirements` on route parameters, a pure Domain/, the SDK rather than a
+  hand-written fetch, RHF + Zod, `@/` imports, a fixed log message with the exception
+  under `exception`. Next and TanStack Start: Base UI, the kit rather than a copy, typed
+  routes, baked data.
+- **The cross-cutting themes of `/gap-code`** on the touched files: personal data in logs
+  and fixtures, twins that must stay aligned, the API contract end to end, where each link
+  and call to action leads, form accessibility.
+- **A family, not a line.** When the diff fixes or introduces a pattern, search the
+  repository for its siblings. A defect that reduces to a pattern and that the gate does
+  not refuse yet is a finding: name the rule that would refuse it.
+
+Flag what the diff introduces or worsens, and what sits in a touched file. A defect in
+a file the branch never opened is `/gap-code`'s business.
 
 ## 4. The Definition of Done, line by line
 
@@ -87,7 +104,7 @@ Review : <branch> vs <ticket>
 ------------------------------------------
 Ticket coverage :        complete | gaps listed
 Scope :                  clean | N changes outside the ticket
-Guidelines :             conform | deviations listed
+Audit grid :             conform | deviations listed
 Tests owed :             written | N missing
 /quality :               PASS | FAIL
 /live-test :                passed | never run
