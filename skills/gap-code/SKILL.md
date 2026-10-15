@@ -53,8 +53,8 @@ rules protect. A pass that leaks shows up at the next one as "new" findings that
 there all along; four measures keep the first pass close to complete.
 
 **Mechanical rules first, run by the orchestrator, not by the agents.** Every rule that
-reduces to a pattern (a raw palette colour, `target="_blank"` without `rel`, an email in a
-log context, an API route without `#[IsGranted]`, an em dash in visible text) is one
+reduces to a pattern (a raw palette colour, `target="_blank"` without `rel`, an API route
+without `#[IsGranted]`, an em dash in visible text) is one
 search over the whole repository, listed exhaustively before any agent starts. An agent
 reading for it finds most of the hits; the search finds all of them. A rule that reduces to a pattern and is not yet refused by the
 gate is a finding of its own, Moyenne, against the gate: name the rule that will close it
@@ -77,7 +77,8 @@ definition.
 and none sees the pattern. Next to the zones, one agent per theme reads the whole
 repository for it alone:
 
-- personal data in logs, error monitoring, URLs and fixtures;
+- secrets (keys, tokens, passwords) in logs, error monitoring and URLs, and real personal
+  data copied into fixtures;
 - twins that must stay aligned (PHP and TS rules, copied lists, constants);
 - the API contract end to end (DTO, controller, OpenAPI, generated client, form);
 - calls to action and links (where each one leads a visitor and a member);

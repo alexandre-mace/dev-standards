@@ -1033,27 +1033,12 @@ already written to the logs is exposed and has to be rotated with whoever issued
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.
 
-### A personal-data mask covers the copies the libraries make
+### The `failed` transport is purged
 
-A mask that strips personal data before it leaves (a `before_send` on Sentry events, a
-Monolog processor) has to reach the places the libraries copy data to on their own, not
-only the request and the log message:
-
-- **The event's `extra`.** sentry-symfony's `ConsoleListener`, registered unconditionally
-  (5.13), sets `extra['Full command']` to the whole command line, arguments included, and
-  the scope copies it onto every error and every sampled transaction of that command. A
-  command taking emails as arguments sent them in clear. Mask `extra` recursively, like the
-  rest of the event.
-- **The message Messenger copies into `ErrorDetailsStamp`.** On `WorkerMessageFailedEvent`,
-  `AddErrorDetailsStampListener` (priority 200) copies the exception message before
-  `SendFailedMessageForRetryListener` (priority 100) logs it: a processor that rewrites the
-  message when it is logged comes too late, and the raw message stays in the
-  `messenger_messages` row through every retry and in `failed`. Mask the exception from a
-  listener on the same event above priority 200.
-- **The `failed` transport is purged.** It keeps a message until someone retries or removes
-  it, and `messenger:failed:remove` takes ids or `--all`, never an age. Schedule a purge by
-  age (a `DELETE` on `messenger_messages` where `queue_name` is the failure queue and
-  `created_at` is older than the retention), next to the monitor's own purge (§16).
+It keeps a message until someone retries or removes it, and `messenger:failed:remove` takes
+ids or `--all`, never an age. Schedule a purge by age (a `DELETE` on `messenger_messages`
+where `queue_name` is the failure queue and `created_at` is older than the retention), next
+to the monitor's own purge (§16).
 
 ### Globally ignored exceptions
 
@@ -2075,7 +2060,7 @@ Not tolerable on a project where you commit ten times an hour, but at a normal f
 
 ### Mechanical rules: refused at commit, not found at audit
 
-Every forbidden anti-pattern that reduces to a pattern in the text is refused by the gate, not left for `/gap-code` to find pass after pass: a raw palette colour, `target="_blank"` without `rel`, an email in a log context, island props read by hand in a test, an em dash in visible text, a finding's identifier cited in the code. A rule that only an audit enforces comes back with the next feature.
+Every forbidden anti-pattern that reduces to a pattern in the text is refused by the gate, not left for `/gap-code` to find pass after pass: a raw palette colour, `target="_blank"` without `rel`, island props read by hand in a test, an em dash in visible text, a finding's identifier cited in the code. A rule that only an audit enforces comes back with the next feature.
 
 - **The tool that owns the language first.** An ESLint rule for TS and TSX (the `guards/*` rules of reactony), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `check-mechanical`.
 - **One script for every project of the stack**, in `dev-standards` (`symfony-react/check-mechanical/`), with its rules and their tests. A project's `bin/check-mechanical` only calls it, through the same relative path as the `docs/` symlinks. No project keeps its own copy, rule list or config file: copies diverge (two of them had, at 499 and 669 lines), and a rule worth having in one project of the stack is worth having in all of them. A rule that holds for one project only does not belong in the script.

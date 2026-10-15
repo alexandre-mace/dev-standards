@@ -53,8 +53,8 @@ branch hands it nothing.
   hand-written fetch, RHF + Zod, `@/` imports, a fixed log message with the exception
   under `exception`. Next and TanStack Start: Base UI, the kit rather than a copy, typed
   routes, baked data.
-- **The cross-cutting themes of `/gap-code`** on the touched files: personal data in logs
-  and fixtures, twins that must stay aligned, the API contract end to end, where each link
+- **The cross-cutting themes of `/gap-code`** on the touched files: secrets in logs
+  and real personal data in fixtures, twins that must stay aligned, the API contract end to end, where each link
   and call to action leads, form accessibility.
 - **A family, not a line.** When the diff fixes or introduces a pattern, search the
   repository for its siblings. A defect that reduces to a pattern and that the gate does
