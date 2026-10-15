@@ -68,7 +68,8 @@ On the line above the occurrence, it covers that line; several can stack above o
 In the first three lines of a file (and the exceptions stacked right under them), it
 covers the whole file: the prompts sent to a language model, a test that quotes the
 characters a rule refuses. Any comment syntax works (`//`, `#`, `{# #}`, `{/* */}`,
-`<!-- -->`); in Markdown, one quoted in code is an example, not an exception.
+`<!-- -->`); in Markdown, one quoted in code is an example, not an exception. The line of
+an exception is not judged, so its reason may name what it excuses.
 
 An exception without a reason, naming an unknown rule, or covering no occurrence any more
 is refused too: it goes away with the code it covered.

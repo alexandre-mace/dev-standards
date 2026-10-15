@@ -112,13 +112,17 @@ foreach ($contents as $path => $content) {
     if (str_contains($content, "\0")) {
         continue;
     }
-    [$directives, $malformed] = directives($content, $path, $rules);
+    [$directives, $malformed, $directiveLines] = directives($content, $path, $rules);
     foreach ($malformed as [$line, $problem]) {
         $found[] = \sprintf('%s:%d: [%s] %s', $path, $line, DIRECTIVE, $problem);
     }
     foreach ($rules as $id => $rule) {
         $hits = applies($rule, $path) ? $rule['find']($content, $path) : [];
         foreach ($hits as [$line, $excerpt]) {
+            // The reason of an exception may name what it excuses.
+            if (isset($directiveLines[$line])) {
+                continue;
+            }
             $covered = false;
             foreach ($directives as $i => $directive) {
                 if ($directive['rule'] === $id && ($directive['file'] || $directive['target'] === $line)) {
@@ -203,18 +207,19 @@ function applies(array $rule, string $path): bool
  *
  * @param array<string, mixed> $rules
  *
- * @return array{list<array{rule: string, line: int, target: int, file: bool, used: bool}>, list<array{int, string}>}
+ * @return array{list<array{rule: string, line: int, target: int, file: bool, used: bool}>, list<array{int, string}>, array<int, true>}
  */
 function directives(string $content, string $path, array $rules): array
 {
     if (!str_contains($content, DIRECTIVE)) {
-        return [[], []];
+        return [[], [], []];
     }
     $searched = 'md' === extension($path) ? withoutCode($content) : $content;
     $lines = explode("\n", $searched);
     $directives = [];
     $malformed = [];
     $pending = [];
+    $directiveLines = [];
     // The header: the exceptions from the first lines on, one per line, until a line that is not one.
     $header = true;
     foreach ($lines as $i => $line) {
@@ -227,6 +232,7 @@ function directives(string $content, string $path, array $rules): array
             $header = $header && $number < FILE_HEADER_LINES;
             continue;
         }
+        $directiveLines[$number] = true;
         // The reason runs to the end of the comment, its closing marks left out.
         $rest = trim((string) preg_replace('/\s*(?:\*\/\s*\}?|#\}|-->|%\})\s*$/', '', $m[1]));
         if (!preg_match('/^([a-z][a-z0-9-]*)\s*(?::\s*(.*))?$/', $rest, $parts)) {
@@ -253,7 +259,7 @@ function directives(string $content, string $path, array $rules): array
         $malformed[] = [$directive['line'], 'exception en fin de fichier : elle ne couvre aucune ligne'];
     }
 
-    return [$directives, $malformed];
+    return [$directives, $malformed, $directiveLines];
 }
 
 /**
