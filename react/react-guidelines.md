@@ -98,13 +98,28 @@ bug, and the same scenario goes into a spec.
 
 ## 3. shadcn and Base UI
 
-**Base UI, never React Aria or Radix**, whatever the project, in **Vega** style (`"style": "base-vega"` in `components.json`).
-Vega is the classic shadcn geometry: a 36 px default button, `rounded-md`. Nova, the other Base UI
-style, is visibly tighter, a 32 px button on `rounded-lg`, and a project that lands on it without
-choosing it ends up with controls smaller than the rest of its interface. Composition
-goes through the `render` prop and standard DOM handlers. `asChild` exists in neither
-base, it is a Radix idiom. A project still on `new-york-v4` is a gap for `/gap-code` to
-raise: migrate it in full, never two bases in one project.
+**Base UI, never React Aria or Radix**, whatever the project. Composition goes through
+the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a
+Radix idiom. A project still on `new-york-v4`, `radix-*` or `aria-*` is a gap for
+`/gap-code` to raise: migrate it in full, never two bases in one project.
+
+**Which of the two Base UI styles is a project decision**, taken once and held, not a
+rule this file can set for everyone. The two differ by geometry alone:
+
+- **Vega** is the classic shadcn geometry, a 36 px default button on `rounded-md`.
+- **Nova** is visibly tighter, a 32 px button on `rounded-lg`.
+
+A project consuming the `@alexandremace` kit inherits the kit's style, since the kit
+vendors the components: changing it there means migrating the kit and propagating, not
+editing `components/ui/` in the consumer.
+
+**What `/gap-code` raises is the disagreement, not the choice.** The `style` field of
+`components.json` is only read by the CLI on the next `add`: it does not reshape what is
+already vendored, so it drifts silently from the components sitting next to it. Measure
+both, the field and the root class of `components/ui/button.tsx`, `rounded-md` plus `h-9`
+for Vega against `rounded-lg` plus `h-8` for Nova. A project that declares one and vends
+the other gets its next component in a geometry that does not match the rest, and nobody
+is told.
 
 shadcn is **not an npm dependency**: the components are vendored source in
 `components/ui/`. There is no `pnpm update`, only the CLI, component by component,

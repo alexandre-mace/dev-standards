@@ -78,7 +78,7 @@ Do not add `--turbopack`: it is the default bundler since Next 16.
 
 ## 2. Components
 
-**Base UI, never React Aria or Radix**, whatever the project, in Vega style. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. Migrate a project left on another base in full, never two bases in one project.
+**Base UI, never React Aria or Radix**, whatever the project. Composition goes through the `render` prop and standard DOM handlers. `asChild` exists in neither base, it is a Radix idiom. Migrate a project left on another base in full, never two bases in one project. Which of the two Base UI styles, Vega or Nova, is a project decision: see `react/react-guidelines.md` §3.
 
 A **project with its own identity** stops there: official shadcn CLI, no registry.
 

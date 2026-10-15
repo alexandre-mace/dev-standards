@@ -239,7 +239,7 @@ anything expensive to call in a loop. And **headers**: a Content Security Policy
 
 ## 4. UI
 
-**Base UI in Vega style**, whatever the project, with Tailwind 4 through PostCSS.
+**Base UI**, whatever the project, with Tailwind 4 through PostCSS. Vega or Nova is a project decision: see `react/react-guidelines.md` §3.
 
 A product with its own identity stops there: official shadcn CLI, no registry. That is the common case for an app.
 
