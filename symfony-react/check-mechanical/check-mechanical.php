@@ -27,8 +27,12 @@
 
 declare(strict_types=1);
 
-/** Never read: generated, locked, vendored, or quoting the deviations on purpose. */
-const SKIPPED = '#^(docs/gap-analysis\.md$|assets/components/ui/|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
+/**
+ * Never read: generated, locked, vendored, or quoting on purpose: the deviations of
+ * docs/gap-analysis.md, and data/, imported datasets and sources quoted as they are
+ * (prefectoral orders, official texts), not the project's own prose.
+ */
+const SKIPPED = '#^(docs/gap-analysis\.md$|data/|assets/components/ui/|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
 
 /** An exception within these first lines of a file covers the whole file. */
 const FILE_HEADER_LINES = 3;
@@ -551,9 +555,11 @@ function doubleDocblock(string $content): array
 {
     $lines = explode("\n", $content);
     $out = [];
-    if (preg_match_all('#\*/[ \t]*\n[ \t]*/\*\*#', $content, $all, \PREG_OFFSET_CAPTURE)) {
-        foreach ($all[0] as [, $offset]) {
-            $line = substr_count($content, "\n", 0, $offset) + 2;
+    // The first comment must be a docblock too: a `/* === … === */` banner above a docblock
+    // documents nothing, it splits the file into sections.
+    if (preg_match_all('#/\*\*(?:(?!\*/).)*\*/(?=[ \t]*\n[ \t]*(/\*\*))#s', $content, $all, \PREG_OFFSET_CAPTURE)) {
+        foreach ($all[1] as [, $offset]) {
+            $line = substr_count($content, "\n", 0, $offset) + 1;
             $out[] = [$line, $lines[$line - 1] ?? ''];
         }
     }
@@ -687,7 +693,7 @@ function rules(): array
             'paths' => $ui,
             'except' => $tests,
             'kind' => 'fichier',
-            'find' => static fn (string $c): array => matches('/(?<![\w:-])(?:spinner-(?:border|grow)|visually-hidden(?:-focusable)?|text-md|d-(?:none|flex|block|inline-block|grid)|form-(?:control|group|select)|text-muted|font-weight-\w+)(?![\w-])/', $c),
+            'find' => static fn (string $c): array => matches('/(?<![\w:\/-])(?:spinner-(?:border|grow)|visually-hidden(?:-focusable)?|text-md|d-(?:none|flex|block|inline-block|grid)|form-(?:control|group|select)|text-muted|font-weight-\w+)(?![\w-])/', $c),
         ],
         'libelle-anglais' => [
             'message' => 'libellé anglais du kit shadcn lu par un lecteur d\'écran : en français (« Fermer », « Autres pages », « Afficher »)',

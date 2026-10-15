@@ -75,7 +75,8 @@ An exception without a reason, naming an unknown rule, or covering no occurrence
 is refused too: it goes away with the code it covered.
 
 The script skips by itself what every project shares: `docs/gap-analysis.md`, which quotes
-the deviations, the shadcn registry components (`assets/components/ui/`), the generated
+the deviations, `data/`, which holds imported datasets and sources quoted as they are
+(prefectoral orders, official texts) rather than the project's prose, the shadcn registry components (`assets/components/ui/`), the generated
 code (`assets/lib/api/`, `openapi.yaml`, `public/build/`), `vendor/`, `node_modules/` and
 the lockfiles. No other folder is out of reach, old code included.
 
