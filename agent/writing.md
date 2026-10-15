@@ -4,6 +4,30 @@ Applies to everything written: prose, site content, UI labels, validation messag
 code comments, commit messages, documentation, and replies in conversation. In French
 as in English.
 
+## Which language
+
+Two decisions, not one.
+
+- **The content is in the project's language**, chosen at the start and held everywhere:
+  interface labels, validation and error messages, the text a visitor reads, and the
+  declarations that announce it (`<html lang>`, `openGraph.locale`).
+- **The code is in English**, always, whatever the project's language: classes,
+  functions, variables, properties, file names, routes, serialization groups, URL
+  parameters, database columns.
+- **A domain term naming a French legal, administrative or agricultural reality stays in
+  French**, unchanged. A `Fonciere`, the `Aides`, the `statuts` of a company: translating
+  them loses what they name, since `RealEstateCompany` drops the legal vehicle and
+  `Subsidies` drops the specific scheme. Keep the French word whole, never half of it.
+- **Never French word order in English words.** `$datePayment` is the real defect, worse
+  than a French name would be: it reads as English and is not. It is `$paymentDate`.
+- **The comments are in French** on a French project. A comment carries nothing but
+  nuance, and the nuance is better in the language it was thought in; the identifiers
+  around it already carry the English.
+
+Measured on La Grange and Le Grenier: 4 of 468 entity properties are not in English, and
+each of the three real ones is a French legal term. The rule describes what the code
+already does.
+
 ## Typography
 
 - No dash to set off a phrase inside a sentence, whatever its length: an apposition or an

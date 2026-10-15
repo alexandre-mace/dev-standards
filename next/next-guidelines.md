@@ -112,7 +112,7 @@ The default palette comes from the kit. A project can take its own by redeclarin
 
 ## 4. Layout and SEO
 - **Server Components by default.** Keep `"use client"` for components that hold state or interaction.
-- **The language is a project decision**, taken at the start and held everywhere: content, comments, and declared both in `<html lang>` and in `openGraph.locale`. Domain identifiers in that language are fine in scripts and models (`Pays`, `ANNEE`, `donnees`).
+- **The language of the site is declared twice**, in `<html lang>` and in `openGraph.locale`, and the two agree. Which language applies to what, content, code and comments, is in `agent/writing.md`.
 - **Geist through the `geist` package**, never through `next/font/google`: `import { GeistSans } from "geist/font/sans"`, variables on `<html>`, `font-sans` on the `<body>`.
 - **Every site lives on its canonical domain** (`<project>.alexandremace.fr` or `<project>.climatelab.fr`), declared in `metadataBase`. Never a `*.vercel.app`: the canonical domain rules in metadata, OG and redirects. Factor the description into a const, it is used three times.
 - **Generated OG image**: `app/opengraph-image.tsx` with `ImageResponse`, 1200×630, never a static image that goes stale. It renders baked data only, never a query parameter or anything else a visitor controls: in the Node runtime, user input reaching the SVG was a remote code execution before 16.3.6.
