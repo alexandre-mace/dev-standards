@@ -91,7 +91,7 @@ Details and setup: section 13.
 
 ### 7. Quality gate
 
-`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`.
+`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
 
 **`make ci-local` must be green before merge** (CI section below): it replays every CI job,
 the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
@@ -2040,6 +2040,7 @@ An example `.husky/pre-commit`:
 #!/usr/bin/env sh
 set -e
 
+bin/check-mechanical
 pnpm exec lint-staged
 
 pnpm tsc --noEmit
@@ -2071,6 +2072,16 @@ Not tolerable on a project where you commit ten times an hour, but at a normal f
 > With TypeScript 7 (native, GA; migration in reactony §8), `tsc --noEmit` drops from ~8s to ~1s.
 
 **Only the tests (unit + functional) stay OUT of the pre-commit hook**: they can climb to several minutes. Those belong in CI.
+
+### Mechanical rules: refused at commit, not found at audit
+
+Every forbidden anti-pattern that reduces to a pattern in the text is refused by the gate, not left for `/gap-code` to find pass after pass: a raw palette colour, `target="_blank"` without `rel`, an email in a log context, island props read by hand in a test, an em dash in visible text, a finding's identifier cited in the code. A rule that only an audit enforces comes back with the next feature.
+
+- **The tool that owns the language first.** An ESLint rule for TS and TSX (the `guards/*` rules of reactony), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `bin/check-mechanical`, a script of the project.
+- **Two kinds of rule.** A file rule reads every line of the files it sees. An addition rule reads only the lines added since the merge base: it lands the day the family is found, refusing new occurrences while the old stock is cleaned, then becomes a file rule.
+- **Where it runs**: the pre-commit hook on the staged files, in their staged version, and `make ci-local` on every tracked file. Not in the hosted CI on its own: `make ci-local` is the gate.
+- **Each rule carries** its reason, its exceptions by path and why, and a test that feeds it a violating file and a clean one. Frozen code is excluded by path, once, at the top.
+- **Where rules come from**: every finding of `/gap-code` or `/review-diff` that reduces to a pattern, in the pull request that fixes it.
 
 ### When to run `/quality` during a session
 

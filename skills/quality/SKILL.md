@@ -36,6 +36,7 @@ vendor/bin/phpstan analyse --no-progress
 vendor/bin/php-cs-fixer fix --dry-run --diff
 php bin/console doctrine:schema:validate --skip-sync
 php -d memory_limit=256M bin/console lint:container
+bin/check-mechanical --all                       # when the project has it; its absence is a finding
 composer audit
 bin/phpunit <the test files the change reaches>   # the whole suite only without a CI that runs it
 ```
