@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# One lock for the whole machine, so that two sessions never run two heavy suites at once
+# on the same workstation (README.md, next to it).
+#
+#   machine-lock run -- <command…>   waits for the lock, runs the command, gives the lock
+#                                    back when it ends, and exits with its status
+#   machine-lock status              who holds the lock, or "libre"
+#   machine-lock held                exit 0 if this process chain already holds it
+#
+# MACHINE_LOCK_TIMEOUT bounds the wait in seconds (0 or unset: no bound); past it, exit
+# 75 naming the holder. MACHINE_LOCK_DIR moves the lock (the tests only): the default is
+# one place per user, outside any repository, so every checkout and worktree shares it.
+#
+# The lock is a BSD lock (flock(2)) on an open file, taken through lockf on macOS and
+# flock on Linux: the kernel drops it when the holder dies, whatever kills it, and after a
+# reboot nothing holds it, so a dead holder never needs reclaiming by hand. The holder is
+# this script's shell, not the command, which runs with the descriptor closed: a daemon
+# the command leaves behind does not keep the machine locked.
+#
+# A run nested under a run of the same chain (bin/ci-local rerunning a step under the
+# lock) runs straight away: MACHINE_LOCK_HELD names the holder, and counts only when that
+# holder is an ancestor of the caller. On a hosted runner (GITHUB_ACTIONS=true) the lock
+# does nothing: CI alone does not tell, since bin/ci-local sets CI=true itself.
+
+set -u
+
+LOCK_DIR=${MACHINE_LOCK_DIR:-$HOME/.local/state/machine-lock}
+LOCK_FILE=$LOCK_DIR/lock
+HOLDER_FILE=$LOCK_DIR/holder
+EX_TEMPFAIL=75
+
+usage() {
+    sed -n '5,11p' "$0" | sed 's/^# \{0,1\}//' >&2
+    exit 2
+}
+
+# Is $1 an ancestor of this process (or this process itself)?
+is_ancestor() {
+    local pid=$$
+    while [ -n "$pid" ] && [ "$pid" -gt 1 ]; do
+        [ "$pid" = "$1" ] && return 0
+        pid=$(ps -o ppid= -p "$pid" 2> /dev/null | tr -d ' ')
+    done
+    return 1
+}
+
+held_by_chain() {
+    local held=${MACHINE_LOCK_HELD:-}
+    [ -n "$held" ] || return 1
+    [ "${held%:*}" = "$LOCK_FILE" ] || return 1
+    is_ancestor "${held##*:}"
+}
+
+try_lock() {
+    if command -v flock > /dev/null 2>&1; then
+        flock -n 9
+    else
+        lockf -s -t 0 9
+    fi
+}
+
+# The holder file: pid, repository, folder, command, start (epoch seconds), one per line.
+write_holder() {
+    local repo common tmp=$HOLDER_FILE.$$
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2> /dev/null) || common=
+    case "$common" in
+        */.git) repo=$(basename "$(dirname "$common")") ;;
+        ?*) repo=$(basename "$common" .git) ;;
+        *) repo='hors dépôt' ;;
+    esac
+    printf '%s\n%s\n%s\n%s\n%s\n' "$$" "$repo" "$PWD" "$*" "$(date +%s)" > "$tmp" 2> /dev/null &&
+        mv -f "$tmp" "$HOLDER_FILE" 2> /dev/null
+}
+
+duration() {
+    local s=$1
+    if [ "$s" -ge 3600 ]; then
+        printf '%d h %02d min' $((s / 3600)) $((s % 3600 / 60))
+    elif [ "$s" -ge 60 ]; then
+        printf '%d min %02d s' $((s / 60)) $((s % 60))
+    else
+        printf '%d s' "$s"
+    fi
+}
+
+# One line on the holder, or an empty string when the holder file names nobody alive (the
+# instant between a lock taken and its holder file written).
+describe_holder() {
+    local pid repo dir cmd since now tilde='~'
+    [ -r "$HOLDER_FILE" ] || return 0
+    {
+        IFS= read -r pid
+        IFS= read -r repo
+        IFS= read -r dir
+        IFS= read -r cmd
+        IFS= read -r since
+    } < "$HOLDER_FILE"
+    [ -n "${pid:-}" ] && kill -0 "$pid" 2> /dev/null || return 0
+    now=$(date +%s)
+    printf '%s (%s) : %s, depuis %s (%s)' "$repo" "${dir/#$HOME/$tilde}" "$cmd" \
+        "$(date -r "$since" +%H:%M:%S 2> /dev/null || date -d "@$since" +%H:%M:%S)" \
+        "$(duration $((now - since)))"
+}
+
+cmd_status() {
+    local holder
+    holder=$(describe_holder)
+    if [ -n "$holder" ]; then
+        echo "tenu par $holder"
+        return 0
+    fi
+    # Nobody alive in the holder file: a try on the lock tells free from a holder that is
+    # starting, and gives it back at once.
+    mkdir -p "$LOCK_DIR"
+    exec 9>> "$LOCK_FILE"
+    if try_lock; then
+        echo libre
+    else
+        echo "tenu par un processus qui démarre"
+    fi
+}
+
+cmd_run() {
+    [ "${1:-}" = -- ] && shift
+    [ $# -gt 0 ] || usage
+
+    if [ "${GITHUB_ACTIONS:-}" = true ] || held_by_chain; then
+        exec "$@"
+    fi
+
+    local timeout=${MACHINE_LOCK_TIMEOUT:-0} start now waited holder last= last_print=0 tty=0
+    case "$timeout" in '' | *[!0-9]*)
+        echo "machine-lock : MACHINE_LOCK_TIMEOUT attend un nombre de secondes, pas « $timeout »." >&2
+        exit 2
+        ;;
+    esac
+    mkdir -p "$LOCK_DIR" || exit 2
+    exec 9>> "$LOCK_FILE" || exit 2
+    [ -t 2 ] && tty=1
+
+    start=$(date +%s)
+    until try_lock; do
+        now=$(date +%s)
+        waited=$((now - start))
+        holder=$(describe_holder)
+        if [ "$timeout" -gt 0 ] && [ "$waited" -ge "$timeout" ]; then
+            [ "$tty" = 1 ] && printf '\r\033[K' >&2
+            echo "machine-lock : verrou toujours tenu après $(duration "$waited") (MACHINE_LOCK_TIMEOUT=$timeout), par ${holder:-un processus qui démarre}" >&2
+            exit $EX_TEMPFAIL
+        fi
+        # No holder named yet: one is starting, or a status call is peeking. Retry quickly
+        # before saying anything.
+        if [ -z "$holder" ] && [ "$waited" -lt 2 ]; then
+            sleep 0.2
+            continue
+        fi
+        holder=${holder:-un processus qui démarre}
+        # A terminal gets one line rewritten in place; a log gets a line when the holder
+        # changes, then one a minute.
+        if [ "$tty" = 1 ]; then
+            printf '\r\033[Kmachine-lock : en attente depuis %s, verrou tenu par %s' "$(duration "$waited")" "$holder" >&2
+        elif [ "${holder% (*}" != "${last% (*}" ] || [ $((now - last_print)) -ge 60 ]; then
+            echo "machine-lock : en attente depuis $(duration "$waited"), verrou tenu par $holder" >&2
+            last_print=$now
+        fi
+        last=$holder
+        sleep 1
+    done
+    if [ -n "$last" ]; then
+        [ "$tty" = 1 ] && printf '\r\033[K' >&2
+        echo "machine-lock : pris après $(duration $(($(date +%s) - start))) d'attente." >&2
+    fi
+
+    write_holder "$@"
+    export MACHINE_LOCK_HELD="$LOCK_FILE:$$"
+    # A signal (Ctrl-C reaches the whole process group) is handled once the command has
+    # ended: the lock stays held while it runs, and its status is the one returned.
+    trap ':' INT TERM HUP
+    "$@" 9>&-
+    local status=$?
+    rm -f "$HOLDER_FILE"
+    exit "$status"
+}
+
+case "${1:-}" in
+    run) shift; cmd_run "$@" ;;
+    status) cmd_status ;;
+    held) held_by_chain ;;
+    -h | --help) usage ;;
+    *) usage ;;
+esac
