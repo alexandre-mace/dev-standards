@@ -50,7 +50,7 @@ declaration, which only a new file adds, and judge new files only.
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `docblock-double`, `gitignore-src` |
-| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `strict-types`, `classe-finale` |
+| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `formulaire-twig`, `strict-types`, `classe-finale` |
 
 A rule that holds for one project only stays out of the script. `cta-je` (a button in
 « Je ») stays in La Grange's design system: Le Grenier's asks for the first person when
