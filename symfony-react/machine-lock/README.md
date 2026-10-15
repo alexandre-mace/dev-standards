@@ -37,14 +37,16 @@ machine-lock held                        # exit 0 if this process chain holds it
 
 `bin/ci-local` takes the lock by itself: it reruns itself under `machine-lock run` at
 start, once its arguments are read (so `--help` does not wait) and before it touches
-`var/ci-local/`. Same relative path and same `DEV_STANDARDS` variable as
-`bin/check-mechanical`.
+`var/ci-local/`. Same lookup, next to the main checkout, and same `DEV_STANDARDS` variable
+as `bin/check-mechanical`.
 
 ```bash
 ARGS=("$@")
 # … arguments read …
 if [ "${GITHUB_ACTIONS:-}" != true ]; then
-    MACHINE_LOCK=${DEV_STANDARDS:-$(cd "$(dirname "$0")" && pwd)/../../../dev-standards}/symfony-react/machine-lock/machine-lock
+    GIT_COMMON_DIR=$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+    CHECKOUT=$(if [ -n "$GIT_COMMON_DIR" ]; then dirname "$GIT_COMMON_DIR"; else cd "$(dirname "$0")/.." && pwd; fi)
+    MACHINE_LOCK=${DEV_STANDARDS:-$CHECKOUT/../../dev-standards}/symfony-react/machine-lock/machine-lock
     if [ ! -x "$MACHINE_LOCK" ]; then
         echo "machine-lock introuvable : $MACHINE_LOCK" >&2
         exit 2
