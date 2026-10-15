@@ -8,10 +8,13 @@ PHP 8.1 or later, no dependency.
 
 ## In a project
 
-`bin/check-mechanical` only calls this script, through the same relative path as the
-guides of `docs/`: the projects and their worktrees sit next to each other under
-`~/dev/<organisation>/`, and `dev-standards` under `~/dev/`. `DEV_STANDARDS` points to
-another copy, a worktree of this repository for instance.
+`bin/check-mechanical` only calls this script, found next to the project's main checkout,
+where the guides of `docs/` point too: the projects sit next to each other under
+`~/dev/<organisation>/`, and `dev-standards` under `~/dev/`. The main checkout comes from
+`git rev-parse --git-common-dir`, not from the script's own path: a worktree that does not
+sit next to the project (`.claude/worktrees/<name>/`, where Claude Code puts them) would
+otherwise look for `dev-standards` inside `.claude/`, and the hook would exit in error.
+`DEV_STANDARDS` points to another copy, a worktree of this repository for instance.
 
 ```php
 #!/usr/bin/env php
@@ -19,7 +22,9 @@ another copy, a worktree of this repository for instance.
 
 declare(strict_types=1);
 
-$devStandards = getenv('DEV_STANDARDS') ?: __DIR__.'/../../../dev-standards';
+$commonDir = trim((string) shell_exec('git -C '.escapeshellarg(__DIR__).' rev-parse --path-format=absolute --git-common-dir 2>/dev/null'));
+$checkout = '' !== $commonDir ? \dirname($commonDir) : __DIR__.'/..';
+$devStandards = getenv('DEV_STANDARDS') ?: $checkout.'/../../dev-standards';
 $script = $devStandards.'/symfony-react/check-mechanical/check-mechanical.php';
 if (!is_file($script)) {
     fwrite(\STDERR, "check-mechanical introuvable : $script\n");
