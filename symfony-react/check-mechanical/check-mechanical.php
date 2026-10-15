@@ -687,6 +687,15 @@ function rules(): array
             'kind' => 'ajout',
             'find' => static fn (string $c): array => matches('/(?<![-\w\[])(?:[\w-]+:)*(?:bg|text|fill|stroke|ring|border|from|to|via|divide|outline|decoration)-(?:white|black)\b/', $c),
         ],
+        // React islands (reactony, principle 6): a one-click action posts through its `/api`
+        // route and the SDK, not a form the browser submits with a hidden CSRF token.
+        'formulaire-twig' => [
+            'message' => 'formulaire POST écrit à la main dans un gabarit : l\'action passe par sa route `/api` et le SDK dans un îlot (reactony, principe 6) ; l\'authentification et le back-office du bundle portent leur exception',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/<form\b[^>]*\bmethod\s*=\s*["\']post["\']|\bname\s*=\s*["\']_token["\']/i', $c),
+        ],
         'classe-inexistante' => [
             'message' => 'classe Bootstrap ou qu\'aucune feuille ne définit : son équivalent Tailwind (`animate-spin`, `sr-only`, `text-base`, `hidden`)',
             'ext' => ['ts', 'tsx', 'js', 'twig', 'css'],
