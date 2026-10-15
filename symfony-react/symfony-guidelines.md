@@ -656,12 +656,19 @@ refuses the cast: a 500 for a forged URL, logged as a bug. Constrain each parame
 URL never matches the route and answers 404:
 
 ```php
-#[Route('/api/adverts/{id}', requirements: ['id' => Requirement::DIGITS], methods: ['GET'], format: 'json')]
+#[Route('/api/adverts/{id}', requirements: ['id' => RouteRequirement::ID], methods: ['GET'], format: 'json')]
 #[Route('/alerts/{token}', requirements: ['token' => Requirement::UUID])]
 ```
 
-`Symfony\Component\Routing\Requirement\Requirement` holds the usual patterns, and a backed
-enum parameter takes `new EnumRequirement(MyEnum::class)`.
+**A numeric id is bounded, not just digits.** `Requirement::DIGITS` (`\d+`) still matches
+`99999999999`, and PostgreSQL refuses it for an `int4` column (SQLSTATE 22003): the same
+500. Nine digits stay under 2 147 483 647, so one project constant,
+`RouteRequirement::ID = '[1-9][0-9]{0,8}'`, serves every id route; `check-mechanical`
+refuses a new `Requirement::DIGITS`, `'\d+'` or `'[0-9]+'` (`id-sans-borne`). A `bigint`
+column would take its own bound.
+
+`Symfony\Component\Routing\Requirement\Requirement` holds the other usual patterns, and a
+backed enum parameter takes `new EnumRequirement(MyEnum::class)`.
 
 ### A success with no content answers 204
 

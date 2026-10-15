@@ -809,6 +809,13 @@ function rules(): array
             'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/\bChoice\(\s*\[|\bchoices:\s*\[/', $c, withoutComments($c, $p)),
         ],
+        'id-sans-borne' => [
+            'message' => 'identifiant de route sans borne (`Requirement::DIGITS`, `\d+`, `[0-9]+`) : `99999999999` atteint PostgreSQL, qui refuse l\'int4 et répond 500, borner à neuf chiffres (`[1-9][0-9]{0,8}`)',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/Requirement::DIGITS|=>\s*\'(?:\\\\d|\[0-9\])\+\'/', $c, withoutComments($c, $p)),
+        ],
         'docblock-double' => [
             'message' => 'docblock suivi d\'un autre docblock : le premier ne documente rien, le fondre dans le second ou le retirer',
             'ext' => ['php', 'ts', 'tsx', 'js', 'mjs'],
