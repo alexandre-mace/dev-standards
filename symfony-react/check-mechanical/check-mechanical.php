@@ -27,8 +27,12 @@
 
 declare(strict_types=1);
 
-/** Never read: generated, locked, vendored, or quoting the deviations on purpose. */
-const SKIPPED = '#^(docs/gap-analysis\.md$|assets/components/ui/|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
+/**
+ * Never read: generated, locked, vendored, or quoting on purpose: the deviations of
+ * docs/gap-analysis.md, and data/, imported datasets and sources quoted as they are
+ * (prefectoral orders, official texts), not the project's own prose.
+ */
+const SKIPPED = '#^(docs/gap-analysis\.md$|data/|assets/components/ui/|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
 
 /** An exception within these first lines of a file covers the whole file. */
 const FILE_HEADER_LINES = 3;

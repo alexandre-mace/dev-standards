@@ -166,11 +166,11 @@ expect(0 === $code && str_contains($out, '--all [--base R]') && str_contains($ou
 
 // What every project shares is skipped by the script itself.
 $root = directory();
-foreach (['docs/gap-analysis.md', 'assets/components/ui/button.tsx', 'assets/lib/api/types.gen.ts', 'vendor/a/b.php', 'node_modules/a/b.js', 'pnpm-lock.yaml', 'composer.lock', 'openapi.yaml'] as $path) {
+foreach (['docs/gap-analysis.md', 'data/fermage/source.json', 'assets/components/ui/button.tsx', 'assets/lib/api/types.gen.ts', 'vendor/a/b.php', 'node_modules/a/b.js', 'pnpm-lock.yaml', 'composer.lock', 'openapi.yaml'] as $path) {
     write($root, $path, "A \u{2014} B\n");
 }
 [$code, , $err] = check(['--root', $root, ...filesUnder($root)]);
-expect(0 === $code, 'le relevé, les composants du registre, le code généré et les dépendances ne sont pas lus', $err);
+expect(0 === $code, 'le relevé, les données de data/, les composants du registre, le code généré et les dépendances ne sont pas lus', $err);
 
 // The hook judges the staged version, and only its new lines for an "ajout" rule: an
 // old pass number of the same file passes, the new one does not, even under a non-ASCII
