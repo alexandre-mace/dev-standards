@@ -1,6 +1,6 @@
 ---
 name: gap-code
-description: Audits a codebase against its stack's guidelines and writes every deviation into docs/gap-analysis.md, aiming at zero. Reads what changed since the previous pass by default, the whole codebase on the first one. Works on the three stacks - Symfony+React, Next, TanStack Start.
+description: Audits a whole codebase against its stack's guidelines and writes every deviation into docs/gap-analysis.md, aiming at zero, Basse included. `delta` reviews only what changed since the previous pass, to prepare it. Works on the three stacks - Symfony+React, Next, TanStack Start.
 ---
 
 **The guidelines are right, the code gets corrected.** The mirror skill is `/gap-sota`,
@@ -14,21 +14,17 @@ Basse finding therefore has to be worth a commit: a docblock that now says the w
 thing, dead code, a visible text error, a twin that will drift. A matter of taste nobody
 would fix is not a finding, and listing it only keeps the count from reaching zero.
 
-**A delta by default.** The header of `docs/gap-analysis.md` names the commit the previous
-pass audited. From it:
+**Every file, every pass.** A pass reads the whole repository, unchanged files included:
+the code has not moved, but the reader has. A newer model, or a guideline sharpened since,
+sees in old code what the previous passes missed.
 
-- every file changed since that commit is read in full, not only its diff: a defect in
-  an untouched part of a touched file counts;
-- the whole repository is still searched for the mechanical rules (section 2), and
-  scanned for config and the gate (section 3) and the agent files (section 4);
-- every rule added or changed in the guidelines since that commit's date
-  (`git log --since` in `dev-standards`) is searched across every file, since a new rule
-  applies to old code too.
-
-A full pass, every file read, is for the first audit, a header without a commit, a large
-rewrite of the guidelines, or when the user asks for one. Seen: a delta review of a
-week's work, 287 files, found 35 findings, each of which a full pass would have reported
-among thousands of re-read lines that had not moved.
+**A delta, to prepare a pass, never to replace one** (`/gap-code delta`). It reads in
+full every file changed since the commit the previous pass audited, named in the header
+of `docs/gap-analysis.md`, and still searches the whole repository for the mechanical
+rules, the config and the gate (sections 2 to 4) and every guideline rule added since that
+commit's date. It catches what a week of features introduced, cheaply, so the fix lot
+lands before the full pass and that pass is spent on what only a fresh full reading
+finds. It writes no `docs/gap-analysis.md`: its findings go straight to a fix lot.
 
 ## 1. Identify the stack, read its guidelines in full
 
@@ -43,8 +39,8 @@ test doctrine apply to all three.
 
 - Report a missing guidelines file as the first gap and stop: without the symlink into
   `dev-standards` there is nothing to audit against.
-- Read the existing `docs/gap-analysis.md` for two things only: the commit the previous
-  pass audited (section 0), and the deviations that were deliberately accepted. A fresh
+- Read the existing `docs/gap-analysis.md` for two things only: the deviations that were
+  deliberately accepted, and, for a delta, the commit the previous pass audited. A fresh
   scan finds everything else on its own, and git holds the history.
 - Stop on an archived repository, rather than auditing a corpse: a last commit saying
   "archive", a redirect to a successor, an archived flag on the remote.
@@ -154,7 +150,7 @@ except the accepted deviations.
 > Ecarts entre les guidelines de la stack et le code actuel, à la date de l'audit.
 > Organisé par priorité. Les cases servent le temps d'une session de nettoyage :
 > le prochain audit réécrit le fichier.
-> Audit de main à <commit complet>, le <date>. Le prochain audit relit ce qui a changé depuis.
+> Audit de main à <commit complet>, le <date>. Un delta part de ce commit.
 
 ---
 
