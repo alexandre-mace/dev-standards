@@ -1738,6 +1738,9 @@ trigger only after weighing it against the allowance.
 `bin/ci-local` (`make ci-local`) replays every job of `ci.yml`, with the same options, on
 the current checkout or worktree. One line per step with its status and duration, logs in
 `var/ci-local/`, `--fast` without the E2E, `--only <group>` to rerun one group.
+It reruns itself under `machine-lock run` (`dev-standards/symfony-react/machine-lock/`), one
+lock for the whole machine: it takes every core, and two runs at once, from two sessions
+or two projects, make unrelated tests miss their timeouts.
 
 - **Groups run in parallel, each stopping at its first failure**: the PHP analysis, the
   front checks, the E2E preparation (build, schema), then the suites. A common

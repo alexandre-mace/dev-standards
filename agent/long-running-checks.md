@@ -27,7 +27,12 @@ benchmark, a deploy to watch. Whoever runs it, the main session or a delegated a
   fail at random. Ask the host to keep the machine awake before a long run; a closed lid
   or a manual sleep still sleeps, so say so to the user when the run is long.
 - Two heavy suites running at once on one machine fight for the processor and make
-  tests flaky. Run one repository's full check at a time.
+  tests flaky: three local CIs started together on one laptop took the load to 40 to 65.
+  A full suite (a local CI, `playwright test` or `phpunit` without a filter) goes through
+  `machine-lock run --` (`symfony-react/machine-lock/`), which makes the second one wait
+  and says who holds the machine; `bin/ci-local` takes it by itself. Checking `pgrep`
+  first is not enough: it misses a suite started directly, and two sessions checking at
+  the same instant both start.
 
 ## Report the measurement, not the impression
 
