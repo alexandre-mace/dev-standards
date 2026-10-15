@@ -82,11 +82,19 @@ v8 (`useReactTable`) predates this: the compiler skips the component that calls 
 `getHeaderGroups()` and `getRowModel().rows`, never the instance. Migrate rather than work
 around it.
 
-**A unit test catches this only if Vitest runs the compiler.** It does when its config
-inherits the Vite plugins (`mergeConfig` over `vite.config.ts`, as reactony §9 asks): then a
-Vitest case on the real table, filtered down to the empty state, cleared, and back, is the
-test the table owes. Where Vitest has its own config without the compiler plugin, only an
-end-to-end test on a real build sees it, and the same scenario goes into a spec.
+**A unit test catches this only if Vitest runs the compiler**, and that depends on the stack:
+
+- **Symfony + React**: it does. `vitest.config.ts` is `mergeConfig(viteConfig, …)`
+  (reactony §9), so the tests inherit the plugins of `vite.config.ts`, React Compiler
+  included. A Vitest case on the real table, filtered down to the empty state, cleared, and
+  back, is the test the table owes.
+- **Next**: the compiler is switched on by `reactCompiler: true` in `next.config.ts`, which
+  Vitest never reads. Its config runs the compiler only if it adds the plugin itself.
+- **TanStack Start**: it runs the compiler only if its config inherits the plugins of the
+  app's `vite.config.ts`. Read the config before counting on it.
+
+Where Vitest runs without the compiler, only an end-to-end test on a real build sees the
+bug, and the same scenario goes into a spec.
 
 ## 3. shadcn and Base UI
 
