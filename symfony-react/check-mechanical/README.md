@@ -55,7 +55,7 @@ declaration, which only a new file adds, and judge new files only.
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `docblock-double`, `gitignore-src` |
-| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `diacritique-invisible`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee` |
+| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `diacritique-invisible`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee` |
 
 `commentaire-anglais` reads a comment line by line, and calls a line English when it
 holds two English function words or more, no French one and no accented letter, among
