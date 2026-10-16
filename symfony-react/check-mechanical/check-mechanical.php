@@ -752,6 +752,22 @@ function rules(): array
             'kind' => 'ajout',
             'find' => static fn (string $c): array => matches('/[\x{201C}\x{201D}]/u', $c),
         ],
+        'guillemets-droits' => [
+            'message' => 'guillemets droits autour d\'un texte affiché : « » avec leurs espaces insécables (`«\\u00a0${nom}\\u00a0»`)',
+            'ext' => ['tsx'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'ajout',
+            // Prettier writes code strings between single quotes, and a JSX attribute follows
+            // its `=`: a pair of double quotes after a space or a parenthesis, around a word or
+            // an interpolation and followed by a space or a punctuation mark, quotes a text. A
+            // string holding an apostrophe keeps its double quotes: it passes.
+            'find' => static fn (string $c, string $p): array => matches(
+                '/(?<=[\s(])"(?:\$\{[^}\n]+\}|\p{L})[^"\'\x{2019}\n]*"(?=[\s.,;:!?)]|$)/um',
+                $c,
+                withoutComments($c, $p),
+            ),
+        ],
         'capitale-sans-accent' => [
             'message' => 'capitale privée de son accent en tête de phrase : « À noter », « À toi », « À titre », « Élaborer », « Étalons »',
             'ext' => ['tsx', 'twig', 'json'],
