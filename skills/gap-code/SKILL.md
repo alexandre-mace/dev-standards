@@ -199,6 +199,12 @@ the fix lots these rules with the findings:
 - **Run `/review-diff` before opening the pull request**: it reads every touched file in
   full against the audit grid, as the next delta pass will, so the fix does not hand that
   pass new findings.
+- **Close the fix session with a delta.** Once every lot is merged, run `/gap-code delta`
+  from the commit the pass audited, fix what it finds, and only then start the next full
+  pass. Ambitious lots touch hundreds of files, and one reviewer per lot cannot read them
+  all; the delta splits them into zones like a pass does. Seen: between the ninth and the
+  tenth pass, the fix lots changed 1 992 files, and 72 % of the tenth pass's findings sat in
+  those files; the other 28 % were in files nobody had touched.
 - **Data first, constraint second.** A unique index or a stricter enum on a table that
   holds offending rows fails the deploy; clean production first, then ship the constraint.
 - **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the

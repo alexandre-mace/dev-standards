@@ -43,6 +43,10 @@ Whatever this review lets through, the next `/gap-code` finds: its delta pass re
 file changed since the previous one, in full, against the same grid. The aim is that this
 branch hands it nothing.
 
+**Past about 60 touched files, one reader skims.** Split the list into zones of at most 60
+files, one reviewer each, as `/gap-code` does, and check every file of every zone is in a
+return. A review that says « each file was not reread » has not happened.
+
 - **Read every touched file in full, not only its hunks.** A docblock, a comment, a test
   name or an OpenAPI description that the change made false counts as introduced by the
   diff. So does a sibling left behind: the same constant or rule in a TS twin, a second
