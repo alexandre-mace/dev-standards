@@ -55,14 +55,14 @@ declaration, which only a new file adds, and judge new files only.
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `docblock-double`, `gitignore-src` |
-| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `commentaire-anglais` |
+| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `diacritique-invisible`, `commentaire-anglais` |
 
 `commentaire-anglais` reads a comment line by line, and calls a line English when it
 holds two English function words or more, no French one and no accented letter, among
 four words or more, once its code spans, URLs, double-quoted citations, phpdoc types and
 variables are set aside. It is a measure, not a parser: on La Grange's `assets/` and
-`templates/`, 493 lines, and the 30 sampled were all real English comments; none is left in
-`src/` once translated. A third-party text quoted as is takes an exception.
+`templates/`, it found 493 lines before their translation, and the 30 sampled were all real
+English comments. A third-party text quoted as is takes an exception.
 
 A rule that holds for one project only stays out of the script. `cta-je` (a button in
 « Je ») stays in La Grange's design system: Le Grenier's asks for the first person when
