@@ -568,26 +568,60 @@ function doubleDocblock(string $content): array
 }
 
 /**
- * A closing inline tag alone on its line and followed by punctuation (`</a>.`): the line
- * break and the indentation before it render as a space inside the element, underlined
- * before the dot. A Twig whitespace control ending the line above (`-}}`, `-#}`, `-%}`)
- * removes that space, and so does Prettier's own layout of a JSX file, which is not read.
+ * The comment lines written in English. The comment is what withoutComments() blanks,
+ * read line by line: a line counts as English when it holds at least two English
+ * function words, no French one and no accented letter, among four words or more. Code
+ * spans, URLs, `@tags`, `$variables` and the directives of the tools are left out first,
+ * so that a French comment quoting code passes, and an attribute (`#[OA\Property(description:
+ * '…')]`) is code, not a comment.
  *
  * @return list<array{int, string}>
  */
-function detachedPunctuation(string $content): array
+function englishComments(string $content, string $path): array
 {
+    $blanked = withoutComments($content, $path);
+    if ($blanked === $content) {
+        return [];
+    }
+    $english = array_flip(['the', 'and', 'is', 'are', 'of', 'to', 'with', 'from', 'this', 'that', 'when', 'for', 'it', 'be', 'not', 'only', 'which', 'if', 'we', 'should', 'must', 'will', 'was', 'were', 'has', 'have', 'does', 'by', 'at', 'its', 'into', 'than', 'then', 'they', 'there', 'these', 'those', 'would', 'could', 'can', 'but', 'because', 'while', 'after', 'before', 'our', 'you', 'your']);
+    $french = array_flip(['le', 'la', 'les', 'des', 'du', 'un', 'une', 'est', 'et', 'pour', 'qui', 'que', 'dans', 'sur', 'pas', 'ne', 'au', 'aux', 'ce', 'cette', 'ces', 'se', 'il', 'elle', 'nous', 'sont', 'ont', 'plus', 'sans', 'avec', 'ou', 'quand', 'si', 'son', 'sa', 'ses', 'leur', 'par', 'en', 'de', 'y']);
     $lines = explode("\n", $content);
+    $blankedLines = explode("\n", $blanked);
     $out = [];
     foreach ($lines as $i => $line) {
-        if (!preg_match('#^\s*</(?:a|abbr|b|button|code|em|i|span|strong)>[.,;:!?)]#', $line)) {
+        $kept = $blankedLines[$i] ?? $line;
+        if ($kept === $line) {
             continue;
         }
-        $previous = '';
-        for ($j = $i - 1; $j >= 0 && '' === $previous; --$j) {
-            $previous = trim($lines[$j]);
+        $first = strspn($line ^ $kept, "\0");
+        $text = substr($line, $first);
+        // A comment opens with its mark, or a line inside a block with its star: a line
+        // that does not was blanked by a `/*` inside a string (a glob, a selector).
+        // A line inside a block without a star is not judged.
+        // `#` opens a comment when a space or the end follows it: `'#%d'` in a string does not.
+        if (!preg_match('~^\s*(//|#(?=\s|$)|\*|/\*|\{#|<!--)~', $text)) {
+            continue;
         }
-        if (!preg_match('/-(?:\}\}|#\}|%\})$/', $previous)) {
+        if (preg_match('/check-mechanical-ignore|eslint-|@ts-|@phpstan-|@psalm-|phpcs:|prettier-ignore|@noinspection|@codeCoverage/', $text)) {
+            continue;
+        }
+        // A text quoted between double quotes is cited as it is (a field name, a message).
+        // The types of a phpdoc tag (`@return array{before: string}`) are code.
+        do {
+            $text = (string) preg_replace('/(?<=\w)(?:\{[^{}]*\}|<[^<>]*>)/', ' ', $text, -1, $replaced);
+        } while ($replaced > 0);
+        $text = (string) preg_replace(['/`[^`]*`/', '/"[^"]*"|“[^”]*”/u', '#\bhttps?://\S+#', '/@[\w-]+\s+[^\s$]+/', '/[@$][\w\\\\\[\]|,:.-]+/'], ' ', $text);
+        if (preg_match('/[àâçéèêëîïôûùüÿœÀÂÇÉÈÊÎÔÛ«»]/u', $text)) {
+            continue;
+        }
+        preg_match_all('/[a-z]+(?:\'[a-z]+)?/', strtolower($text), $words);
+        $words = $words[0];
+        if (\count($words) < 4) {
+            continue;
+        }
+        $englishCount = \count(array_filter($words, static fn (string $w): bool => isset($english[$w])));
+        $frenchCount = \count(array_filter($words, static fn (string $w): bool => isset($french[$w]) || str_contains($w, "'")));
+        if ($englishCount >= 2 && 0 === $frenchCount) {
             $out[] = [$i + 1, $line];
         }
     }
@@ -675,28 +709,12 @@ function rules(): array
             'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/&(?:[a-zA-Z]{1,2}(?:grave|acute|circ|uml|cedil|lig)|[lr]squo|[lr]dquo|[lr]aquo|hellip|ndash|euro|[lrud]arr|times|#\d{3,5}|#x[0-9a-fA-F]{2,4});/', $c),
         ],
-        'guillemets-anglais' => [
-            'message' => 'guillemets anglais dans un texte affiché : « » avec leurs espaces insécables (« quotidien »)',
-            'ext' => ['tsx', 'twig'],
-            'paths' => $ui,
-            'except' => $tests,
+        'diacritique-invisible' => [
+            'message' => 'diacritique combinant (U+0300 à U+036F) écrit tel quel : invisible à la lecture comme dans un diff, l\'échappement (`\\u0301`) ou la lettre précomposée',
+            'ext' => $prose,
+            'paths' => $everywhere,
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/[\x{201C}\x{201D}]/u', $c),
-        ],
-        'capitale-sans-accent' => [
-            'message' => 'capitale privée de son accent en tête de phrase : « À noter », « À toi », « À titre », « Élaborer », « Étalons »',
-            'ext' => ['tsx', 'twig', 'json'],
-            'paths' => $ui,
-            'except' => $tests,
-            'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/\bA\s(?:qui|noter|toi|titre|cette|quel|quelle|partir\sde)\b|\bE(?:labor\w*|talons?)\b/u', $c),
-        ],
-        'ponctuation-detachee' => [
-            'message' => 'balise fermante seule sur sa ligne et suivie de la ponctuation : le retour à la ligne se rend en espace soulignée (« lien . ») ; `{#- … -#}` en fin de ligne au-dessus, ou `-}}`',
-            'ext' => ['twig'],
-            'paths' => '#^templates/#',
-            'kind' => 'ajout',
-            'find' => static fn (string $c): array => detachedPunctuation($c),
+            'find' => static fn (string $c): array => matches('/[\x{0300}-\x{036F}]/u', $c),
         ],
         'identifiant-constat' => [
             'message' => 'identifiant de constat d\'audit : la réécriture de docs/gap-analysis.md l\'efface, dire la cause en clair ou citer le commit',
@@ -882,6 +900,13 @@ function rules(): array
             'paths' => $everywhere,
             'kind' => 'fichier',
             'find' => static fn (string $c): array => doubleDocblock($c),
+        ],
+        'commentaire-anglais' => [
+            'message' => 'commentaire en anglais sur un projet français : en français, comme le veut dev-standards/agent/writing.md (un texte tiers cité tel quel garde son exception)',
+            'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml', 'sh'],
+            'paths' => $everywhere,
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => englishComments($c, $p),
         ],
         'strict-types' => [
             'message' => 'fichier PHP ajouté sans `declare(strict_types=1);`',
