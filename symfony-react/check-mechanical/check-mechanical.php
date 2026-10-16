@@ -801,11 +801,27 @@ function rules(): array
             'find' => static fn (string $c): array => matches('/(?<![a-zA-Z])rgba?\(\s*\d/', $c),
         ],
         'blanc-noir' => [
-            'message' => '`white`/`black` posé hors jetons : `bg-card`, `bg-background`, `text-foreground`, `text-primary-foreground`…',
+            'message' => '`white`/`black` posé hors jetons, en classe ou dans un style : `bg-card`, `text-foreground`, `text-primary-foreground`, `var(--primary-foreground)`…',
             'ext' => $front,
             'paths' => $ui,
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/(?<![-\w\[])(?:[\w-]+:)*(?:bg|text|fill|stroke|ring|border|from|to|via|divide|outline|decoration)-(?:white|black)\b/', $c),
+            // The Tailwind classes, then a colour property written in an inline style, a CSS
+            // string or a React `style` object (`color: white`, `backgroundColor: 'black'`).
+            'find' => static fn (string $c): array => matches(
+                '/(?<![-\w\[])(?:[\w-]+:)*(?:bg|text|fill|stroke|ring|border|from|to|via|divide|outline|decoration)-(?:white|black)\b'
+                .'|(?<![-\w])(?:color|background(?:-color)?|backgroundColor|fill|stroke|border-color|borderColor|outline-color|outlineColor)\s*:\s*[\'"]?(?:white|black)\b/',
+                $c,
+            ),
+        ],
+        // A locked lucide icon carries `fill="none"` and its stroke on its `<g>`, which beat
+        // any fill or stroke set on the `<svg>` root: a `fill-*` or `stroke-*` class, or a
+        // `fill:` option there, paints nothing.
+        'icone-racine' => [
+            'message' => 'remplissage ou trait posé sur la racine d\'une icône `ux_icon` : l\'icône verrouillée porte `fill="none"` et son trait sur son `<g>`, qui l\'emportent ; viser les enfants (`[&>*]:fill-success`), le trait suit `currentColor`',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/(?<![-\w\]:&>*_\/])(?:[\w-]+:)*(?:fill|stroke)-(?!none\b)[a-z][\w\/-]*+(?!\s*=)|(?<![-\w])fill\s*:\s*[\'"]/', $c),
         ],
         // React islands (reactony, principle 6): a one-click action posts through its `/api`
         // route and the SDK, not a form the browser submits with a hidden CSRF token.
