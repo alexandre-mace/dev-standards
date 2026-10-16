@@ -498,10 +498,16 @@ left the focus on the step heading or on `<body>`.
   change). Any other
   step change sends the focus to the new step's heading (`tabIndex={-1}`): the button
   that held it has just unmounted, and the focus would fall on `<body>`.
-- **The error is linked to the element that takes the focus**: `aria-invalid`, and
-  `aria-describedby` pointing to the `FieldError`'s `id`, on the input, on the
-  `SelectTrigger` rather than the `Select` root, on the `role="group"` container of a
-  hand-made group. A
+- **The error is linked to the element that takes the focus**: `aria-describedby`
+  pointing to the `FieldError`'s `id`, and `aria-invalid`, on the input, on the
+  `SelectTrigger` rather than the `Select` root. The `role="group"` container of a
+  hand-made group, or a `fieldset`, takes `aria-describedby` alone: WAI-ARIA 1.2, the W3C
+  Recommendation in force, lists `aria-invalid` on the controls (`checkbox`, `combobox`,
+  `textbox`, `switch` by inheritance…) and on `radiogroup`, and marks it « deprecated on
+  this role in ARIA 1.2 » on `group` (§6.7 `aria-invalid`, « Used in Roles »; unchanged in
+  the editor's draft of 12 October 2026). A control inside the group that accepts it, a
+  checkbox or a switch, carries it; a row of `aria-pressed` buttons has none, and the
+  description carries the error alone. A
   `Field` that passes its error id through context only reaches the controls that read
   that context: not a `FieldSet`, not a raw `SelectTrigger`, not a hand-made group. An
   explicit `id` on a `FieldError` overrides the context, so the control must point to
