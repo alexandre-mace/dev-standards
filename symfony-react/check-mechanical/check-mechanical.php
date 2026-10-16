@@ -647,6 +647,13 @@ function rules(): array
             'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/&(?:[a-zA-Z]{1,2}(?:grave|acute|circ|uml|cedil|lig)|[lr]squo|[lr]dquo|[lr]aquo|hellip|ndash|euro|[lrud]arr|times|#\d{3,5}|#x[0-9a-fA-F]{2,4});/', $c),
         ],
+        'diacritique-invisible' => [
+            'message' => 'diacritique combinant (U+0300 à U+036F) écrit tel quel : invisible à la lecture comme dans un diff, l\'échappement (`\\u0301`) ou la lettre précomposée',
+            'ext' => $prose,
+            'paths' => $everywhere,
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/[\x{0300}-\x{036F}]/u', $c),
+        ],
         'identifiant-constat' => [
             'message' => 'identifiant de constat d\'audit : la réécriture de docs/gap-analysis.md l\'efface, dire la cause en clair ou citer le commit',
             'ext' => $prose,
