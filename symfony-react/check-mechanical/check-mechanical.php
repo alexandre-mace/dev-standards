@@ -568,6 +568,34 @@ function doubleDocblock(string $content): array
 }
 
 /**
+ * A closing inline tag alone on its line and followed by punctuation (`</a>.`): the line
+ * break and the indentation before it render as a space inside the element, underlined
+ * before the dot. A Twig whitespace control ending the line above (`-}}`, `-#}`, `-%}`)
+ * removes that space, and so does Prettier's own layout of a JSX file, which is not read.
+ *
+ * @return list<array{int, string}>
+ */
+function detachedPunctuation(string $content): array
+{
+    $lines = explode("\n", $content);
+    $out = [];
+    foreach ($lines as $i => $line) {
+        if (!preg_match('#^\s*</(?:a|abbr|b|button|code|em|i|span|strong)>[.,;:!?)]#', $line)) {
+            continue;
+        }
+        $previous = '';
+        for ($j = $i - 1; $j >= 0 && '' === $previous; --$j) {
+            $previous = trim($lines[$j]);
+        }
+        if (!preg_match('/-(?:\}\}|#\}|%\})$/', $previous)) {
+            $out[] = [$i + 1, $line];
+        }
+    }
+
+    return $out;
+}
+
+/**
  * Each rule: its message, the extensions and paths it reads, its kind ("fichier": every
  * line; "ajout": added lines only), and the function that finds its occurrences.
  *
@@ -646,6 +674,29 @@ function rules(): array
             'paths' => $ui,
             'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/&(?:[a-zA-Z]{1,2}(?:grave|acute|circ|uml|cedil|lig)|[lr]squo|[lr]dquo|[lr]aquo|hellip|ndash|euro|[lrud]arr|times|#\d{3,5}|#x[0-9a-fA-F]{2,4});/', $c),
+        ],
+        'guillemets-anglais' => [
+            'message' => 'guillemets anglais dans un texte affiché : « » avec leurs espaces insécables (« quotidien »)',
+            'ext' => ['tsx', 'twig'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/[\x{201C}\x{201D}]/u', $c),
+        ],
+        'capitale-sans-accent' => [
+            'message' => 'capitale privée de son accent en tête de phrase : « À noter », « À toi », « À titre », « Élaborer », « Étalons »',
+            'ext' => ['tsx', 'twig', 'json'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/\bA\s(?:qui|noter|toi|titre|cette|quel|quelle|partir\sde)\b|\bE(?:labor\w*|talons?)\b/u', $c),
+        ],
+        'ponctuation-detachee' => [
+            'message' => 'balise fermante seule sur sa ligne et suivie de la ponctuation : le retour à la ligne se rend en espace soulignée (« lien . ») ; `{#- … -#}` en fin de ligne au-dessus, ou `-}}`',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => detachedPunctuation($c),
         ],
         'identifiant-constat' => [
             'message' => 'identifiant de constat d\'audit : la réécriture de docs/gap-analysis.md l\'efface, dire la cause en clair ou citer le commit',
