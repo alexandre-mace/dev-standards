@@ -568,6 +568,68 @@ function doubleDocblock(string $content): array
 }
 
 /**
+ * The comment lines written in English. The comment is what withoutComments() blanks,
+ * read line by line: a line counts as English when it holds at least two English
+ * function words, no French one and no accented letter, among four words or more. Code
+ * spans, URLs, `@tags`, `$variables` and the directives of the tools are left out first,
+ * so that a French comment quoting code passes, and an attribute (`#[OA\Property(description:
+ * '…')]`) is code, not a comment.
+ *
+ * @return list<array{int, string}>
+ */
+function englishComments(string $content, string $path): array
+{
+    $blanked = withoutComments($content, $path);
+    if ($blanked === $content) {
+        return [];
+    }
+    $english = array_flip(['the', 'and', 'is', 'are', 'of', 'to', 'with', 'from', 'this', 'that', 'when', 'for', 'it', 'be', 'not', 'only', 'which', 'if', 'we', 'should', 'must', 'will', 'was', 'were', 'has', 'have', 'does', 'by', 'at', 'its', 'into', 'than', 'then', 'they', 'there', 'these', 'those', 'would', 'could', 'can', 'but', 'because', 'while', 'after', 'before', 'our', 'you', 'your']);
+    $french = array_flip(['le', 'la', 'les', 'des', 'du', 'un', 'une', 'est', 'et', 'pour', 'qui', 'que', 'dans', 'sur', 'pas', 'ne', 'au', 'aux', 'ce', 'cette', 'ces', 'se', 'il', 'elle', 'nous', 'sont', 'ont', 'plus', 'sans', 'avec', 'ou', 'quand', 'si', 'son', 'sa', 'ses', 'leur', 'par', 'en', 'de', 'y']);
+    $lines = explode("\n", $content);
+    $blankedLines = explode("\n", $blanked);
+    $out = [];
+    foreach ($lines as $i => $line) {
+        $kept = $blankedLines[$i] ?? $line;
+        if ($kept === $line) {
+            continue;
+        }
+        $first = strspn($line ^ $kept, "\0");
+        $text = substr($line, $first);
+        // A comment opens with its mark, or a line inside a block with its star: a line
+        // that does not was blanked by a `/*` inside a string (a glob, a selector).
+        // A line inside a block without a star is not judged.
+        // `#` opens a comment when a space or the end follows it: `'#%d'` in a string does not.
+        if (!preg_match('~^\s*(//|#(?=\s|$)|\*|/\*|\{#|<!--)~', $text)) {
+            continue;
+        }
+        if (preg_match('/check-mechanical-ignore|eslint-|@ts-|@phpstan-|@psalm-|phpcs:|prettier-ignore|@noinspection|@codeCoverage/', $text)) {
+            continue;
+        }
+        // A text quoted between double quotes is cited as it is (a field name, a message).
+        // The types of a phpdoc tag (`@return array{before: string}`) are code.
+        do {
+            $text = (string) preg_replace('/(?<=\w)(?:\{[^{}]*\}|<[^<>]*>)/', ' ', $text, -1, $replaced);
+        } while ($replaced > 0);
+        $text = (string) preg_replace(['/`[^`]*`/', '/"[^"]*"|“[^”]*”/u', '#\bhttps?://\S+#', '/@[\w-]+\s+[^\s$]+/', '/[@$][\w\\\\\[\]|,:.-]+/'], ' ', $text);
+        if (preg_match('/[àâçéèêëîïôûùüÿœÀÂÇÉÈÊÎÔÛ«»]/u', $text)) {
+            continue;
+        }
+        preg_match_all('/[a-z]+(?:\'[a-z]+)?/', strtolower($text), $words);
+        $words = $words[0];
+        if (\count($words) < 4) {
+            continue;
+        }
+        $englishCount = \count(array_filter($words, static fn (string $w): bool => isset($english[$w])));
+        $frenchCount = \count(array_filter($words, static fn (string $w): bool => isset($french[$w]) || str_contains($w, "'")));
+        if ($englishCount >= 2 && 0 === $frenchCount) {
+            $out[] = [$i + 1, $line];
+        }
+    }
+
+    return $out;
+}
+
+/**
  * Each rule: its message, the extensions and paths it reads, its kind ("fichier": every
  * line; "ajout": added lines only), and the function that finds its occurrences.
  *
@@ -838,6 +900,13 @@ function rules(): array
             'paths' => $everywhere,
             'kind' => 'fichier',
             'find' => static fn (string $c): array => doubleDocblock($c),
+        ],
+        'commentaire-anglais' => [
+            'message' => 'commentaire en anglais sur un projet français : en français, comme le veut dev-standards/agent/writing.md (un texte tiers cité tel quel garde son exception)',
+            'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml', 'sh'],
+            'paths' => $everywhere,
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => englishComments($c, $p),
         ],
         'strict-types' => [
             'message' => 'fichier PHP ajouté sans `declare(strict_types=1);`',

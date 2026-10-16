@@ -1,0 +1,3 @@
+framework:
+  cache:
+    app: cache.adapter.filesystem # shared by the instances, so it must be cleared on deploy
