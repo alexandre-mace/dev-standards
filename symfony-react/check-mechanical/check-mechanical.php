@@ -791,12 +791,15 @@ function rules(): array
             'find' => static fn (string $c): array => matches('/\b(?:z\d{2}|t-[a-z0-9]+(?:-[a-z0-9]+)*)#[A-Z]{0,2}\d+\b/', $c),
         ],
         'identifiant-audit' => [
-            'message' => 'numéro de passe ou de constat d\'audit : la réécriture de docs/gap-analysis.md l\'efface, dire la cause en clair ou citer le commit',
+            'message' => 'numéro de passe, de constat ou date d\'audit : la réécriture de docs/gap-analysis.md l\'efface, dire la cause en clair ou citer le commit',
             'ext' => $prose,
             'paths' => $everywhere,
             'kind' => 'ajout',
+            // « gap analysis 2026-07 » : chaque audit réécrit le fichier, la date ne
+            // désigne plus rien dès le suivant. Le chemin `docs/gap-analysis.md` passe.
             'find' => static fn (string $c): array => matches(
-                '/\b\d{1,2}(?:e|\x{1D49}|ème|th)\s+(?:passe|gap-analysis\spass)\b|\bpasses?\s+\d{1,2}\b|\bfindings?\s+#?\d|\bconstats?\s+(?:n°\s*)?#?\d/u',
+                '/\b\d{1,2}(?:e|\x{1D49}|ème|th)\s+(?:passe|gap-analysis\spass)\b|\bpasses?\s+\d{1,2}\b|\bfindings?\s+#?\d|\bconstats?\s+(?:n°\s*)?#?\d'
+                .'|(?i:\bgap[\s-]analysis)\s+(?:du\s+|de\s+|d\x{2019}|d\')?\(?(?:\d{4}-\d{2}|\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4}|(?:\d{1,2}(?:er)?\s+)?(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})/u',
                 $c,
             ),
         ],
