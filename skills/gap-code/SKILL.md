@@ -213,6 +213,38 @@ the fix lots these rules with the findings:
   `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
   to one points to nothing. It says the cause in plain words, or names the commit.
 
+## 9. Which model, at which effort
+
+Set `model` and `effort` on every agent this skill or its fix lots launch: this section is
+the instruction that allows it. The measure is the cost of a whole task, not the price of a
+token, since a cheaper model that reasons longer can cost more per task.
+
+| Role | Model | Effort | Why |
+|---|---|---|---|
+| Zone and theme agents, config scan | Opus | `xhigh` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
+| Refutation of Haute and Moyenne | Opus | `high` | It reads one finding against the code, the callers and the tests |
+| Fix lots on logic, data, contracts, security | Opus | `high` | It must refute before fixing and break nothing next door |
+| Fix lots that are mechanical (renames, typography, texts, test names) | Sonnet | `medium` | A tight brief and a review behind it carry the rest |
+| Haiku | none | | It "fixes" code that was right |
+
+Never `max`: it buys about two points of index for 1.7 times the cost per task.
+
+Measured by Artificial Analysis (Intelligence Index, cost per index task, read on 2026-10-17):
+
+| Model and effort | Index | Cost per task | Output tokens |
+|---|---|---|---|
+| Opus 5.5, max | 58 | $5.98 | 260 M |
+| Opus 5.5, xhigh | 56 | $3.46 | |
+| Opus 5.5, high | 54 | | |
+| Sonnet 5.5, max | 56 | $5.46 to $7.67 (sources disagree) | 420 M |
+| Sonnet 5.5, medium | | $0.59 | |
+
+At max effort Sonnet costs as much as Opus or more, despite half the token price, because
+it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less.
+Fable 5.1 had no Artificial Analysis measure on that date: try it on one zone against Opus
+before giving it a role. Re-read these figures when a new model ships; on a subscription the
+limit counts tokens, so the same ranking holds.
+
 ## Rules
 
 - **Fix nothing.** This skill diagnoses, it does not touch source code.
