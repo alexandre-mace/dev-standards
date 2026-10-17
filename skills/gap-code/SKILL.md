@@ -224,7 +224,7 @@ token, since a cheaper model that reasons longer can cost more per task.
 | Zone and theme agents, config scan | Opus | `high` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
 | Refutation of Haute and Moyenne | Opus | `high` | It reads one finding against the code, the callers and the tests |
 | Fix lots on logic, data, contracts, security | Opus | `high` | It must refute before fixing and break nothing next door |
-| Fix lots that are mechanical (renames, typography, texts, test names) | to measure | | See below |
+| Fix lots that are mechanical (renames, typography, texts, test names) | Opus | `low` | Measured below: fewest defects introduced, fewest tokens |
 
 `high` everywhere Opus runs: `xhigh` adds 2.4 points of index (56.0 against 53.6) for 1.9
 times the cost per task, and `max` 1.6 more for 1.7 times again.
@@ -267,6 +267,20 @@ a reading by eye was wrong by five points on Opus `low`.
   delta reads one zone twice, at `high` and at `medium`, and compares findings and false
   positives; the next logic fix lots alternate `high` and `medium`, and the delta after
   them counts what it finds behind each. Write the outcome in the role table.
+
+Measured on La Grange, 2026-10-17, three mechanical lots of comparable work, then a delta
+reading their files at equal depth (Opus `high`):
+
+| Lot | Fixed | Tokens | Duration | Introduced, per 100 files touched |
+|---|---|---|---|---|
+| Opus `low` | 31 of 35 | 187 K | 20 min | 5, all Basse |
+| Sonnet `medium` | 53 of 60 | 280 K | 44 min | about 10, one a wrong total |
+| Haiku `max` | 27 of 34 | 663 K, plus four review agents | 85 min | 6 after four review rounds that caught a broken test and a display regression; it also printed `.env.local` against its brief |
+
+Haiku gets no role. And one reading of a zone misses a third to a half of what is there: the
+same 33 files read at Opus `high` and `medium` gave 10 and 7 findings, only 3 in common, 14
+in all. The delicate zones are worth two readings at different efforts rather than one at a
+higher effort.
 
 Re-read these figures when a new model ships.
 
