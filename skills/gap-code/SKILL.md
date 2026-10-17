@@ -230,21 +230,33 @@ token, since a cheaper model that reasons longer can cost more per task.
 `high` everywhere Opus runs: `xhigh` gains two points of index (56 against 54) that a pass
 has not shown it needs, and `max` two more for 1.7 times the cost per task of `xhigh`.
 
-Measured by Artificial Analysis (Intelligence Index, cost per index task, read on 2026-10-17):
+Measured by Artificial Analysis, read on 2026-10-17. The max figures come from the model
+pages; the other efforts are read off the chart "Intelligence Index vs. Cost per Task, by
+Model Release" (artificialanalysis.ai, `#intelligence-efficiency-tabs`), to about one point
+and ten cents, since the page gives them only as a graph:
 
-| Model and effort | Index | Cost per task | Output tokens |
-|---|---|---|---|
-| Opus 5.5, max | 58 | $5.98 | 260 M |
-| Opus 5.5, xhigh | 56 | $3.46 | |
-| Opus 5.5, high | 54 | | |
-| Sonnet 5.5, max | 56 | $5.46 to $7.67 (sources disagree) | 420 M |
-| Sonnet 5.5, medium | | $0.59 | |
+| Model and effort | Index | Cost per task |
+|---|---|---|
+| Opus 5.5, max | 58 | $5.98 |
+| Opus 5.5, xhigh | 56 | $3.46 |
+| Opus 5.5, high | about 53 | about $1.80 |
+| Opus 5.5, medium | about 51 | about $1.30 |
+| Opus 5.5, low | about 47 | about $0.90 |
+| Sonnet 5.5, max | 56 | $5.46 to $7.67 (sources disagree) |
+| Sonnet 5.5, medium | about 42 | $0.59 |
+| Fable 5.1, its best effort | about 53 | about $6 to $7.60 |
 
-At max effort Sonnet costs as much as Opus or more, despite half the token price, because
-it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less; `high` has no published cost yet.
-Fable 5.1 had no Artificial Analysis measure on that date: try it on one zone against Opus
-before giving it a role. Re-read these figures when a new model ships; on a subscription the
-limit counts tokens, so the same ranking holds.
+- At max effort Sonnet costs as much as Opus or more, despite half the token price: it
+  spends about 1.6 times the tokens (420 M against 260 M on the index).
+- Opus `high` costs about half of `xhigh` for three points less.
+- Fable 5.1 sits under Opus 5.5 at every cost: no role.
+- For the mechanical lots, Opus `low` scores about five points above Sonnet `medium` for
+  about 1.5 times the cost. The fix session after this measure runs one mechanical lot on
+  each and compares tokens, duration and what the review finds behind them; write the
+  outcome in the table above.
+
+Re-read these figures when a new model ships. On a subscription the limit counts tokens, so
+the ranking holds, but Opus uses the quota faster per token than Sonnet.
 
 ## Rules
 
