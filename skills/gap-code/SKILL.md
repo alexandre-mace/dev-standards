@@ -262,6 +262,12 @@ a reading by eye was wrong by five points on Opus `low`.
   tokens, duration and what the review finds behind each, and writes the outcome in the
   role table.
 
+- Opus `medium` loses 2.4 more points (51.2) for 26 % less than `high`, a worse trade than
+  `xhigh` to `high` (2.4 points for 47 %). Measure it before moving a role there: the next
+  delta reads one zone twice, at `high` and at `medium`, and compares findings and false
+  positives; the next logic fix lots alternate `high` and `medium`, and the delta after
+  them counts what it finds behind each. Write the outcome in the role table.
+
 Re-read these figures when a new model ships.
 
 ## Rules
