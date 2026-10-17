@@ -224,39 +224,45 @@ token, since a cheaper model that reasons longer can cost more per task.
 | Zone and theme agents, config scan | Opus | `high` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
 | Refutation of Haute and Moyenne | Opus | `high` | It reads one finding against the code, the callers and the tests |
 | Fix lots on logic, data, contracts, security | Opus | `high` | It must refute before fixing and break nothing next door |
-| Fix lots that are mechanical (renames, typography, texts, test names) | Sonnet | `medium` | A tight brief and a review behind it carry the rest |
-| Haiku | none | | It "fixes" code that was right |
+| Fix lots that are mechanical (renames, typography, texts, test names) | to measure | | See below |
 
-`high` everywhere Opus runs: `xhigh` gains two points of index (56 against 54) that a pass
-has not shown it needs, and `max` two more for 1.7 times the cost per task of `xhigh`.
+`high` everywhere Opus runs: `xhigh` adds 2.4 points of index (56.0 against 53.6) for 1.9
+times the cost per task, and `max` 1.6 more for 1.7 times again.
 
-Measured by Artificial Analysis, read on 2026-10-17. The max figures come from the model
-pages; the other efforts are read off the chart "Intelligence Index vs. Cost per Task, by
-Model Release" (artificialanalysis.ai, `#intelligence-efficiency-tabs`), to about one point
-and ten cents, since the page gives them only as a graph:
+Measured by Artificial Analysis on 2026-10-17. The figures sit in the page source of
+`artificialanalysis.ai/models/<slug>` (`claude-opus-5-5-high`…): `intelligenceIndex`, and
+`intelligenceIndexCostPerTask.cost.total` in dollars. Read them there, never off a chart:
+a reading by eye was wrong by five points on Opus `low`.
 
-| Model and effort | Index | Cost per task |
-|---|---|---|
-| Opus 5.5, max | 58 | $5.98 |
-| Opus 5.5, xhigh | 56 | $3.46 |
-| Opus 5.5, high | about 53 | about $1.80 |
-| Opus 5.5, medium | about 51 | about $1.30 |
-| Opus 5.5, low | about 47 | about $0.90 |
-| Sonnet 5.5, max | 56 | $5.46 to $7.67 (sources disagree) |
-| Sonnet 5.5, medium | about 42 | $0.59 |
-| Fable 5.1, its best effort | about 53 | about $6 to $7.60 |
+| Model | Effort | Index | Cost per task | Output tokens per task |
+|---|---|---|---|---|
+| Opus 5.5 | max | 57.6 | $5.98 | 84 K |
+| Opus 5.5 | xhigh | 56.0 | $3.46 | 40 K |
+| Opus 5.5 | high | 53.6 | $1.82 | 18 K |
+| Opus 5.5 | medium | 51.2 | $1.34 | 12 K |
+| Opus 5.5 | low | 42.3 | $0.55 | 3 K |
+| Sonnet 5.5 | max | 56.0 | $5.46 | 147 K |
+| Sonnet 5.5 | xhigh | 51.9 | $2.01 | 48 K |
+| Sonnet 5.5 | high | 46.8 | $0.88 | 19 K |
+| Sonnet 5.5 | medium | 40.8 | $0.48 | 8 K |
+| Sonnet 5.5 | low | 35.9 | $0.35 | 5 K |
+| Haiku 5.5 | max | 43.4 | $0.21 | 129 K |
+| Haiku 5.5 | xhigh | 41.2 | $0.12 | 66 K |
+| Fable 5.1 | max | 53.4 | $7.63 | 47 K |
+| Fable 5.1 | high | 51.2 | $3.91 | 19 K |
 
-- At max effort Sonnet costs as much as Opus or more, despite half the token price: it
-  spends about 1.6 times the tokens (420 M against 260 M on the index).
-- Opus `high` costs about half of `xhigh` for three points less.
-- Fable 5.1 sits under Opus 5.5 at every cost: no role.
-- For the mechanical lots, Opus `low` scores about five points above Sonnet `medium` for
-  about 1.5 times the cost. The fix session after this measure runs one mechanical lot on
-  each and compares tokens, duration and what the review finds behind them; write the
-  outcome in the table above.
+- Fable 5.1 sits under Opus 5.5 at every cost (Opus `high` scores more for half the
+  price of Fable `high`): no role.
+- At equal effort Sonnet spends about as many tokens as Opus for half the token price,
+  but scores less: Sonnet `xhigh` (51.9, $2.01) is under Opus `high` (53.6, $1.82).
+- For the mechanical lots, four candidates stand close on the index: Opus `low` (42.3,
+  $0.55), Sonnet `medium` (40.8, $0.48), Haiku `max` (43.4, $0.21) and Sonnet `high`
+  (46.8, $0.88). The index is not an agentic coding measure: the fix session after this
+  measure runs mechanical lots on Opus `low`, Sonnet `medium` and Haiku `max`, compares
+  tokens, duration and what the review finds behind each, and writes the outcome in the
+  role table.
 
-Re-read these figures when a new model ships. On a subscription the limit counts tokens, so
-the ranking holds.
+Re-read these figures when a new model ships.
 
 ## Rules
 
