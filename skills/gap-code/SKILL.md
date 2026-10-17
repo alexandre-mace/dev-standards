@@ -221,13 +221,14 @@ token, since a cheaper model that reasons longer can cost more per task.
 
 | Role | Model | Effort | Why |
 |---|---|---|---|
-| Zone and theme agents, config scan | Opus | `xhigh` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
+| Zone and theme agents, config scan | Opus | `high` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
 | Refutation of Haute and Moyenne | Opus | `high` | It reads one finding against the code, the callers and the tests |
 | Fix lots on logic, data, contracts, security | Opus | `high` | It must refute before fixing and break nothing next door |
 | Fix lots that are mechanical (renames, typography, texts, test names) | Sonnet | `medium` | A tight brief and a review behind it carry the rest |
 | Haiku | none | | It "fixes" code that was right |
 
-Never `max`: it buys about two points of index for 1.7 times the cost per task.
+`high` everywhere Opus runs: `xhigh` gains two points of index (56 against 54) that a pass
+has not shown it needs, and `max` two more for 1.7 times the cost per task of `xhigh`.
 
 Measured by Artificial Analysis (Intelligence Index, cost per index task, read on 2026-10-17):
 
@@ -240,7 +241,7 @@ Measured by Artificial Analysis (Intelligence Index, cost per index task, read o
 | Sonnet 5.5, medium | | $0.59 | |
 
 At max effort Sonnet costs as much as Opus or more, despite half the token price, because
-it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less.
+it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less, and at `high` it costs less still.
 Fable 5.1 had no Artificial Analysis measure on that date: try it on one zone against Opus
 before giving it a role. Re-read these figures when a new model ships; on a subscription the
 limit counts tokens, so the same ranking holds.
