@@ -256,7 +256,7 @@ and ten cents, since the page gives them only as a graph:
   outcome in the table above.
 
 Re-read these figures when a new model ships. On a subscription the limit counts tokens, so
-the ranking holds, but Opus uses the quota faster per token than Sonnet.
+the ranking holds.
 
 ## Rules
 
