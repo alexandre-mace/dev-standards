@@ -241,7 +241,7 @@ Measured by Artificial Analysis (Intelligence Index, cost per index task, read o
 | Sonnet 5.5, medium | | $0.59 | |
 
 At max effort Sonnet costs as much as Opus or more, despite half the token price, because
-it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less, and at `high` it costs less still.
+it spends about 1.6 times the tokens. Opus at `xhigh` reaches Sonnet's max score for less; `high` has no published cost yet.
 Fable 5.1 had no Artificial Analysis measure on that date: try it on one zone against Opus
 before giving it a role. Re-read these figures when a new model ships; on a subscription the
 limit counts tokens, so the same ranking holds.
