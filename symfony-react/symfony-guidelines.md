@@ -916,7 +916,7 @@ External APIs with authentication. URLs and credentials in `.env`, injected thro
 
 `config/packages/http_client.yaml` already configures scoped clients (`webflow.client`, `discord.client`…) with `retry_failed`: 3 attempts, exponential backoff from 1s to 10s.
 
-Leave `http_codes` out. Symfony's default (`GenericRetryStrategy::DEFAULT_RETRY_STATUS_CODES`) retries 429, 502 and 503 for every method, but a transport failure (0), 500 and 504 for idempotent methods only: after a timeout or a 500 the server may well have done the work, and replaying a POST submits the HubSpot form or creates the Airtable record twice. A flat list such as `[0, 429, 500, 502, 503, 504]` loses that distinction and replays every method. When the list has to be written out, keep the restriction with the map form: `http_codes: { 0: [GET, HEAD, PUT, DELETE], 429: ~, 500: [GET, HEAD, PUT, DELETE], … }`.
+Leave `http_codes` out. Symfony's default (`GenericRetryStrategy::DEFAULT_RETRY_STATUS_CODES`) retries 423, 425, 429, 502 and 503 for every method, but a transport failure (0), 500, 504, 507 and 510 for idempotent methods only: after a timeout or a 500 the server may well have done the work, and replaying a POST submits the HubSpot form or creates the Airtable record twice. A flat list such as `[0, 429, 500, 502, 503, 504]` loses that distinction and replays every method. When the list has to be written out, keep the restriction with the map form: `http_codes: { 0: [GET, HEAD, PUT, DELETE], 429: ~, 500: [GET, HEAD, PUT, DELETE], … }`.
 
 **Do not re-implement** a retry loop on top: not with `RetryableHttpClient` inside the service, not with a hand-rolled `while`. Services inject the scoped client directly and let the DI layer own the retries:
 
