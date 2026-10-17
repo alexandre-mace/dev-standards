@@ -758,12 +758,15 @@ function rules(): array
             'paths' => $ui,
             'except' => $tests,
             'kind' => 'ajout',
-            // Prettier writes code strings between single quotes, and a JSX attribute follows
-            // its `=`: a pair of double quotes after a space or a parenthesis, around a word or
-            // an interpolation and followed by a space or a punctuation mark, quotes a text. A
-            // string holding an apostrophe keeps its double quotes: it passes.
+            // A quoted text sits inside a sentence: the pair of double quotes follows a word and
+            // one space (« le bouton "Valider" »), around a word or an interpolation, and is
+            // followed by a space or a punctuation mark. Code never puts a word right before a
+            // string, except a keyword (`from "react"`, `return "x"`, `case "a"`), so a project
+            // whose Prettier writes code strings between double quotes (`=== "all"`,
+            // `unit: "kWh"`, `fn("x")`) passes, as does a JSX attribute after its `=`. A string
+            // holding an apostrophe keeps its double quotes: it passes.
             'find' => static fn (string $c, string $p): array => matches(
-                '/(?<=[\s(])"(?:\$\{[^}\n]+\}|\p{L})[^"\'\x{2019}\n]*"(?=[\s.,;:!?)]|$)/um',
+                '/(?<=\p{L} )(?<!\bfrom )(?<!\breturn )(?<!\bcase )(?<!\bin )(?<!\bof )(?<!\btypeof )(?<!\bawait )(?<!\byield )(?<!\bimport )(?<!\bexport )(?<!\bas )(?<!\belse )(?<!\bthrow )(?<!\bnew )"(?:\$\{[^}\n]+\}|\p{L})[^"\'\x{2019}\n]*"(?=[\s.,;:!?)]|$)/um',
                 $c,
                 withoutComments($c, $p),
             ),
