@@ -665,7 +665,8 @@ URL never matches the route and answers 404:
 500. Nine digits stay under 2 147 483 647, so one project class in
 `Domain/Support/Database/`, `Int4`, holds `ID = '[1-9]\d{0,8}'` for every id route and
 `MAX = 2147483647` for every integer a DTO accepts (`#[Assert\Range(max: Int4::MAX)]`);
-`check-mechanical` refuses a new `Requirement::DIGITS`, `'\d+'` or `'[0-9]+'`
+`check-mechanical` refuses a new `Requirement::DIGITS`, `'\d+'` or `'[0-9]+'`, in a route
+attribute as in a YAML route file, and a DTO `Regex` that accepts nothing but digits
 (`id-sans-borne`). A `bigint` column would take its own bound.
 
 `Symfony\Component\Routing\Requirement\Requirement` holds the other usual patterns, and a

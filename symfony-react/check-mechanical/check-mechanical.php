@@ -30,14 +30,20 @@ declare(strict_types=1);
 /**
  * Never read: generated, locked, vendored, or quoting on purpose: the deviations of
  * docs/gap-analysis.md, and data/, imported datasets and sources quoted as they are
- * (prefectoral orders, official texts), not the project's own prose.
+ * (prefectoral orders, official texts), not the project's own prose. Of
+ * assets/components/ui/, only the shadcn registry files, named in kebab case at its top:
+ * composites/, the tests and a project's own components (data-table.tsx, multi-select.tsx,
+ * which the registry does not ship) are read.
  */
-const SKIPPED = '#^(docs/gap-analysis\.md$|data/|assets/components/ui/|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
+const SKIPPED = '#^(docs/gap-analysis\.md$|data/|assets/components/ui/(?!(?:data-table|multi-select)\.tsx$)[a-z0-9-]+\.tsx$|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
 
 /** An exception within these first lines of a file covers the whole file. */
 const FILE_HEADER_LINES = 3;
 
 const DIRECTIVE = 'check-mechanical-ignore';
+
+/** A hyphen between spaces, a word or a number on each side: it stands for a dash. */
+const HYPHEN_AS_DASH = '[\p{L}\d][\p{L}\d.,)»%€]* - [\p{L}\d«(]';
 
 /*
  * An emoji, as the rules about emojis read it. Not the marks of a legal text (©, ®, ™),
@@ -142,7 +148,7 @@ foreach ($contents as $path => $content) {
                     $directives[$i]['used'] = $covered = true;
                 }
             }
-            if ($covered || ('ajout' === $rule['kind'] && null !== $added && !isset($added[$path][$line]))) {
+            if ($covered || ('ajout' === kind($rule, $path) && null !== $added && !isset($added[$path][$line]))) {
                 continue;
             }
             $found[] = \sprintf("%s:%d: [%s] %s\n    %s", $path, $line, $id, $rule['message'], mb_strimwidth(trim($excerpt), 0, 160, '…'));
@@ -188,7 +194,8 @@ function usage(int $code): never
 function listRules(): never
 {
     foreach (rules() as $id => $rule) {
-        echo \sprintf("%-20s %-8s %s\n", $id, $rule['kind'], $rule['message']);
+        $partly = isset($rule['addedOnly']) ? ' (lignes ajoutées seules : '.$rule['addedOnlyLabel'].')' : '';
+        echo \sprintf("%-20s %-8s %s%s\n", $id, $rule['kind'], $rule['message'], $partly);
     }
     exit(0);
 }
@@ -203,6 +210,17 @@ function git(string $args, bool $quiet = false): string
 function extension(string $path): string
 {
     return pathinfo($path, \PATHINFO_EXTENSION);
+}
+
+/**
+ * The kind of the rule for this file: a "file" rule may read only the added lines of some
+ * paths (`addedOnly`), where projects still hold old occurrences.
+ *
+ * @param array{kind: string, addedOnly?: string} $rule
+ */
+function kind(array $rule, string $path): string
+{
+    return isset($rule['addedOnly']) && preg_match($rule['addedOnly'], $path) ? 'ajout' : $rule['kind'];
 }
 
 /** @param array{ext: list<string>, paths: string, except?: string} $rule */
@@ -482,7 +500,10 @@ function enclosing(string $content, int $offset, string $open, string $close): ?
  */
 function hyphenAsDash(string $content, string $path): array
 {
-    $dash = '[\p{L}\d][\p{L}\d.,)»%€]* - [\p{L}\d«(]';
+    $dash = HYPHEN_AS_DASH;
+    if (str_ends_with($path, '.php')) {
+        return hyphenAsDashInPhpStrings($content);
+    }
     if (str_ends_with($path, '.twig')) {
         // The text of a `<code>` is a name, quoted as it is written elsewhere.
         $text = blank($content, '/\{#.*?#\}|\{\{.*?\}\}|\{%.*?%\}|<script\b.*?<\/script>|<style\b.*?<\/style>|<code\b.*?<\/code>|<[a-zA-Z!\/][^>]*>/s');
@@ -529,15 +550,19 @@ function visibleEmoji(string $content): array
 }
 
 /**
- * Each named class declaration that is neither `final` nor `abstract`.
+ * Each named class declaration that is neither `final` nor `abstract`. Under tests/, a base
+ * that the tests extend (`…TestCase`) and a Foundry factory stay open.
  *
  * @return list<array{int, string}>
  */
-function openClasses(string $content): array
+function openClasses(string $content, bool $inTests = false): array
 {
     $code = withoutComments($content, 'a.php');
     $out = [];
     foreach (matches('/^[ \t]*((?:(?:final|abstract|readonly)\s+)*)class\s+\w+/m', $content, $code) as [$line, $excerpt]) {
+        if ($inTests && preg_match('/\bclass\s+\w*TestCase\b|\bextends\s+\\\\?(?:\w+\\\\)*\w*(?:ObjectFactory|ModelFactory)\b/', $excerpt)) {
+            continue;
+        }
         if (!preg_match('/\b(final|abstract)\b/', explode('class', $excerpt)[0])) {
             $out[] = [$line, $excerpt];
         }
@@ -658,6 +683,160 @@ function detachedPunctuation(string $content): array
 }
 
 /**
+ * A route id or a DTO field accepting any number of digits. The digits may be written
+ * `\d` (`\\d` in a double-quoted PHP string or written twice by habit), `[0-9]`, after an
+ * optional leading `[1-9]`, and then `+` or `*`: `[1-9]\d{0,8}` is bounded and passes.
+ * Read in a route attribute or a PHP route file (`'id' => '\d+'`, `{id<\d+>}`), a YAML route
+ * file (`requirements: { id: '\d+' }`, one per line too), and in src/Dto/ a `Regex` that
+ * accepts nothing but digits (`pattern: '/^\d+$/'`), which lets `99999999999` through to
+ * the same `find()`.
+ *
+ * @return list<array{int, string}>
+ */
+function unboundedIds(string $content, string $path): array
+{
+    $code = withoutComments($content, $path);
+    $digits = '(?:\[1-9\])?(?:\\\\{1,2}d|\[0-9\])[+*]';
+    $patterns = ['/\{\w+<'.$digits.'>/'];
+    if ('php' === extension($path)) {
+        $patterns[] = '/Requirement::(?:DIGITS|POSITIVE_INT)\b/';
+        $patterns[] = '/=>\s*([\'"])'.$digits.'\1/';
+        if (str_starts_with($path, 'src/Dto/')) {
+            $patterns[] = '/\bRegex\(\s*(?:pattern\s*:\s*)?([\'"])([\/#~])\^'.$digits.'\$\2[a-zA-Z]*\1/';
+        }
+    } else {
+        $patterns[] = '/^[ \t]*[\w-]+[ \t]*:[ \t]*([\'"]?)'.$digits.'\1[ \t]*$/m';
+        $patterns[] = '/[{,][ \t]*[\w-]+[ \t]*:[ \t]*([\'"]?)'.$digits.'\1[ \t]*(?=[,}])/';
+    }
+
+    return sortedByLine(array_merge(...array_map(static fn (string $p): array => matches($p, $content, $code), $patterns)));
+}
+
+/**
+ * @param list<array{int, string}> $hits
+ *
+ * @return list<array{int, string}> one per line, in order
+ */
+function sortedByLine(array $hits): array
+{
+    $byLine = [];
+    foreach ($hits as [$line, $excerpt]) {
+        $byLine[$line] ??= [$line, $excerpt];
+    }
+    ksort($byLine);
+
+    return array_values($byLine);
+}
+
+/**
+ * The content with everything outside the `ux_icon(…)` calls blanked: the root of a hand
+ * written `<svg>`, or a `<path class="fill-…">`, takes its fill as it is.
+ */
+function iconCalls(string $content): string
+{
+    $kept = (string) preg_replace('/[^\n]/', ' ', $content);
+    if (!preg_match_all('/\bux_icon\s*\(/', $content, $all, \PREG_OFFSET_CAPTURE)) {
+        return $kept;
+    }
+    $n = \strlen($content);
+    foreach ($all[0] as [$call, $offset]) {
+        $depth = 0;
+        for ($end = $offset + \strlen($call) - 1; $end < $n; ++$end) {
+            if ('(' === $content[$end]) {
+                ++$depth;
+            } elseif (')' === $content[$end] && 0 === --$depth) {
+                break;
+            }
+        }
+        $kept = substr_replace($kept, substr($content, $offset, $end - $offset + 1), $offset, $end - $offset + 1);
+    }
+
+    return $kept;
+}
+
+/**
+ * A hyphen between spaces in a PHP string that reads as text: on one line, opening with a
+ * capital letter, holding no code (no dot between two words, no bracket, `$`, `<`, `=`,
+ * no SQL keyword) and not passed to a logger, which nobody reads on screen. A choice
+ * label (`'V1 - Salaire animateur'`), a field label, a flash message.
+ *
+ * @return list<array{int, string}>
+ */
+function hyphenAsDashInPhpStrings(string $content): array
+{
+    $code = withoutComments($content, 'a.php');
+    $lines = explode("\n", $content);
+    $out = [];
+    if (!preg_match_all('/\'(?:[^\'\\\\\n]|\\\\.)*\'|"(?:[^"\\\\\n]|\\\\.)*"/u', $code, $all, \PREG_OFFSET_CAPTURE)) {
+        return [];
+    }
+    foreach ($all[0] as [$string, $offset]) {
+        $text = substr($string, 1, -1);
+        if (!preg_match('/^\p{Lu}/u', $text) || !preg_match('/'.HYPHEN_AS_DASH.'/u', $text)
+            || preg_match('/\w\.\w|[(){}\[\]$<>=]|\b(?:SELECT|FROM|WHERE|JOIN)\b/', $text)) {
+            continue;
+        }
+        $line = substr_count($code, "\n", 0, $offset) + 1;
+        if (!preg_match('/\blogger->\w+\(/i', $lines[$line - 1] ?? '')) {
+            $out[] = [$line, $lines[$line - 1] ?? ''];
+        }
+    }
+
+    return sortedByLine($out);
+}
+
+/**
+ * The matches of the pattern in the text a reader sees: comments left out, and neither a
+ * test (its text follows the screen's) nor a line written to a logger.
+ *
+ * @return list<array{int, string}>
+ */
+function inVisibleText(string $pattern, string $content, string $path): array
+{
+    return array_values(array_filter(
+        matches($pattern, $content, withoutComments($content, $path)),
+        static fn (array $hit): bool => !preg_match('/\blogger->\w+\(/i', $hit[1]),
+    ));
+}
+
+/**
+ * A `<Label>` or `<label>` that names no control: no `htmlFor` (nor `for`), no `id` that an
+ * `aria-labelledby` points to, no spread that could carry either, and no control nested in it. A screen reader then reads the field
+ * without its name, and a click on the text focuses nothing.
+ *
+ * @return list<array{int, string}>
+ */
+function orphanLabels(string $content, string $path): array
+{
+    $code = withoutComments($content, $path);
+    $lines = explode("\n", $content);
+    $out = [];
+    if (!preg_match_all('/(?<![\w.$])<(Label|label)(?=[\s>\/])/', $code, $all, \PREG_OFFSET_CAPTURE)) {
+        return [];
+    }
+    $control = '/<(?:input|select|textarea|Input|InputGroupInput|Textarea|Select|SelectTrigger|NativeSelect|Checkbox|Switch|Radio|RadioGroup|RadioGroupItem|Slider|Combobox|MultiSelect|DatePicker|InputOTP)\b/';
+    foreach ($all[0] as $i => [, $offset]) {
+        $opening = tag($code, $offset + 1) ?? '';
+        // An `id` names a group through `aria-labelledby`.
+        if (preg_match('/\s(?:htmlFor|for|id)\s*=|\{\s*\.\.\./', $opening)) {
+            continue;
+        }
+        $name = $all[1][$i][0];
+        if (!str_ends_with(rtrim($opening), '/>')) {
+            $close = strpos($code, '</'.$name.'>', $offset);
+            $inner = false === $close ? '' : substr($code, $offset + \strlen($opening), $close - $offset - \strlen($opening));
+            if (preg_match($control, $inner)) {
+                continue;
+            }
+        }
+        $line = substr_count($code, "\n", 0, $offset) + 1;
+        $out[] = [$line, $lines[$line - 1] ?? ''];
+    }
+
+    return $out;
+}
+
+/**
  * Each rule: its message, the extensions and paths it reads, its kind ("fichier": every
  * line; "ajout": added lines only), and the function that finds its occurrences.
  *
@@ -722,12 +901,41 @@ function rules(): array
                 'md' === extension($p) ? withoutCode($c) : $c,
             ),
         ],
+        'anglicisme' => [
+            'message' => '« upload » dans un texte affiché : téléverser, envoyer, déposer, joindre (« Documents envoyés », « Déposez votre fichier »)',
+            'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml'],
+            'paths' => $everywhere,
+            'except' => $tests,
+            'kind' => 'ajout',
+            // `uploader` alone is an English name in the code (`$uploader`, `VichUploader`):
+            // it counts after a French word only.
+            'find' => static fn (string $c, string $p): array => inVisibleText(
+                '/uploadé(?:e|s|es)?(?!\p{L})|(?i:\bupload(?:ez|ons)\b)|(?:\b[ldLD][\'\x{2019}]|\b(?:à|pour|de|un|des|les|cet|votre|vos|du|chaque)\s+)(?i:upload(?:er|s)?)\b/u',
+                $c,
+                $p,
+            ),
+        ],
+        'points-suspension' => [
+            'message' => 'trois points dans un texte affiché : le caractère « … » (« Rechercher… », « Chargement… »)',
+            'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml'],
+            'paths' => $everywhere,
+            'except' => $tests,
+            'kind' => 'ajout',
+            // After a letter and before the end of the text: the spread (`...props`,
+            // `[...a]`) and the first-class callable (`strlen(...)`) follow a bracket or a
+            // space, and an escape (`"\n..."`) is not a word.
+            'find' => static fn (string $c, string $p): array => inVisibleText('/(?<=(?<!\\\\)\p{L})\.\.\.(?=[\s"\'`<)\]}]|$)/um', $c, $p),
+        ],
         'trait-union' => [
             'message' => 'trait d\'union entouré d\'espaces dans un texte affiché : tiret moyen (« 10–20 ha », « Annonces – Site ») ou virgules',
-            'ext' => ['tsx', 'twig'],
-            'paths' => $ui,
+            'ext' => ['tsx', 'twig', 'php'],
+            'paths' => '#^(assets|templates|src)/#',
             'except' => $tests,
             'kind' => 'fichier',
+            // A PHP string read as text: the projects still hold some (a sheet tab, a
+            // third-party label quoted as is), so only the new ones are judged.
+            'addedOnly' => '#\.php$#',
+            'addedOnlyLabel' => 'PHP',
             'find' => static fn (string $c, string $p): array => hyphenAsDash($c, $p),
         ],
         'entite-html' => [
@@ -800,9 +1008,14 @@ function rules(): array
             'kind' => 'ajout',
             // « gap analysis 2026-07 » : chaque audit réécrit le fichier, la date ne
             // désigne plus rien dès le suivant. Le chemin `docs/gap-analysis.md` passe.
-            'find' => static fn (string $c): array => matches(
+            // Then a finding named by its number (`gap H5`, `gap-analysis M12bis`), a section
+            // of the file (`gap-analysis §9`), a numbered ruling (`arbitrage 21c`), and in the
+            // code a pull request (`(PR #101)`): the document that cites it says why itself.
+            'find' => static fn (string $c, string $p): array => matches(
                 '/\b\d{1,2}(?:e|\x{1D49}|ème|th)\s+(?:passe|gap-analysis\spass)\b|\bpasses?\s+\d{1,2}\b|\bfindings?\s+#?\d|\bconstats?\s+(?:n°\s*)?#?\d'
-                .'|(?i:\bgap[\s-]analysis)\s+(?:du\s+|de\s+|d\x{2019}|d\')?\(?(?:\d{4}-\d{2}|\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4}|(?:\d{1,2}(?:er)?\s+)?(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})/u',
+                .'|(?i:\bgap[\s-]analysis)\s+(?:du\s+|de\s+|d\x{2019}|d\')?\(?(?:\d{4}-\d{2}|\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4}|(?:\d{1,2}(?:er)?\s+)?(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4})'
+                .'|(?i:\bgap(?:[\s-]analysis)?)\s+[HMB]\d+|(?i:\bgap[\s-]analysis)\s+§\s*\d+|\barbitrage\s+\d+[a-z]\b'
+                .('md' === extension($p) ? '' : '|\(PR\s+#\d+\)').'/u',
                 $c,
             ),
         ],
@@ -817,8 +1030,9 @@ function rules(): array
         ],
         'rgba' => [
             'message' => 'couleur rgb()/rgba() en littéral : un jeton, avec son opacité (`bg-primary/20`, `color-mix`)',
-            'ext' => $front,
-            'paths' => $ui,
+            // An extension of src/Twig/ writes its markup too.
+            'ext' => [...$front, 'php'],
+            'paths' => '#^(assets|templates|src/Twig)/#',
             'kind' => 'ajout',
             'find' => static fn (string $c): array => matches('/(?<![a-zA-Z])rgba?\(\s*\d/', $c),
         ],
@@ -843,7 +1057,8 @@ function rules(): array
             'ext' => ['twig'],
             'paths' => '#^templates/#',
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/(?<![-\w\]:&>*_\/])(?:[\w-]+:)*(?:fill|stroke)-(?!none\b)[a-z][\w\/-]*+(?!\s*=)|(?<![-\w])fill\s*:\s*[\'"]/', $c),
+            // Read inside a `ux_icon(…)` call only: a `<svg>` written by hand takes its fill.
+            'find' => static fn (string $c): array => matches('/(?<![-\w\]:&>*_\/])(?:[\w-]+:)*(?:fill|stroke)-(?!none\b)[a-z][\w\/-]*+(?!\s*=)|(?<![-\w])fill\s*:\s*[\'"]/', $c, iconCalls($c)),
         ],
         // React islands (reactony, principle 6): a one-click action posts through its `/api`
         // route and the SDK, not a form the browser submits with a hidden CSRF token.
@@ -877,9 +1092,22 @@ function rules(): array
             'message' => '`<label>` natif : le `Label` du kit (`components/ui/label`)',
             'ext' => ['tsx'],
             'paths' => '#^assets/#',
-            'except' => $tests,
+            // The kit's own Label wraps the native one.
+            'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^assets/components/ui/label\.tsx$#',
             'kind' => 'fichier',
+            // The composites of assets/components/ui/ used to be skipped with the registry: a
+            // project may still hold a native label there.
+            'addedOnly' => '#^assets/components/ui/#',
+            'addedOnlyLabel' => 'assets/components/ui/',
             'find' => static fn (string $c, string $p): array => matches('/<label\b/', $c, withoutComments($c, $p)),
+        ],
+        'label-orphelin' => [
+            'message' => '`<Label>` qui ne nomme aucun champ : `htmlFor` vers l\'`id` du contrôle, ou le contrôle dans le libellé ; sinon un texte (`<p>`, `<span>`), un titre de groupe (`<legend>`, `aria-labelledby`)',
+            'ext' => ['tsx'],
+            'paths' => '#^assets/#',
+            'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^assets/components/ui/label\.tsx$#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => orphanLabels($c, $p),
         ],
         'case-native' => [
             'message' => 'case à cocher native : la `Checkbox` du kit, qui reçoit le focus sous Safari',
@@ -902,12 +1130,21 @@ function rules(): array
         // What the page loads and opens.
         'target-blank' => [
             'message' => '`target="_blank"` sans `rel="noopener noreferrer"` dans la même balise ou le même objet : la page ouverte garderait une prise sur celle-ci et saurait d\'où elle vient',
-            // Not PHP, which assembles its tags piece by piece.
-            'ext' => $markup,
-            'paths' => $ui,
+            'ext' => [...$markup, 'php'],
+            'paths' => '#^(assets|templates|src)/#',
             'except' => $tests,
             'kind' => 'fichier',
-            'find' => static fn (string $c): array => blankWithoutRel($c),
+            // PHP assembles its tags piece by piece: there, `noreferrer` is looked for on the
+            // line (`'target' => '_blank'` of an EasyAdmin field, `target="_blank"` in a
+            // string), and the projects still hold some, so only the new lines are judged.
+            'addedOnly' => '#\.php$#',
+            'addedOnlyLabel' => 'PHP',
+            'find' => static fn (string $c, string $p): array => 'php' === extension($p)
+                ? array_values(array_filter(
+                    matches('/[\'"]target[\'"]\s*=>\s*[\'"]_blank|\btarget\s*=\s*\\\\?[\'"]_blank/', $c, withoutComments($c, $p)),
+                    static fn (array $hit): bool => !str_contains($hit[1], 'noreferrer'),
+                ))
+                : blankWithoutRel($c),
         ],
         'hote-tiers' => [
             'message' => 'image ou emoji chargé d\'un hôte tiers : il reçoit l\'IP du visiteur et disparaît avec son fichier ; le fichier dans le dépôt, une icône lucide ou le caractère',
@@ -977,11 +1214,11 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => matches('/\bChoice\(\s*\[|\bchoices:\s*\[/', $c, withoutComments($c, $p)),
         ],
         'id-sans-borne' => [
-            'message' => 'identifiant de route sans borne (`Requirement::DIGITS`, `\d+`, `[0-9]+`) : `99999999999` atteint PostgreSQL, qui refuse l\'int4 et répond 500, borner à neuf chiffres (`[1-9][0-9]{0,8}`)',
-            'ext' => ['php'],
-            'paths' => '#^src/#',
+            'message' => 'identifiant sans borne (`Requirement::DIGITS`, `\d+`, `[0-9]+`, dans une route PHP ou YAML, ou une `Regex` de DTO) : `99999999999` atteint PostgreSQL, qui refuse l\'int4 et répond 500, borner à neuf chiffres (`[1-9]\d{0,8}`, une constante `Int4::ID`)',
+            'ext' => ['php', 'yaml', 'yml'],
+            'paths' => '#^(src/|config/routes(/|\.ya?ml$|\.php$))#',
             'kind' => 'ajout',
-            'find' => static fn (string $c, string $p): array => matches('/Requirement::DIGITS|=>\s*\'(?:\\\\d|\[0-9\])\+\'/', $c, withoutComments($c, $p)),
+            'find' => static fn (string $c, string $p): array => unboundedIds($c, $p),
         ],
         'docblock-double' => [
             'message' => 'docblock suivi d\'un autre docblock : le premier ne documente rien, le fondre dans le second ou le retirer',
@@ -1000,19 +1237,20 @@ function rules(): array
         'strict-types' => [
             'message' => 'fichier PHP ajouté sans `declare(strict_types=1);`',
             'ext' => ['php'],
-            'paths' => '#^src/#',
+            'paths' => '#^(src|tests)/#',
             // Reported on the first line, which only a new file adds.
             'kind' => 'ajout',
             'find' => static fn (string $c): array => preg_match('/^declare\(strict_types=1\);/m', $c) ? [] : [[1, '<?php']],
         ],
         'classe-finale' => [
-            'message' => 'classe ajoutée ni `final` ni `abstract` : une classe se ferme, l\'héritage se décide',
+            'message' => 'classe ajoutée ni `final` ni `abstract` : une classe se ferme, l\'héritage se décide (une base de tests s\'appelle `…TestCase`, ou se déclare `abstract`)',
             'ext' => ['php'],
-            'paths' => '#^src/#',
-            // Doctrine extends the entities for its lazy proxies.
-            'except' => '#^src/Entity/#',
+            'paths' => '#^(src|tests)/#',
+            // Doctrine extends the entities for its lazy proxies; Foundry's factories follow
+            // their maker.
+            'except' => '#^src/Entity/|^tests/Factory/#',
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => openClasses($c),
+            'find' => static fn (string $c, string $p): array => openClasses($c, str_starts_with($p, 'tests/')),
         ],
         'gitignore-src' => [
             'message' => '`.gitignore` sous src/ : le dépôt n\'a qu\'un .gitignore de code, à la racine',

@@ -1,0 +1,4 @@
+ancienne_fiche_groupe:
+    path: /groupe/{id}
+    controller: Symfony\Bundle\FrameworkBundle\Controller\RedirectController
+    requirements: { id: '\d+' }

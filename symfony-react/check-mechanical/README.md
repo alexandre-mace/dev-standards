@@ -55,7 +55,17 @@ declaration, which only a new file adds, and judge new files only.
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `docblock-double`, `gitignore-src` |
-| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `diacritique-invisible`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee` |
+| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `id-sans-borne`, `diacritique-invisible`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin` |
+
+A **fichier** rule can read only the added lines of some paths, where the projects still
+hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
+PHP, where La Grange and Le Grenier keep links with `rel="noopener"` alone and CLI messages
+or third-party labels with a spaced hyphen; `label-natif` in `assets/components/ui/`, whose
+composites used to be skipped with the registry.
+
+`couleur-brute`, `blanc-noir`, `rgba` and `commentaire-anglais` become **fichier** once every
+project has cleaned them. Measured on 18/10/2026, La Grange is clean of all four, Fabacée's
+integration branch of the first two, and Le Grenier holds 74, 17, 2 and 1,738 of them.
 
 `commentaire-anglais` reads a comment line by line, and calls a line English when it
 holds two English function words or more, no French one and no accented letter, among
@@ -88,7 +98,9 @@ is refused too: it goes away with the code it covered.
 
 The script skips by itself what every project shares: `docs/gap-analysis.md`, which quotes
 the deviations, `data/`, which holds imported datasets and sources quoted as they are
-(prefectoral orders, official texts) rather than the project's prose, the shadcn registry components (`assets/components/ui/`), the generated
+(prefectoral orders, official texts) rather than the project's prose, the shadcn registry
+components (the kebab-case files at the top of `assets/components/ui/`; `composites/`, the
+tests and a project's own `data-table.tsx` and `multi-select.tsx` are read), the generated
 code (`assets/lib/api/`, `openapi.yaml`, `public/build/`), `vendor/`, `node_modules/` and
 the lockfiles. No other folder is out of reach, old code included.
 

@@ -172,6 +172,36 @@ foreach (['docs/gap-analysis.md', 'data/fermage/source.json', 'assets/components
 [$code, , $err] = check(['--root', $root, ...filesUnder($root)]);
 expect(0 === $code, 'le relevé, les données de data/, les composants du registre, le code généré et les dépendances ne sont pas lus', $err);
 
+// Of assets/components/ui/, only the registry files are skipped: composites/, the tests and
+// a project's own data-table.tsx and multi-select.tsx are read.
+$root = directory();
+foreach (['assets/components/ui/composites/Champ.tsx', 'assets/components/ui/data-table.tsx', 'assets/components/ui/multi-select.tsx', 'assets/components/ui/FeveSlider.tsx'] as $path) {
+    write($root, $path, "export const a = 'A \u{2014} B';\n");
+}
+foreach (filesUnder($root) as $path) {
+    [, , $err] = check(['--root', $root, $path]);
+    expect(str_contains($err, "$path:1: [tiret-long]"), "$path n'est pas un composant du registre : il est lu", $err);
+}
+
+// A "fichier" rule may read only the added lines of some paths: target-blank and
+// trait-union in PHP, where the projects still hold old occurrences, while a TSX file is
+// read whole.
+$root = repositoryWithAnOldPassNumber();
+write($root, 'src/Link.php', "<?php\n\ndeclare(strict_types=1);\n\n\$a = '<a href=\"/x\" target=\"_blank\">x</a>';\n");
+write($root, 'assets/Old.tsx', "export const A = () => <a href='/x' target='_blank'>x</a>;\n");
+git($root, 'add', '.');
+git($root, 'commit', '-qm', 'liens');
+git($root, 'branch', 'base');
+write($root, 'src/Link.php', "\$b = '<a href=\"/y\" target=\"_blank\">y</a>';\n", append: true);
+git($root, 'add', '.');
+git($root, 'commit', '-qm', 'nouveau lien');
+[$code, , $err] = check(['--all', '--base', 'base'], $root);
+expect(
+    1 === $code && str_contains($err, 'src/Link.php:6: [target-blank]') && !str_contains($err, 'src/Link.php:5:') && str_contains($err, 'assets/Old.tsx:1: [target-blank]'),
+    'target-blank lit en PHP les seules lignes ajoutées, et tout un fichier TSX',
+    $err,
+);
+
 // The hook judges the staged version, and only its new lines for an "ajout" rule: an
 // old pass number of the same file passes, the new one does not, even under a non-ASCII
 // name, which git would quote.

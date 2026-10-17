@@ -1,0 +1,4 @@
+ancienne_structure:
+    path: /structure/{structure}
+    requirements:
+        structure: "\\d+"

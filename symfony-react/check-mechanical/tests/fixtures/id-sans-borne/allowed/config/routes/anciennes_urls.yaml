@@ -1,0 +1,4 @@
+# `\d+` laissait passer un id au-delà d'int4.
+ancienne_fiche_groupe:
+    path: /groupe/{id}
+    requirements: { id: '[1-9]\d{0,8}', uuid: '[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}' }
