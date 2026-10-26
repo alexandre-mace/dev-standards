@@ -1,6 +1,6 @@
 ---
 name: preprod
-description: Merges the current feature branch into preprod for UAT, then returns to it. Never touches main. Triggers - "pousse en preprod", "mets en preprod", "envoie en recette", once the user has given the go.
+description: Merges the current feature branch into preprod for UAT, then returns to it. Never touches main. Triggers - "pousse en preprod", "mets en preprod", "envoie en recette", or as the last step of /ticket once /review-diff passed.
 allowed-tools: Bash(git *)
 ---
 
@@ -15,8 +15,10 @@ hand over the preview URL.
 
 ## Rules
 
-- **Only on the user's explicit go, in this conversation.** Preprod is shared: a merge
-  there replaces what someone else may be testing.
+- **The feature request is the go.** When `/ticket` (or the user) asked for the feature and
+  `/review-diff` passed, merge without asking: the user does not want to be asked to approve
+  UAT for work they requested. Ask first only when preprod may be holding someone else's
+  test in progress, or when the branch is not the one the user asked for.
 - **Never delete the feature branch.** It stays for the UAT fixes and the eventual
   `/deploy`.
 - Abort if the current branch is already `main` or `preprod`.
