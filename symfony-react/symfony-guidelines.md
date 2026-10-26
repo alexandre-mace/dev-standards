@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026; floor 8.5; security ≥ 8.5.9, 8.5.11 pending on Clever) · Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar) · Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0 · PHPUnit 13.3 (dama 8.6.0 compatible: see §13) · PHPStan 2.2.16 (Turbo) · PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias) · Foundry 2.13 (**≥ 2.10.3**) · dama 8.6 · Eris 1.1 · EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7) · Twig 3.30 (≥ 3.27) · sentry-symfony 5.13 · nelmio/api-doc-bundle 5.12 · zenstruck/messenger-monitor-bundle 0.6 · PostgreSQL 18 (18.4 on CleverCloud, floor 17) · Symfony Reprise 1.3 (Vite integration, see reactony §6) · VichUploader 3.0.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.10, default from October 2026; floor 8.5; security ≥ 8.5.9, 8.5.11 pending on Clever), Symfony 8.1.7 (8.2 expected Nov. 2026, see Radar), Doctrine ORM 3.7.2 / doctrine-bundle 3.3.2 / DBAL 4.5.0, PHPUnit 13.3 (dama 8.6.0 compatible: see §13), PHPStan 2.2.16 (Turbo), PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias), Foundry 2.13 (**≥ 2.10.3**), dama 8.6, Eris 1.1, EasyAdmin 5.6 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7), Twig 3.30 (≥ 3.27), sentry-symfony 5.13, nelmio/api-doc-bundle 5.12, zenstruck/messenger-monitor-bundle 0.6, PostgreSQL 18 (18.4 on CleverCloud, floor 17), Symfony Reprise 1.3 (Vite integration, see reactony §6), VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -8,12 +8,12 @@ Read the **playbook + Definition of Done** (below) and the **anti-patterns (§18
 
 | Task | Sections |
 |---|---|
-| New API route | §3 Controller · §4 Dto · §2 Domain |
+| New API route | §3 Controller, §4 Dto, §2 Domain |
 | File upload | §4 (+ reactony §2) |
-| Business rule / calculation | §2 Domain · §15 What to create when |
-| Entity / DB query | §8 Entity · §7 Repository |
-| External API / rate limit / webhook | §6 Api · Logging & Sentry |
-| Console command / cron | §11 Command · §17 Scheduler |
+| Business rule / calculation | §2 Domain, §15 What to create when |
+| Entity / DB query | §8 Entity, §7 Repository |
+| External API / rate limit / webhook | §6 Api, Logging & Sentry |
+| Console command / cron | §11 Command, §17 Scheduler |
 | Async external call | §16 Messenger |
 | Writing tests | §13 Testing (+ reactony §9 on the frontend) |
 | Before committing | §14 QA |

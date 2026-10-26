@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0 · React Compiler 1.0 · shadcn CLI 4.21 (Base UI 1.8 base, Vega style, `cn` package) · lucide-react 1.x · eslint-plugin-react-hooks 7.1 · Vitest 5.0 · MSW 3.0 · Playwright 1.63.
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0, React Compiler 1.0, shadcn CLI 4.21 (Base UI 1.8 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, Vitest 5.0, MSW 3.0, Playwright 1.63.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how

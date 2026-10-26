@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0 · React Compiler 1.0 (native plugin-react 6.1 path, see §7) · @vitejs/plugin-react 6.1 / Vite 8.3 (Rolldown) · Symfony Reprise 1.3 (see §6) · symfony/ux 3.5 · TanStack Query 5.104 · RHF 7.89 (v8 still in beta) · Zod 4.6 · @hey-api/openapi-ts 0.99 (exact pin) · Tailwind 4.3 · shadcn (`Field` family; CLI 4.21, `cn` package) · Vitest 5.0 (see §9) · MSW 3.0 (see §9) · Playwright 1.63 · eslint-plugin-react-hooks 7.1 · TypeScript 7 (native, GA, see §8).
+> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1 / Vite 8.3 (Rolldown), Symfony Reprise 1.3 (see §6), symfony/ux 3.5, TanStack Query 5.104, RHF 7.89 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.21, `cn` package), Vitest 5.0 (see §9), MSW 3.0 (see §9), Playwright 1.63, eslint-plugin-react-hooks 7.1, TypeScript 7 (native, GA, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -13,14 +13,14 @@ Read the **Principles** (below) and the **anti-patterns (§10)** for every task;
 
 | Task | Sections |
 |---|---|
-| Display data (props, useQuery) | §1 Reading · §5 Pipeline |
-| Form (create/edit) | §4 Form · §3 422 errors · §2 Writing |
+| Display data (props, useQuery) | §1 Reading, §5 Pipeline |
+| Form (create/edit) | §4 Form, §3 422 errors, §2 Writing |
 | File upload | §2 (+ symfony-guidelines §4) |
-| New endpoint consumed by React | §5 Pipeline · §2 Writing |
-| New component / Twig mount | §6 Infra · §7 Conventions |
+| New endpoint consumed by React | §5 Pipeline, §2 Writing |
+| New component / Twig mount | §6 Infra, §7 Conventions |
 | "React or Stimulus/Turbo?" | §6 (When React, when Stimulus) |
 | Perf / memoization / React Compiler | §7 (Performance) |
-| Frontend tests | §9 Tests · §8 QA |
+| Frontend tests | §9 Tests, §8 QA |
 | Unsure about a pattern | §11 Summary |
 
 ## Principles
