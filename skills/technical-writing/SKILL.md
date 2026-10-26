@@ -68,6 +68,8 @@ apply the rules below, then the **Chat register** section on top of them.
 Only with `--chat`. The reader is a colleague reading between two other messages, and
 the text has to sound typed, not drafted.
 
+- No greeting and no sign-off: the first sentence is already the subject. "Hello, pour
+  l'export :" becomes "L'export :".
 - Write the way the thread is written: the colleague's own shortcuts are fair game
   ("10j", "auto", "+", "genre"), and so is spoken French ("ça touche à aucun montant").
 - An arrow for a consequence: "match corrigé -> lettré dans la minute".
