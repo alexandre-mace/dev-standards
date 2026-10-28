@@ -19,10 +19,23 @@ symfony-react/performance-cores/performance-cores   # 6 on an M5 Max
 
 ## In a project
 
-`bin/ci-local` finds it like `machine-lock`, next to the main checkout or wherever
-`DEV_STANDARDS` points, and keeps its variable as an override:
+`bin/ci-local` finds it next to the project's main checkout, through
+`git rev-parse --git-common-dir`, the lookup that works from every worktree, including one
+under `.claude/worktrees/` (`../machine-lock/README.md`, "Finding dev-standards from a
+worktree"). It keeps its own variable as an override, and says so on the PHPUnit line when
+the script was not found, rather than falling back to one process in silence: on
+28/10/2026 Le Grenier's ParaTest dropped to one process from a `.claude/worktrees/`
+worktree without a word.
 
 ```bash
-PERFORMANCE_CORES=${DEV_STANDARDS:-$CHECKOUT/../../dev-standards}/symfony-react/performance-cores/performance-cores
-PHPUNIT_PROCESSES=${CI_LOCAL_PHPUNIT_PROCESSES:-$("$PERFORMANCE_CORES" 2> /dev/null || echo 1)}
+DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")/../../dev-standards}
+PERFORMANCE_CORES=$DEV_STANDARDS_DIR/symfony-react/performance-cores/performance-cores
+if [ -n "${CI_LOCAL_PHPUNIT_PROCESSES:-}" ]; then
+    PHPUNIT_PROCESSES=$CI_LOCAL_PHPUNIT_PROCESSES
+elif [ -x "$PERFORMANCE_CORES" ]; then
+    PHPUNIT_PROCESSES=$("$PERFORMANCE_CORES")
+else
+    PHPUNIT_PROCESSES=1
+    PHPUNIT_NOTE=" (performance-cores introuvable : $PERFORMANCE_CORES)"
+fi
 ```

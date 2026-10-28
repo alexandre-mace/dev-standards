@@ -51,16 +51,15 @@ machine-lock held                        # exit 0 if this process chain holds it
 
 `bin/ci-local` takes the lock by itself: it reruns itself under `machine-lock run` at
 start, once its arguments are read (so `--help` does not wait) and before it touches
-`var/ci-local/`. Same lookup, next to the main checkout, and same `DEV_STANDARDS` variable
-as `bin/check-mechanical`.
+`var/ci-local/`. It finds `dev-standards` next to the project's main checkout, the one
+lookup that works from every worktree (see "Finding dev-standards from a worktree" below).
 
 ```bash
 ARGS=("$@")
 # … arguments read …
 if [ "${GITHUB_ACTIONS:-}" != true ]; then
-    GIT_COMMON_DIR=$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
-    CHECKOUT=$(if [ -n "$GIT_COMMON_DIR" ]; then dirname "$GIT_COMMON_DIR"; else cd "$(dirname "$0")/.." && pwd; fi)
-    MACHINE_LOCK=${DEV_STANDARDS:-$CHECKOUT/../../dev-standards}/symfony-react/machine-lock/machine-lock
+    DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")/../../dev-standards}
+    MACHINE_LOCK=$DEV_STANDARDS_DIR/symfony-react/machine-lock/machine-lock
     if [ ! -x "$MACHINE_LOCK" ]; then
         echo "machine-lock introuvable : $MACHINE_LOCK" >&2
         exit 2
@@ -71,6 +70,30 @@ fi
 
 A full suite run on its own, `playwright test` or `phpunit` without a filter, goes through
 `machine-lock run` too. A filtered run (one file, one test) does not need it.
+
+## Finding dev-standards from a worktree
+
+The projects sit next to each other under `~/dev/<organisation>/`, and `dev-standards`
+under `~/dev/`. Every script that calls into it (`bin/ci-local`, `bin/check-mechanical`,
+`bin/worktree-setup`) looks for it next to the project's **main checkout**, which
+`git rev-parse --git-common-dir` gives from any worktree: its parent is that checkout.
+
+```bash
+DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")/../../dev-standards}
+```
+
+- **Not from the script's own path** (`$(dirname "$0")/../../../dev-standards`): it works
+  from a worktree that sits next to the project (`~/dev/feve/fabacee-x`), and fails from
+  one under `.claude/worktrees/<name>/`, where Claude Code puts them, by looking for
+  `dev-standards` inside `.claude/`. On 28/10/2026, Fabacée's `bin/ci-local` and
+  `bin/check-mechanical` and Le Grenier's still looked that way: the local CI and the
+  pre-commit hook exited in 2 there, and Le Grenier's ParaTest fell silently to one process.
+- **`DEV_STANDARDS`** points at another copy, a worktree of this repository for instance,
+  to try a change to a shared script before it is merged.
+- **`--path-format=absolute`** (git 2.31): without it, the main checkout answers a
+  relative `.git`.
+
+The PHP version, for `bin/check-mechanical`, is in `../check-mechanical/README.md`.
 
 ## Tests
 
