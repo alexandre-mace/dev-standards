@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The tests of machine-lock, on a lock of their own (MACHINE_LOCK_DIR in a temporary
-# folder), so they never wait on nor block a real run. About fifteen seconds.
+# folder), so they never wait on nor block a real run. About thirty seconds.
 #
 #   symfony-react/machine-lock/tests/run.sh
 
@@ -114,6 +114,73 @@ GITHUB_ACTIONS=true MACHINE_LOCK_TIMEOUT=1 "$ML" run -- sh -c 'exit 5'
 check "sur GitHub Actions, la commande tourne sans attendre le verrou" $? 5
 CI=true MACHINE_LOCK_TIMEOUT=1 "$ML" run -- true 2> /dev/null
 check "CI=true seul (bin/ci-local le pose) ne lève pas le verrou" $? 75
+wait "$holder"
+
+# --- Waiters are served in order of arrival ---------------------------------------------
+
+# Each waiter retries every second from its own start: a holder ending half a second into
+# that cycle lets a later arrival retry first, which is what the queue must not reward.
+order=$TMP/order.log
+"$ML" run -- sleep 2.5 &
+holder=$!
+wait_held
+for name in a b c d; do
+    "$ML" run -- sh -c "echo $name >> '$order'" 2> /dev/null &
+    sleep 0.3
+done
+wait
+check "les attentes passent dans l'ordre d'arrivée" "$(tr -d '\n' < "$order")" abcd
+
+# --- The status lists the queue, and a waiter knows its place ---------------------------
+
+"$ML" run -- sleep 4 &
+holder=$!
+wait_held
+"$ML" run -- sleep 0 2> /dev/null &
+first=$!
+sleep 0.5
+second_err=$TMP/second.err
+MACHINE_LOCK_TIMEOUT=2 "$ML" run -- true 2> "$second_err"
+status_now=$("$ML" status)
+case "$status_now" in
+    *"en attente, dans l'ordre :"*"1. hors dépôt"*"sleep 0"*) ok "« status » liste la file d'attente" ;;
+    *) ko "« status » sans la file : $status_now" ;;
+esac
+case "$(cat "$second_err")" in
+    *"(position 2 sur 2)"*) ok "une attente dit sa place dans la file" ;;
+    *) ko "place absente du message : $(cat "$second_err")" ;;
+esac
+check "une attente bornée quitte la file en partant" "$(ls "$MACHINE_LOCK_DIR/queue" | grep -c '^[0-9]*$')" 1
+wait "$holder" "$first"
+
+# --- A dead waiter does not hold up the queue -------------------------------------------
+
+"$ML" run -- sleep 2 &
+holder=$!
+wait_held
+"$ML" run -- true 2> /dev/null &
+dead=$!
+sleep 0.5
+kill -9 "$dead"
+wait "$dead" 2> /dev/null
+MACHINE_LOCK_TIMEOUT=6 "$ML" run -- true 2> /dev/null
+check "le ticket d'une attente tuée (kill -9) ne bloque pas la suivante" $? 0
+wait "$holder"
+
+# --- Ctrl-C while waiting takes the ticket back ------------------------------------------
+
+"$ML" run -- sleep 3 &
+holder=$!
+wait_held
+set -m
+"$ML" run -- true 2> /dev/null &
+waiter=$!
+set +m
+sleep 0.5
+kill -INT -- "-$waiter"
+wait "$waiter"
+check "Ctrl-C pendant l'attente rend 130" $? 130
+check "et retire le ticket de la file" "$(ls "$MACHINE_LOCK_DIR/queue" | grep -c '^[0-9]*$')" 0
 wait "$holder"
 
 echo

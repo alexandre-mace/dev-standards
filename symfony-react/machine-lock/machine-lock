@@ -4,7 +4,7 @@
 #
 #   machine-lock run -- <command…>   waits for the lock, runs the command, gives the lock
 #                                    back when it ends, and exits with its status
-#   machine-lock status              who holds the lock, or "libre"
+#   machine-lock status              who holds the lock, or "libre", then who waits
 #   machine-lock held                exit 0 if this process chain already holds it
 #
 # MACHINE_LOCK_TIMEOUT bounds the wait in seconds (0 or unset: no bound); past it, exit
@@ -17,6 +17,11 @@
 # this script's shell, not the command, which runs with the descriptor closed: a daemon
 # the command leaves behind does not keep the machine locked.
 #
+# Waiters are served in order of arrival: each takes a numbered ticket in the queue folder
+# and tries the lock only once its ticket is the oldest one alive. A ticket names its
+# process and that process's start time, so a waiter that died (kill -9, a machine put to
+# sleep and never woken, a reused pid) is swept away by the next one that looks.
+#
 # A run nested under a run of the same chain (bin/ci-local rerunning a step under the
 # lock) runs straight away: MACHINE_LOCK_HELD names the holder, and counts only when that
 # holder is an ancestor of the caller. On a hosted runner (GITHUB_ACTIONS=true) the lock
@@ -27,6 +32,10 @@ set -u
 LOCK_DIR=${MACHINE_LOCK_DIR:-$HOME/.local/state/machine-lock}
 LOCK_FILE=$LOCK_DIR/lock
 HOLDER_FILE=$LOCK_DIR/holder
+QUEUE_DIR=$LOCK_DIR/queue
+QUEUE_LOCK=$LOCK_DIR/queue.lock
+COUNTER_FILE=$LOCK_DIR/next-ticket
+TICKET=
 EX_TEMPFAIL=75
 
 usage() {
@@ -59,17 +68,85 @@ try_lock() {
     fi
 }
 
-# The holder file: pid, repository, folder, command, start (epoch seconds), one per line.
-write_holder() {
-    local repo common tmp=$HOLDER_FILE.$$
+# Who this run is: pid, repository, folder, command, start (epoch seconds), one per line.
+# The holder file is these five lines; a ticket adds the process's start time.
+who_lines() {
+    local repo common
     common=$(git rev-parse --path-format=absolute --git-common-dir 2> /dev/null) || common=
     case "$common" in
         */.git) repo=$(basename "$(dirname "$common")") ;;
         ?*) repo=$(basename "$common" .git) ;;
         *) repo='hors dépôt' ;;
     esac
-    printf '%s\n%s\n%s\n%s\n%s\n' "$$" "$repo" "$PWD" "$*" "$(date +%s)" > "$tmp" 2> /dev/null &&
-        mv -f "$tmp" "$HOLDER_FILE" 2> /dev/null
+    printf '%s\n%s\n%s\n%s\n%s\n' "$$" "$repo" "$PWD" "$*" "$(date +%s)"
+}
+
+write_holder() {
+    local tmp=$HOLDER_FILE.$$
+    who_lines "$@" > "$tmp" 2> /dev/null && mv -f "$tmp" "$HOLDER_FILE" 2> /dev/null
+}
+
+# A process's start time, which tells it from a later process given the same pid.
+started_at() {
+    ps -o lstart= -p "$1" 2> /dev/null
+}
+
+# The queue's own lock, held a few milliseconds: a ticket number is drawn and its file
+# written under it, so numbers follow arrival and no ticket is seen half written.
+lock_queue() {
+    exec 8>> "$QUEUE_LOCK" || return 1
+    if command -v flock > /dev/null 2>&1; then
+        flock -w 10 8
+    else
+        lockf -s -t 10 8
+    fi
+}
+
+enqueue() {
+    local next tmp
+    mkdir -p "$QUEUE_DIR" || return 1
+    lock_queue || return 1
+    next=$(cat "$COUNTER_FILE" 2> /dev/null)
+    case "$next" in '' | *[!0-9]*) next=0 ;; esac
+    next=$((next + 1))
+    echo "$next" > "$COUNTER_FILE"
+    TICKET=$QUEUE_DIR/$(printf '%012d' "$next")
+    tmp=$QUEUE_DIR/tmp.$$
+    { who_lines "$@"; started_at $$; } > "$tmp" && mv -f "$tmp" "$TICKET"
+    local written=$?
+    exec 8>&-
+    return $written
+}
+
+leave_queue() {
+    [ -n "$TICKET" ] && rm -f "$TICKET"
+    TICKET=
+}
+
+# A ticket whose process is gone, or whose pid now belongs to another process.
+ticket_alive() {
+    local pid started
+    {
+        IFS= read -r pid
+        read -r _ && read -r _ && read -r _ && read -r _
+        IFS= read -r started
+    } < "$1" 2> /dev/null || return 1
+    [ -n "${pid:-}" ] && kill -0 "$pid" 2> /dev/null || return 1
+    [ "$(started_at "$pid")" = "$started" ]
+}
+
+# The live tickets, oldest first; the dead ones are removed on the way.
+live_tickets() {
+    local ticket
+    for ticket in "$QUEUE_DIR"/*; do
+        case "${ticket##*/}" in '' | *[!0-9]*) continue ;; esac
+        [ -f "$ticket" ] || continue
+        if ticket_alive "$ticket"; then
+            echo "$ticket"
+        else
+            rm -f "$ticket"
+        fi
+    done
 }
 
 duration() {
@@ -83,18 +160,18 @@ duration() {
     fi
 }
 
-# One line on the holder, or an empty string when the holder file names nobody alive (the
-# instant between a lock taken and its holder file written).
-describe_holder() {
+# One line on the run a holder file or a ticket names, or an empty string when it names
+# nobody alive (for the holder, the instant between a lock taken and its file written).
+describe() {
     local pid repo dir cmd since now tilde='~'
-    [ -r "$HOLDER_FILE" ] || return 0
+    [ -r "$1" ] || return 0
     {
         IFS= read -r pid
         IFS= read -r repo
         IFS= read -r dir
         IFS= read -r cmd
         IFS= read -r since
-    } < "$HOLDER_FILE"
+    } < "$1"
     [ -n "${pid:-}" ] && kill -0 "$pid" 2> /dev/null || return 0
     now=$(date +%s)
     printf '%s (%s) : %s, depuis %s (%s)' "$repo" "${dir/#$HOME/$tilde}" "$cmd" \
@@ -102,21 +179,42 @@ describe_holder() {
         "$(duration $((now - since)))"
 }
 
+describe_holder() {
+    describe "$HOLDER_FILE"
+}
+
+# The waiters, one line each, in the order they will be served.
+describe_queue() {
+    local ticket line rank=0
+    for ticket in $(live_tickets); do
+        line=$(describe "$ticket")
+        [ -n "$line" ] || continue
+        rank=$((rank + 1))
+        echo "  $rank. $line"
+    done
+}
+
 cmd_status() {
-    local holder
+    local holder queue
     holder=$(describe_holder)
     if [ -n "$holder" ]; then
         echo "tenu par $holder"
-        return 0
-    fi
-    # Nobody alive in the holder file: a try on the lock tells free from a holder that is
-    # starting, and gives it back at once.
-    mkdir -p "$LOCK_DIR"
-    exec 9>> "$LOCK_FILE"
-    if try_lock; then
-        echo libre
     else
-        echo "tenu par un processus qui démarre"
+        # Nobody alive in the holder file: a try on the lock tells free from a holder that
+        # is starting, and gives it back at once.
+        mkdir -p "$LOCK_DIR"
+        exec 9>> "$LOCK_FILE"
+        if try_lock; then
+            echo libre
+        else
+            echo "tenu par un processus qui démarre"
+        fi
+        exec 9>&-
+    fi
+    queue=$(describe_queue)
+    if [ -n "$queue" ]; then
+        echo "en attente, dans l'ordre :"
+        echo "$queue"
     fi
 }
 
@@ -129,6 +227,7 @@ cmd_run() {
     fi
 
     local timeout=${MACHINE_LOCK_TIMEOUT:-0} start now waited holder last= last_print=0 tty=0
+    local tickets position count place
     case "$timeout" in '' | *[!0-9]*)
         echo "machine-lock : MACHINE_LOCK_TIMEOUT attend un nombre de secondes, pas « $timeout »." >&2
         exit 2
@@ -138,16 +237,37 @@ cmd_run() {
     exec 9>> "$LOCK_FILE" || exit 2
     [ -t 2 ] && tty=1
 
+    # Waiting, the ticket leaves with the run, whatever stops it: a dead waiter's ticket
+    # would hold up the queue until another waiter sweeps it.
+    trap 'leave_queue; exit 130' INT
+    trap 'leave_queue; exit 143' TERM
+    trap 'leave_queue; exit 129' HUP
+    enqueue "$@" || {
+        echo "machine-lock : impossible de prendre un ticket dans $QUEUE_DIR." >&2
+        exit 2
+    }
+
     start=$(date +%s)
-    until try_lock; do
+    # The lock is tried only by the oldest live ticket, so waiters are served in order.
+    until tickets=$(live_tickets) && [ "${tickets%%$'\n'*}" = "$TICKET" ] && try_lock; do
         now=$(date +%s)
         waited=$((now - start))
         holder=$(describe_holder)
         if [ "$timeout" -gt 0 ] && [ "$waited" -ge "$timeout" ]; then
+            leave_queue
             [ "$tty" = 1 ] && printf '\r\033[K' >&2
             echo "machine-lock : verrou toujours tenu après $(duration "$waited") (MACHINE_LOCK_TIMEOUT=$timeout), par ${holder:-un processus qui démarre}" >&2
             exit $EX_TEMPFAIL
         fi
+        # A ticket swept between two looks (its run ended or died) is drawn again, at the end.
+        if [ ! -f "$TICKET" ]; then
+            enqueue "$@" || exit 2
+            continue
+        fi
+        count=$(printf '%s\n' "$tickets" | grep -c .)
+        position=$(printf '%s\n' "$tickets" | grep -n -x -F "$TICKET" | cut -d: -f1)
+        place=
+        [ "${count:-0}" -gt 1 ] && place=" (position ${position:-?} sur $count)"
         # No holder named yet: one is starting, or a status call is peeking. Retry quickly
         # before saying anything.
         if [ -z "$holder" ] && [ "$waited" -lt 2 ]; then
@@ -158,14 +278,15 @@ cmd_run() {
         # A terminal gets one line rewritten in place; a log gets a line when the holder
         # changes, then one a minute.
         if [ "$tty" = 1 ]; then
-            printf '\r\033[Kmachine-lock : en attente depuis %s, verrou tenu par %s' "$(duration "$waited")" "$holder" >&2
-        elif [ "${holder% (*}" != "${last% (*}" ] || [ $((now - last_print)) -ge 60 ]; then
-            echo "machine-lock : en attente depuis $(duration "$waited"), verrou tenu par $holder" >&2
+            printf '\r\033[Kmachine-lock : en attente depuis %s%s, verrou tenu par %s' "$(duration "$waited")" "$place" "$holder" >&2
+        elif [ "${holder% (*}$place" != "${last% (*}" ] || [ $((now - last_print)) -ge 60 ]; then
+            echo "machine-lock : en attente depuis $(duration "$waited")$place, verrou tenu par $holder" >&2
             last_print=$now
         fi
-        last=$holder
+        last="${holder% (*}$place ("
         sleep 1
     done
+    leave_queue
     if [ -n "$last" ]; then
         [ "$tty" = 1 ] && printf '\r\033[K' >&2
         echo "machine-lock : pris après $(duration $(($(date +%s) - start))) d'attente." >&2
