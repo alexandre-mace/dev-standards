@@ -292,6 +292,22 @@ real timers back after each test. Recopied inline, the pair drifts from one file
 next. A `setTimeout(50)` awaited in a test bets on how long the code takes, and the bet
 gets lost on a slower runner.
 
+**An unhandled request fails the test.** MSW listens with
+`onUnhandledFrame: 'error'` (MSW 3; `onUnhandledRequest` in MSW 2): a request no handler
+serves otherwise reaches the network or waits for its timeout, and the test passes on the
+caller's fallback.
+
+**The suite runs in random order**, its seed printed (`sequence: {shuffle: true}`, replayed
+with `vitest run --sequence.seed=<seed>`): a test that passes only after another shows up
+instead of sleeping. It is also the proof owed before sharing one jsdom between files.
+
+**These rules are checks, not advice.** ESLint refuses in the test files an assignment, a
+`delete` or a `defineProperty` on a global, an inline `vi.useFakeTimers`, and a real wait (a
+`setTimeout` in a `new Promise`, MSW's `delay` except `'infinite'`). La Grange does it
+with `no-restricted-syntax` selectors registered as named rules of a local plugin: under
+the one core rule, the last block that sets it would replace the others' selectors. The Symfony + React checklist lists the rest
+(`symfony-react/symfony-guidelines.md` §13, « The recipe, as a checklist »).
+
 **Not worth testing**: a component that only calls an API and displays the result, a
 full-render snapshot that breaks on any class change, a passthrough of the UI kit.
 
