@@ -1,19 +1,19 @@
 # Next Guidelines: static-first personal sites
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run.
 >
-> Radar: Instant Navigations (`cacheComponents` + `partialPrefetching`) are still opt-in in 16.3, and the 16.4 canary pushes them as the future default. The 16.4 canary also turns strict route matching on by default: a route tree that cannot resolve fails the build (escape hatch `deprecated.looseRouteMatching`). Worth watching, not yet standards.
+> Radar: a security release is pre-announced for 3 November 2026 (seven medium-severity fixes): it raises the floor that day. Cache Components becomes the default in Next 17.
 
 | Tool | Version | Notes |
 |---|---|---|
-| Next.js | 16.3 | App Router, Active LTS. **Floor 16.3.7** (security release of 30/09/2026, 16.3.6 until then). Security releases are usually pre-announced on nextjs.org/blog: patch within the week. A critical one can ship the same day it is announced (16.3.6, 22/09/2026, remote code execution through `ImageResponse`): patch that day. `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts` |
-| React | 19.3 | `<ViewTransition>` stable: `transitionTypes` on `<Link>` needs no flag any more |
+| Next.js | 16.4 | App Router, Active LTS, and only the latest minor gets the security patches. **Floor 16.4.1** (14/10/2026: two critical remote code executions, through a `use cache` function returning typed arrays and through the image optimizer on SVG, plus a Server Actions denial of service); no 16.3 is safe. Security releases are usually pre-announced on nextjs.org/blog: patch within the week. A critical one can ship the same day it is announced (16.3.6, 22/09/2026, remote code execution through `ImageResponse`): patch that day. `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts`; strict route matching on by default, a route tree that cannot resolve fails the build (escape hatch `deprecated.looseRouteMatching`) |
+| React | 19.3 | `<ViewTransition>` stable: `transitionTypes` on `<Link>` needs no flag any more. The server packages need 19.3.1 (remote code execution, GHSA-xqc2-xf4c-x3h3), which Next 16.4.1 brings |
 | `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
 | TypeScript | 7.0 | The native Go port, published as `typescript`; `next build` type-checks with it since 16.3. A project still on 5.9 migrates through 6.0 first (see `symfony-react/reactony.md` §8) |
 | Tailwind | 4 | PostCSS, no `tailwind.config` |
 | shadcn | Base UI base, Vega style | The ecosystem default since July 2026. `cn` from the `cn` package (see `react/react-guidelines.md` §3) |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
-| Biome | 2.5 | Lint and format. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
+| Biome | 2.6 | Lint and format. `create-next-app --biome` still installs 2.4: bump it after scaffolding. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
 | lucide-react | 1.x | No more brand icons |
 | Geist | npm package | |
@@ -40,6 +40,15 @@ What gets added most often, and where it goes.
 - **User data**: see §6, the only case that justifies a backend.
 
 ## Current patterns
+
+**Cache Components on, and the site held static by the build.** Since 16.4, `create-next-app` turns on `cacheComponents` and `partialPrefetching`, and Next recommends the model for every app. A static-first site keeps it and declares `ensureStatic` in the root layout: the build fails the day a dynamic component slips into any page, instead of the site quietly rendering at request time.
+
+```tsx
+// app/layout.tsx
+export const ensureStatic = 'navigation';
+```
+
+The day a page genuinely needs request-time content, move the declaration down from the root to the nested layouts that stay static, rather than dropping it.
 
 **Suspense for what is slow, not for what is missing.** A `loading.tsx` covers the whole segment; a local `<Suspense>` isolates the one slow part. On a static site most pages need neither.
 
@@ -68,7 +77,7 @@ It needs `babel-plugin-react-compiler` as a devDependency.
 pnpm create next-app@latest <project> --ts --app --tailwind --biome --no-src-dir --import-alias "@/*" --use-pnpm
 ```
 
-Do not add `--turbopack`: it is the default bundler since Next 16.
+Do not add `--turbopack`: it is the default bundler since Next 16. Passing any flag counts as the recommended settings, so Cache Components comes on (`--no-cache-components` to opt out, which this file does not recommend).
 
 **Pin `packageManager`** in `package.json`, and commit the lockfile. A `package-lock.json` showing up means someone installed with the wrong tool.
 
