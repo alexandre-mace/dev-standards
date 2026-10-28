@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# Brings a new worktree of a Symfony + React project to the point where its first commit
+# passes the pre-commit hook (README.md, next to it). Run from the worktree, usually
+# through the project's own bin/worktree-setup.
+#
+#   worktree-setup           PHP and JS dependencies, dev cache warmed, hook checked
+#   worktree-setup --build   the same, then the Vite build (to look at it in a browser)
+#
+# One line per step with its duration; at the first failure, the end of the step's log
+# follows and the script stops. Logs in var/worktree-setup/. It never reads, writes nor
+# copies .env.local: a new worktree has none, and Symfony runs on .env without one.
+
+set -o pipefail
+
+usage() {
+    sed -n '6,7p' "$0" | sed 's/^# \{0,1\}//'
+    exit "${1:-0}"
+}
+
+BUILD=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --build) BUILD=1 ;;
+        -h | --help) usage 0 ;;
+        *) echo "Option inconnue : $1" >&2; usage 2 >&2 ;;
+    esac
+    shift
+done
+
+ROOT=$(git rev-parse --show-toplevel 2> /dev/null) || {
+    echo "Pas dans un dépôt git." >&2
+    exit 2
+}
+cd "$ROOT" || exit 2
+for file in composer.json package.json bin/console; do
+    [ -e "$file" ] || { echo "$ROOT n'est pas un projet Symfony + React : $file manque." >&2; exit 2; }
+done
+
+LOG_DIR="$ROOT/var/worktree-setup"
+rm -rf "$LOG_DIR"
+mkdir -p "$LOG_DIR"
+
+# The dev-standards this script belongs to, the one the project's wrapper found.
+DEV_STANDARDS_DIR=$(cd "$(dirname "$0")/../.." && pwd -P)
+
+PUBLIC_DIR=$(php -r '$c = json_decode((string) file_get_contents("composer.json"), true); echo $c["extra"]["public-dir"] ?? "public";')
+
+TOTAL_START=$(date +%s)
+STEP_NO=0
+
+duration() {
+    local s=$1
+    if [ "$s" -ge 60 ]; then
+        printf '%d min %02d s' $((s / 60)) $((s % 60))
+    else
+        printf '%d s' "$s"
+    fi
+}
+
+line() { # status, duration, name
+    printf '  %s  %-12s %s\n' "$1" "$2" "$3"
+}
+
+# step "Name" function: the function's output goes to var/worktree-setup/<n>-<function>.log.
+step() {
+    local name=$1 fn=$2 log start code took
+    STEP_NO=$((STEP_NO + 1))
+    log="$LOG_DIR/$(printf '%02d' "$STEP_NO")-$fn.log"
+    start=$(date +%s)
+    "$fn" > "$log" 2>&1
+    code=$?
+    took=$(duration $(($(date +%s) - start)))
+    if [ "$code" -eq 0 ]; then
+        line 'OK   ' "$took" "$name"
+        return 0
+    fi
+    line 'ÉCHEC' "$took" "$name"
+    echo
+    echo "--- fin de ${log#"$ROOT"/} ---"
+    tail -n 40 "$log"
+    echo "---"
+    exit 1
+}
+
+# The debug container the hook reads: its .xml for PHPStan (containerXmlPath), its .ser
+# for lint:container. Named after the kernel class (App_KernelDevDebugContainer.ser for
+# App\Kernel), so looked for rather than assumed.
+container_ser() {
+    local ser
+    for ser in var/cache/dev/*DevDebugContainer.ser; do
+        [ -s "$ser" ] && { echo "$ser"; return 0; }
+    done
+    return 1
+}
+
+# The cache:clear composer install runs at the end (the auto-scripts of composer.json)
+# runs under the php.ini limit, 128 MB by default, and dies there: composer exits in 255,
+# after ContainerBuilderDebugDumpPass has written the debug container's .xml and before
+# its .ser. The php.d below raises the limit for every PHP process composer starts, the
+# cache:clear and the assets:install after it included. An empty first entry in
+# PHP_INI_SCAN_DIR keeps the default scan directory.
+composer_install() {
+    mkdir -p "$LOG_DIR/php.d"
+    echo 'memory_limit=1G' > "$LOG_DIR/php.d/worktree-setup.ini"
+    PHP_INI_SCAN_DIR="${PHP_INI_SCAN_DIR:-}:$LOG_DIR/php.d" composer install --no-interaction --no-progress
+}
+
+# The bundles' public files (EasyAdmin's styles, for one): composer's auto-scripts copy
+# them, and a project whose auto-scripts do not, or stop before, serves its back office
+# unstyled, which an E2E accessibility audit then reads as contrast failures.
+assets_install() {
+    php -d memory_limit=1G bin/console assets:install "$PUBLIC_DIR" --no-interaction
+}
+
+# pnpm's prepare script installs the husky hook (.husky/_ in this worktree).
+pnpm_install() { pnpm install --frozen-lockfile; }
+
+# As long as the .xml stays fresh, nothing rewrites the .ser (the dump stops once the .xml
+# is up to date), and lint:container fails reading it: a dev cache without its .ser is
+# rebuilt from scratch, with enough memory.
+cache_warmup() {
+    container_ser > /dev/null || rm -rf var/cache/dev
+    php -d memory_limit=1G bin/console cache:warmup --env=dev
+}
+
+check_container() {
+    container_ser && return 0
+    echo "Le .ser du conteneur de debug manque dans var/cache/dev après le préchauffage :"
+    echo "lint:container échouera dans le hook pre-commit. Voir le journal du préchauffage,"
+    echo "puis relancer à la main :"
+    echo "  rm -rf var/cache/dev && php -d memory_limit=2G bin/console cache:warmup --env=dev"
+    return 1
+}
+
+# A worktree whose hook is not installed commits without any check, silently.
+check_hook() {
+    local hooks_path
+    hooks_path=$(git config core.hooksPath)
+    if [ -z "$hooks_path" ]; then
+        [ -x "$(git rev-parse --git-path hooks)/pre-commit" ] && return 0
+        echo "Aucun hook pre-commit : ni core.hooksPath, ni $(git rev-parse --git-path hooks)/pre-commit."
+        return 1
+    fi
+    [ -x "$hooks_path/pre-commit" ] && return 0
+    echo "core.hooksPath vaut $hooks_path, et $hooks_path/pre-commit manque dans ce worktree."
+    echo "Les hooks husky s'y posent par « pnpm exec husky »."
+    return 1
+}
+
+# The guides of docs/ are tracked symlinks into dev-standards, relative to the project's
+# place next to it (../../../dev-standards/… from docs/). From a worktree that sits
+# deeper, .claude/worktrees/<name>/ where Claude Code puts them, the same text points
+# into <main checkout>/.claude/dev-standards, which does not exist: the links are broken,
+# and a hook that checks the documents a comment cites refuses the commit. A link to this
+# dev-standards is made where they look, outside the worktree, in a folder the project
+# already ignores; nothing tracked changes.
+link_dev_standards() {
+    local file target prefix base expected
+    while IFS= read -r file; do
+        [ -L "$file" ] && [ ! -e "$file" ] || continue
+        target=$(readlink "$file")
+        case "$target" in */dev-standards/*) ;; *) continue ;; esac
+        prefix=${target%%/dev-standards/*}
+        base=$(cd "$(dirname "$file")" && cd "$prefix" 2> /dev/null && pwd -P) || {
+            echo "$file -> $target : le dossier $prefix n'existe pas depuis $(dirname "$file")."
+            return 1
+        }
+        expected=$base/dev-standards
+        if [ -e "$expected" ] || [ -L "$expected" ]; then
+            echo "$file -> $target reste cassé alors que $expected existe : le corriger à la main."
+            return 1
+        fi
+        ln -s "$DEV_STANDARDS_DIR" "$expected" || return 1
+        echo "$expected -> $DEV_STANDARDS_DIR"
+    done < <(git ls-files -s | awk '$1 == "120000" { sub(/^[^\t]*\t/, ""); print }')
+}
+
+vite_build() { pnpm build; }
+
+step "composer install (memory_limit=1G)" composer_install
+[ -d "$PUBLIC_DIR/bundles" ] || step "assets:install $PUBLIC_DIR" assets_install
+step "pnpm install --frozen-lockfile" pnpm_install
+step "Cache dev préchauffé (memory_limit=1G)" cache_warmup
+step "Conteneur de debug présent (var/cache/dev/*DevDebugContainer.ser)" check_container
+step "Hook pre-commit installé" check_hook
+step "Liens de docs/ vers dev-standards" link_dev_standards
+[ "$BUILD" -eq 1 ] && step "pnpm build" vite_build
+
+echo "Worktree prêt en $(duration $(($(date +%s) - TOTAL_START)))."
