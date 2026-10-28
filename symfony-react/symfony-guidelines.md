@@ -34,7 +34,7 @@ Written down so it isn't re-litigated every session (in an AI-first codebase, th
 
 - **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (`make types`) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost. (Re-validated October 2026: still true with API Platform 5.0, a cleanup major that changes nothing in this reasoning.)
 - **No RSC / React Server Components** (see `reactony.md`): Symfony + Twig **is** the server layer already; the React islands are the intentional client leaves. Bolting RSC on means running a Node rendering server next to PHP, for a role PHP already fills.
-- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks (August 2026): FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. October 2026 confirmed the price: seventeen FrankenPHP advisories in one month, most of them in worker mode (per-request environment variables leaking into later requests, a client disconnect crashing the process, use-after-free bugs), all fixed in 1.13.4. The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
+- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks (August 2026): FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. October 2026 confirmed the price: seventeen FrankenPHP advisories in one month, most of them in worker mode. The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
 
 ---
 
@@ -118,8 +118,6 @@ A feature is only "done" when **every** one of these is green:
 
 **The runtime reference is what CleverCloud publishes, not php.net.** The apps are hosted there, so the version to run is the newest minor its images offer. Two sources, at every watch: the "PHP version" table of the runtime doc (`clever.cloud/developers/doc/deploy/applications/php/`), which lists the accepted `CC_PHP_VERSION` values and what the bare `8` resolves to, and the changelog (`clever.cloud/developers/changelog/`) for the announcements. Neither gives the patch number: only `php -v` on an instance does. Pin `CC_PHP_VERSION` to that explicit minor (`8.5`), never the bare major: `8` resolves to Clever's **default** minor at deployment time, so the runtime silently lags the newest branch, then jumps unannounced when Clever moves the default. That happened in October 2026: **8.5 is Clever's default**, for the bare `8` since the 14 October images and for an app with no `CC_PHP_VERSION` at all since the 21 October ones, so such an app moved to 8.5 on its next deployment. Clever warned that a few PECL extensions were not packaged for 8.5 yet, so check `php -m` against the app's needs.
 
-Since the 9 October 2026 images, Clever also fails the deployment on a few settings it used to tolerate: a `CC_WEBROOT` that is not an absolute path or contains `..`, a `CC_OPCACHE_PRELOAD` file outside the app directory, and, from 14 October, an environment variable whose name contains a dot or a dash.
-
 The `composer.json` floor is `>= 8.5`, with `config.platform.php` pinned to `8.5` so dependency resolution matches the runtime, and local and CI run 8.5 too. A project still on `>= 8.4` is a gap for `/gap-code`: the code may use 8.5 syntax that its own floor does not allow. The 8.4 features to use everywhere: explicit nullables (`?Type $param = null`, the implicit form is deprecated), asymmetric visibility (`public private(set)`), property hooks, `array_find()`/`array_any()`/`array_all()`.
 
 **PHP 8.5 features to use**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
@@ -149,24 +147,18 @@ Merged since, still on the 8.2 branch (no beta tag at the 29 September watch):
 
 Merged between the 29 September and 28 October watches, still no beta tag:
 
-- **Tests**: `KernelTestCase` reads `KERNEL_CLASS`, `APP_ENV` and `APP_DEBUG` from `$_SERVER` before `$_ENV`, so `phpunit.xml.dist` declares them with `<server>`, not `<env>`. Under `framework.test`, rate limiters, HTTP client caches and the HTTP cache store are reset between tests, the session storage defaults to `mock_file`, and password hashing drops to its minimum cost.
+- **Tests**: `KernelTestCase` reads `KERNEL_CLASS`, `APP_ENV` and `APP_DEBUG` from `$_SERVER` before `$_ENV`, so `phpunit.xml.dist` declares them with `<server>`, not `<env>`.
 - **`#[RateLimit]` consumes on `kernel.controller`, before `#[IsGranted]`**: a request denied by the voter still spends a token. Size the public limiters with that in mind.
 - **`#[IsGranted]` whose subject reads a `#[MapRequestPayload]` argument** now maps and validates the payload before voting, so an invalid payload answers 422 before a 403.
-- **A controller declaring `void` returns a 204.**
 - **Error bodies from `ProblemNormalizer` are served as `application/problem+json`**: the functional tests that assert the content type, and the OpenAPI drift gate (§13), see it.
-- **Messenger**: messages are signed per transport (`sign: true`), signing per message type is deprecated, and so is `RedispatchMessageHandler`.
-- **BC breaks**: `#[AutowireCallable]` and `#[AutowireMethodOf]` become lazy; the `priority` of `AsDecorator`, `AsEventListener` and `AsMessageHandler` becomes `?int`.
-- **ExpressionLanguage**: the built-in `constant()` and `enum()` are deprecated in favour of a `ConstantFunctionProvider` allow-list.
-- **HttpClient** no longer follows an https → http redirect.
 - **doctrine-bundle ≥ 3.3.3** stops extending the FrameworkBundle cache warmer that 8.2 deprecates: take it before the upgrade.
 
 Also worth watching, outside the core:
 
 - **VichUploader 3.0 is stable** (7 September 2026), and 2.x is in maintenance only: migrate. PHP ≥ 8.3; annotations are gone (attributes from `Mapping\Attribute` only); `NamerInterface::name()` and `DirectoryNamerInterface::directoryName()` take `object|array`; `PropertyMapping`, `PropertyMappingFactory` and the metadata readers are final, so a test mocks the new interfaces instead. New: a `vich:cleanup` command for orphaned files.
-- **Doctrine ORM 3.7** deprecates string sort directions in favour of the `SortDirection` enum, and `TypedExpression` in favour of `ExpressionWithReturnType`; it brings cursor-based pagination. It also deprecates `Tools\Pagination\Paginator` in favour of `OffsetPaginator` (`count($paginator)` becomes `getTotalCount()`), the `#[ORM\JoinColumns]` attribute, and `null` as a lock mode. It needs **EasyAdmin ≥ 5.6**, which silences the `SortDirection` deprecation. **DBAL 4.5** adds DateTime types stored in UTC and deprecates `SimpleArrayType` and `Column::getType()` (use `getTypeName()`).
+- **Doctrine ORM 3.7** deprecates string sort directions in favour of the `SortDirection` enum, and `TypedExpression` in favour of `ExpressionWithReturnType`; it brings cursor-based pagination. It needs **EasyAdmin ≥ 5.6**, which silences the `SortDirection` deprecation. **DBAL 4.5** adds DateTime types stored in UTC and deprecates `SimpleArrayType` and `Column::getType()` (use `getTypeName()`).
 - **Doctrine ORM 4**: still no alpha, only a `4.0.x-dev` branch, with no commit since September 2026 and a 4.0.0 milestone without a due date; the direction is confirmed (PHP 8.4 minimum, built entirely on native lazy objects).
 - **PHP 8.6 and PostgreSQL 19** are both due on 19 November 2026 upstream. Neither moves the reference until Clever publishes it (see the PHP section and §8).
-- **PHPUnit 14** is planned for February 2027: it drops PHP 8.4, removes `any()`, `with()` without `expects()` and `--cache-result`, and deprecates `expectExceptionMessage()`. 13.4 already deprecates class-level `#[Group]` and size attributes inherited from a parent class.
 - **Twig 3.29** brings documentation comments and deprecates macro calls without parentheses and duplicate macro definitions.
 
 ---
@@ -1638,7 +1630,7 @@ const a11y = await new AxeBuilder({page}).analyze();
 expect(a11y.violations).toEqual([]);
 ```
 
-Keep `@axe-core/playwright` at `^4.14`: every bump of the axe engine surfaces new violations, to be handled at the bump rather than ignored. 4.14 turns `label-content-name-mismatch` on by default (WCAG 2.5.3): a control whose `aria-label` does not contain its visible text now fails.
+Keep `@axe-core/playwright` at `^4.14`: every bump of the axe engine surfaces new violations, to be handled at the bump rather than ignored.
 
 **Never call an external integration from an E2E**, same constraints as in `tests/`. Three ways: empty key environment variables so the services fall into their no-op branch, a service override in the `e2e` environment config, or an injected `MockHttpClient`.
 
