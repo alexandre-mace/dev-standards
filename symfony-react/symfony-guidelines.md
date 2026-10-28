@@ -1772,9 +1772,18 @@ or two projects, make unrelated tests miss their timeouts.
 - **Vitest runs alone**, between the analyses and the heavy suites. Next to ParaTest or
   Playwright it misses its timeouts (five seconds a test, one second a `findBy`): fourteen
   red tests in one measured pass, none when it runs alone.
-- **PHPUnit runs on ParaTest**, one process per core, each on its own SQLite file; the
-  `postgres` group, which shares one database, stays sequential. Before switching, check
-  how the test base prepares the schema: one that drops and recreates every table inside
+- **PHPUnit runs on ParaTest**, each process on its own SQLite file or, on PostgreSQL, its
+  own database (`<base>_test<n>`, created by the test bootstrap from `TEST_TOKEN`, dropped
+  at the end of the run); a `postgres` group that shares one database stays sequential.
+- **About one process per performance core**, not one per core, set by a variable of
+  `bin/ci-local` and measured on the machine. ParaTest's default takes every core, and the
+  efficiency cores of an Apple chip are slower while Playwright's workers and their
+  PHP-FPM run alongside. Measured on 28/10/2026 on an Apple M5 Max (6 performance cores,
+  12 efficiency) with PHPUnit on PostgreSQL: 3 min 07 alone on one process, 58 s on four,
+  47 s on six, 41 s on eight; a full run took 2 min 10 on six against 4 min 13 to 4 min 52
+  on one, and eight saved only 6 s while going past the performance cores.
+- **Before switching, check how the test base prepares the schema**: one that drops and
+  recreates every table inside
   the per-test transaction (DAMA) takes a lock per table in every process. Measured on a
   second project: 2 131 locks for one recreation, against about 6 400 slots on a local
   PostgreSQL, and `out of shared memory` once ParaTest and the E2E ran together. The
