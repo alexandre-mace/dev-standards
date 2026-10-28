@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# The machine's performance cores, so that a parallel suite (ParaTest in bin/ci-local)
+# sets its process count from the machine rather than a number written in every project
+# (README.md, next to it).
+#
+#   performance-cores        prints that count, at least 1
+#
+# On Apple silicon, the performance cores (hw.perflevel0): the efficiency cores are slower
+# and slow the suite down more than they help while Playwright runs alongside. On an Intel
+# Mac, every physical core. On Linux, what nproc returns, which honours a container's
+# limits.
+
+set -u
+
+count=
+case "$(uname -s)" in
+    Darwin)
+        count=$(sysctl -n hw.perflevel0.physicalcpu 2> /dev/null) ||
+            count=$(sysctl -n hw.physicalcpu 2> /dev/null)
+        ;;
+    *)
+        count=$(nproc 2> /dev/null)
+        ;;
+esac
+
+case "$count" in
+    '' | *[!0-9]* | 0) count=1 ;;
+esac
+echo "$count"

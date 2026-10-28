@@ -1775,8 +1775,9 @@ or two projects, make unrelated tests miss their timeouts.
 - **PHPUnit runs on ParaTest**, each process on its own SQLite file or, on PostgreSQL, its
   own database (`<base>_test<n>`, created by the test bootstrap from `TEST_TOKEN`, dropped
   at the end of the run); a `postgres` group that shares one database stays sequential.
-- **About one process per performance core**, not one per core, set by a variable of
-  `bin/ci-local` and measured on the machine. ParaTest's default takes every core, and the
+- **About one process per performance core**, not one per core: `bin/ci-local` reads the
+  count from `symfony-react/performance-cores/performance-cores` and keeps a variable to
+  override it. ParaTest's default takes every core, and the
   efficiency cores of an Apple chip are slower while Playwright's workers and their
   PHP-FPM run alongside. Measured on 28/10/2026 on an Apple M5 Max (6 performance cores,
   12 efficiency) with PHPUnit on PostgreSQL: 3 min 07 alone on one process, 58 s on four,
