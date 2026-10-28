@@ -183,6 +183,45 @@ check "Ctrl-C pendant l'attente rend 130" $? 130
 check "et retire le ticket de la file" "$(ls "$MACHINE_LOCK_DIR/queue" | grep -c '^[0-9]*$')" 0
 wait "$holder"
 
+# --- The machine stays awake while the command runs (macOS) ----------------------------
+
+# The sleep assertion caffeinate takes for a holder, as pmset lists it.
+awake_for() {
+    pmset -g assertions 2> /dev/null | grep -q "asserting on behalf of Process ID $1\$"
+}
+
+# Until the assertion for $1 is gone, two seconds at most.
+released() {
+    local i
+    for i in $(seq 20); do
+        awake_for "$1" || return 0
+        sleep 0.1
+    done
+    return 1
+}
+
+if [ "$(uname -s)" = Darwin ]; then
+    "$ML" run -- sh -c 'echo $PPID > holder.pid; sleep 1' &
+    holder=$!
+    sleep 0.5
+    if awake_for "$(cat holder.pid)"; then ok "la machine reste éveillée pendant la commande"; else ko "aucune assertion de veille pour le détenteur pendant la commande"; fi
+    wait "$holder"
+    if released "$(cat holder.pid)"; then ok "et peut dormir de nouveau une fois la commande finie"; else ko "l'assertion de veille survit à la commande"; fi
+
+    "$ML" run -- sleep 30 &
+    holder=$!
+    wait_held
+    sleep 0.3
+    orphan=$(pgrep -P "$holder" sleep)
+    kill -9 "$holder"
+    wait "$holder" 2> /dev/null
+    if released "$holder"; then ok "un détenteur tué (kill -9) rend aussi la veille"; else ko "l'assertion de veille survit à un détenteur tué"; fi
+    kill "$orphan" 2> /dev/null
+else
+    "$ML" run -- sh -c 'pgrep -x caffeinate > /dev/null && exit 1; exit 0'
+    check "hors de macOS, rien ne garde la machine éveillée" $? 0
+fi
+
 echo
 if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) en échec."

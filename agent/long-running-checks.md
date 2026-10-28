@@ -25,7 +25,9 @@ benchmark, a deploy to watch. Whoever runs it, the main session or a delegated a
 
 - A pass that spans a sleep is not a measurement: every step slows tenfold and timeouts
   fail at random. Ask the host to keep the machine awake before a long run; a closed lid
-  or a manual sleep still sleeps, so say so to the user when the run is long.
+  or a manual sleep still sleeps, so say so to the user when the run is long. On macOS,
+  `machine-lock run` keeps it awake for the command it runs (`caffeinate -i`), so a local
+  CI already is; the rest of a long task is not.
 - Two heavy suites running at once on one machine fight for the processor and make
   tests flaky: three local CIs started together on one laptop took the load to 40 to 65.
   A full suite (a local CI, `playwright test` or `phpunit` without a filter) goes through

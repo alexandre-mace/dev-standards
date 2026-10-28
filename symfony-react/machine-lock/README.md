@@ -28,6 +28,12 @@ machine-lock held                        # exit 0 if this process chain holds it
 - **A nested run does not wait on itself**: a run under a run of the same process chain
   (a CI rerunning one step under the lock) starts at once. `MACHINE_LOCK_HELD`, set by
   the outer run, counts only when the holder it names is an ancestor of the caller.
+- **The machine stays awake while the command runs**, on macOS: `caffeinate -i -w <pid>`
+  follows the run's shell and lets the machine sleep again once it is gone, `kill -9`
+  included. A pass that spans a sleep measures nothing: every step slows down and timeouts
+  fail at random (`agent/long-running-checks.md`). It prevents idle sleep only: a closed
+  lid or a sleep asked from the menu still sleeps, so say so before a long run. Elsewhere,
+  nothing.
 - **No lock on a hosted runner** (`GITHUB_ACTIONS=true`): the lock is a workstation
   matter. `CI` alone does not tell, since `bin/ci-local` sets `CI=true` itself.
 - **One place per user**, outside any repository: `~/.local/state/machine-lock/`, so
@@ -77,5 +83,6 @@ another, four waiters are served in their order of arrival even when a later one
 first, `status` lists the queue and a waiter gives its place, a waiter killed with
 `kill -9` does not hold up the next one, Ctrl-C while waiting takes the ticket back, a holder killed with `kill -9` or interrupted with Ctrl-C gives the lock back,
 the command's status comes back, the wait is bounded and names the holder, a nested run
-passes and a `MACHINE_LOCK_HELD` inherited from elsewhere does not, and a hosted runner
-skips the lock.
+passes and a `MACHINE_LOCK_HELD` inherited from elsewhere does not, a hosted runner
+skips the lock, and on macOS the machine stays awake while the command runs and may sleep
+again once it ends or its holder is killed (read from `pmset -g assertions`).

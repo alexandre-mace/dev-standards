@@ -22,6 +22,10 @@
 # process and that process's start time, so a waiter that died (kill -9, a machine put to
 # sleep and never woken, a reused pid) is swept away by the next one that looks.
 #
+# On macOS the machine stays awake while the command runs: a caffeinate -i -w watches
+# this script's shell and lets the machine sleep again once it is gone, whatever ends it.
+# A closed lid or a sleep asked by hand still sleeps. Elsewhere, nothing.
+#
 # A run nested under a run of the same chain (bin/ci-local rerunning a step under the
 # lock) runs straight away: MACHINE_LOCK_HELD names the holder, and counts only when that
 # holder is an ancestor of the caller. On a hosted runner (GITHUB_ACTIONS=true) the lock
@@ -294,6 +298,13 @@ cmd_run() {
 
     write_holder "$@"
     export MACHINE_LOCK_HELD="$LOCK_FILE:$$"
+    # A pass that spans a sleep measures nothing: every step slows down and timeouts fail
+    # at random (agent/long-running-checks.md). caffeinate follows this shell rather than
+    # the command, so a kill -9 of the holder releases it too; it runs with the lock's
+    # descriptor closed, so it never holds the lock.
+    if [ "$(uname -s)" = Darwin ] && command -v caffeinate > /dev/null 2>&1; then
+        caffeinate -i -w $$ 9>&- > /dev/null 2>&1 &
+    fi
     # A signal (Ctrl-C reaches the whole process group) is handled once the command has
     # ended: the lock stays held while it runs, and its status is the one returned.
     trap ':' INT TERM HUP
