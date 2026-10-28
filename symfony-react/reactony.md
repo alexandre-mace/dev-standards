@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1 / Vite 8.3 (Rolldown), Symfony Reprise 1.3 (see §6), symfony/ux 3.5, TanStack Query 5.104, RHF 7.89 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.21, `cn` package), Vitest 5.0 (see §9), MSW 3.0 (see §9), Playwright 1.63, eslint-plugin-react-hooks 7.1, TypeScript 7 (native, GA, see §8).
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, eslint-plugin-react-hooks 7.1, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -365,7 +365,7 @@ showed « Une erreur est survenue » for the whole maintenance.
 - **No migration to React 19 Actions** (`useActionState`) for forms with structured server validation. Mapping `violations[].propertyPath` to per-field errors isn't native to Actions, and Actions wants to own the `pending`/`error` state that TanStack Query already owns. Awkward double ownership.
 - **Yes to `useOptimistic`** for instant-UI mutations (toggle favourite, add to list, reorder). It composes cleanly with RHF + TanStack Query.
 - **`useFormStatus`: no, not in this pattern.** It only reports `pending` for a `<form action={...}>` (React Actions). With RHF + `useMutation` (submit through `onSubmit`) it would stay `false` forever. Submission state comes from `mutation.isPending`, or from `useFormState({ control }).isSubmitting` for a deeply nested button.
-- **RHF floor: ≥ 7.85** (official `<Activity/>` support, indispensable if a form lives inside a `mode="hidden"` panel); 7.86 adds the type-safe `getErrors` method. v8 (the compiler-first rewrite) is still in beta (`8.0.0-beta.4`, September 2026): don't adopt it before stable.
+- **RHF floor: ≥ 7.90** (official `<Activity/>` support since 7.85, indispensable if a form lives inside a `mode="hidden"` panel, and 7.90 fixes `useWatch` no longer updating watched objects after an `<Activity>` subtree reconnects); 7.86 adds the type-safe `getErrors` method. v8 (the compiler-first rewrite) is still in beta (`8.0.0-beta.5`, October 2026): don't adopt it before stable.
 
 ```tsx
 // useOptimistic: instant UI while a TanStack Query mutation is in flight
@@ -623,7 +623,9 @@ In CI: `make types && git diff --exit-code openapi.yaml assets/lib/api/` catches
 
 ## 6. Infra: Vite + Symfony UX
 
-React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. Link the JS package as `file:vendor/symfony/ux-react/assets` (the default wiring) so it follows the composer version: the npm `latest` dist-tag of `@symfony/ux-react` still points at 2.36, so a registry install does not give you 3.x.
+React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. Link the JS package as `file:vendor/symfony/ux-react/assets` (the default wiring) so it follows the composer version. The npm `latest` dist-tag of `@symfony/ux-react` has pointed at 3.x since 3.6.0 (October 2026), but a registry install can still drift from the PHP bundle composer resolved, and the two must move together.
+
+**Vite floor: 8.3.3** (6 October 2026). Three advisories on what the dev server serves: files outside `server.fs.allow`, the first bytes of any file through `?vite-wasm-instance`, and cross-origin script execution through a custom middleware. The production build is not exposed, but the dev server listens on every developer's machine.
 
 ### Layout
 
@@ -691,7 +693,7 @@ revert.
 
 The Symfony integration is **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), Webpack Encore's official heir for Vite and Rsbuild, under the Symfony backward-compatibility promise. It replaces `pentatrion/vite-bundle` and `vite-plugin-symfony`, whose whole scope it covers. A project still on pentatrion is a gap **to close**, and not urgent, pentatrion not being deprecated.
 
-**The migration is only mechanical** (Twig prefix `vite_` → `reprise_`, swap the plugin, import `startStimulusApp` from `@symfony/reprise/stimulus`) **when the project registers its React controllers with an eager glob from a single entry.** Attempted on a real repo (31 August 2026), two ux-react limits block the rename-only path (still there in 3.5.1), verified in `vendor/symfony/ux-react/assets/dist/register_controller.js`:
+**The migration is only mechanical** (Twig prefix `vite_` → `reprise_`, swap the plugin, import `startStimulusApp` from `@symfony/reprise/stimulus`) **when the project registers its React controllers with an eager glob from a single entry.** Attempted on a real repo (31 August 2026), two ux-react limits block the rename-only path (still there in 3.6.0), verified in `vendor/symfony/ux-react/assets/dist/register_controller.js`:
 
 - `registerReactControllerComponents` **hard-throws on a lazy glob** (`{ eager: false }`). Pentatrion's helper awaits the lazy import at mount, so each island ships as its own on-demand chunk; ux-react has no counterpart, and forcing `eager: true` pulls every controller (leaflet, maplibre…) into the main entry's graph on every page.
 - Called from **several entries** (a page loading `app` plus a dedicated `leaflet_app`), it **rebuilds the registry from scratch instead of merging**: the last entry wins and the other's islands throw "does not exist" at mount. Its `normalizeGlobKeys` also strips the deepest common prefix of each registered set, so a scoped glob in a secondary entry resolves to names that no longer match the Twig `react_component()` calls.
@@ -860,7 +862,9 @@ Here, how it is enabled on a Vite build.
 (Oxc transforms) and is **silently ignored**. Two configurations actually run it.
 
 **Native path** (plugin-react ≥ 6.1), the compiler's Rust port, more than ten times
-faster than Babel, with `oxc-transform-react` as an optional peer:
+faster than Babel, with `oxc-transform-react` as an optional peer (≥ 0.152 from
+plugin-react 6.1.2, which also renames `compiler.logDiagnostics` to
+`compiler.reportDiagnostics`):
 
 ```js
 plugins: [react({ compiler: true })]
@@ -913,7 +917,7 @@ Config (`.prettierrc`) with `prettier-plugin-tailwindcss` (≥ 0.8, which requir
 pnpm tsc --noEmit
 ```
 
-**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, eslint and hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
+**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1, in beta since 20 October 2026; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, eslint and hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
 
 > All of these are bundled in the global `/quality` skill, which auto-detects the project type. For the backend quality tools (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), see `docs/symfony-guidelines.md` section 14.
 
@@ -950,7 +954,9 @@ pnpm test:e2e:ui         # Playwright in interactive UI mode
 > - The config is no longer looked up in parent directories, and reports move to `.vitest/` (add it to `.gitignore`).
 > - In Browser Mode only, `toHaveTextContent` becomes a strict equality (`toMatchTextContent` for partial or regex matching) and locators are exact by default. The jest-dom matcher under jsdom does not change.
 >
-> A project staying on 4 for now needs **≥ 4.1.11**: earlier versions let the `@vitest/mocker` redirect read arbitrary files (GHSA-82fw-gwwq-j7x9).
+> **Floor 5.0.5** (16 October 2026): before it, the servers behind `--ui`, Browser Mode and `api` ignored `server.fs.deny` and served `.env` (GHSA-p458-7748-mcp3); a plain `vitest run` was not exposed. `@vitest/mocker` 5.0.3 also closes a code injection through manual mock registration (GHSA-qxg6-89mg-rqv8).
+>
+> A project staying on 4 for now needs **≥ 4.1.12**: earlier versions let the `@vitest/mocker` redirect read arbitrary files (GHSA-82fw-gwwq-j7x9) and carry the same mock-registration injection.
 
 ### What to test, by return on investment
 

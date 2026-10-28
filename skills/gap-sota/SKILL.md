@@ -107,3 +107,8 @@ keeps it in step, and a stale screen teaches the old rule to whoever reads it to
 - No project names, no company names, no ticket references, code examples included.
 - English throughout. Keep the tone: prescriptive, dense, short code examples.
 - Do not remove a pattern that is still correct: update, add or clarify.
+- **The guidelines are not a changelog.** A release note earns a line only if it changes
+  what someone writes, configures or pins: a floor, a trap, a migration step that breaks
+  our patterns, a watch item that fired. A new feature nobody here uses, a deprecation of
+  an API we do not call, a list of every merged change: the version number in the header
+  is enough, and the changelog stays where it is.

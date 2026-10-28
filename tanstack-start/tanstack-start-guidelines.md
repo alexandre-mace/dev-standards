@@ -2,28 +2,28 @@
 
 > Dashboards, internal tools, simulators, products.
 >
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run.
 
 | Tool | Version | Notes |
 |---|---|---|
-| TanStack Start | 1.168 | Stable on npm, around 17M weekly downloads. Parts of the official docs still say Release Candidate, and Convex repeats that caveat: pin exact versions and read the changelog before bumping. **Floor 1.168.51**: it hardens URL handling against open redirects (protocol allowlist on links and redirects), removes the `isAbsoluteUrl` export, and requires configured `origin` values without a path or trailing slash |
-| TanStack Router | 1.170 | The framework's real core. Floor 1.170.34, same hardening as Start |
-| TanStack Query | 5.104 | |
+| TanStack Start | 1.169 | Stable since 1.169.0 (12/10/2026), and the docs say so; Convex's still call it a Release Candidate. Pin exact versions and read the changelog before bumping. Moving from 1.168 goes through the official migration guide from the RC. **Floor 1.168.60** on the 1.168 line: before it, an unauthenticated attacker could make a server-function response run script on the app's domain (GHSA-qx66-fv34-fjm8, CVSS 9.3). 1.168.51 had already hardened URL handling against open redirects (protocol allowlist on links and redirects, `isAbsoluteUrl` removed, configured `origin` values without a path or trailing slash) |
+| TanStack Router | 1.170 | The framework's real core. Floor 1.170.34, the same URL hardening as Start |
+| TanStack Query | 5.105 | |
 | TanStack Form | 1.33 | |
-| Convex | 1.46 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query`. 1.46 puts `.optional()` on every validator, which changes type compatibility between Convex versions: one `convex` version across the workspace |
-| Clerk | `@clerk/tanstack-react-start` 1.6 | Optional. First-class support when the app has accounts. 1.6 drops keyless mode: without `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` the dev server throws, so a new project runs `npx clerk@latest init` first |
+| Convex | 1.48 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query`. 1.46 puts `.optional()` on every validator, which changes type compatibility between Convex versions: one `convex` version across the workspace |
+| Clerk | `@clerk/tanstack-react-start` 1.7 | Optional. First-class support when the app has accounts. 1.7 requires a `src/start.ts`, which switches off Start's default CSRF protection: see §3 bis. 1.6 drops keyless mode: without `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` the dev server throws, so a new project runs `npx clerk@latest init` first |
 | Zod | 4.6 | Floor 4.6: 4.5 runs out of memory on some recursive schemas |
-| Vite | 8.3 | With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
+| Vite | 8.3 | **Floor 8.3.3** (dev-server advisories of 06/10/2026, see `symfony-react/reactony.md` §6). With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
-| Biome | 2.5 | Lint and format |
-| Vitest / Playwright | 5.0 / 1.63 | Vitest 5 migration notes in `symfony-react/reactony.md` §9 |
+| Biome | 2.6 | Lint and format |
+| Vitest / Playwright | 5.0 / 1.64 | Vitest floor 5.0.5, and the migration notes, in `symfony-react/reactony.md` §9 |
 | Hosting | Vercel | Build output is portable, it can move elsewhere unchanged |
 
 ## What this file covers
 
 Apps whose value is what the user does. The fork with `next/` is decided when the project starts, on one testable question: would rendering on the server ship less JavaScript to the browser? If yes the pages are content and belong in `next/`; if no, the server-first model is a tax paid for nothing.
 
-Both frameworks have Server Components. What differs is the default: Next is server-first until you write `use client`, Start is client-first and you opt in with `renderServerComponent()`. Start's are still experimental, so if RSC is central to the project, that settles it in favour of `next/`.
+Both frameworks have Server Components. What differs is the default: Next is server-first until you write `use client`, Start is client-first and you opt in with `renderServerComponent()`. Start's are still experimental, so if RSC is central to the project, that settles it in favour of `next/`. A project that tries them anyway needs the React server packages at 19.3.1 or later (GHSA-xqc2-xf4c-x3h3, remote code execution).
 
 **If the app needs no SSR, no server functions and no streaming at all**, the TanStack docs recommend dropping Start for **TanStack Router alone**, as a SPA.
 
@@ -221,6 +221,19 @@ createServerFn({ method: 'POST' }).middleware([authenticated]).handler(async ({ 
 
 It is to server functions what the layout route of §2 is to screens: the session is checked once, in
 one place, rather than leaf by leaf.
+
+**A `src/start.ts` switches off the default CSRF protection.** Start installs its CSRF middleware on
+server functions only when the app has no `src/start.ts`; the moment one exists, and Clerk ≥ 1.7
+requires one for `clerkMiddleware()`, the protection is gone without a word. Register it first:
+
+```ts
+// src/start.ts
+const csrf = createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === 'serverFn' })
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [csrf, clerkMiddleware()],
+}))
+```
 
 **A query that returns a whole document publishes it whole.** Convex sends what the function
 returns, so select the fields rather than returning the row: an email, a hash, an internal note

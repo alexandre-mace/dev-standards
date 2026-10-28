@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 29 September 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.0, React Compiler 1.0, shadcn CLI 4.21 (Base UI 1.8 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, Vitest 5.0, MSW 3.0, Playwright 1.63.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
@@ -103,8 +103,9 @@ the `render` prop and standard DOM handlers. `asChild` exists in neither base, i
 Radix idiom. A project still on `new-york-v4`, `radix-*` or `aria-*` is a gap for
 `/gap-code` to raise: migrate it in full, never two bases in one project.
 
-**Which of the two Base UI styles is a project decision**, taken once and held, not a
-rule this file can set for everyone. The two differ by geometry alone:
+**Which Base UI style is a project decision**, taken once and held, not a rule this file
+can set for everyone. The registry offers eight per base; we choose between two, which
+differ by geometry alone:
 
 - **Vega** is the classic shadcn geometry, a 36 px default button on `rounded-md`.
 - **Nova** is visibly tighter, a 32 px button on `rounded-lg`.
@@ -311,7 +312,7 @@ control, required state. What follows holds for any component.
   Left in the label, its name is read before the word.
 - **A touch target is at least 24 × 24 CSS pixels** (WCAG 2.2, criterion 2.5.8, level
   AA). A chip's « Retirer » button at `h-4 w-4` is 16 pixels. axe's `target-size` rule
-  measures it but is off by default (axe-core 4.13): turn it on in the E2E check,
+  measures it but is off by default (axe-core 4.14): turn it on in the E2E check,
   `new AxeBuilder({page}).options({rules: {'target-size': {enabled: true}}})`.
 - **No `outline-hidden` without a visible focus indicator in its place.** Tailwind's
   `outline-hidden` removes the outline outside forced-colours mode. A field that takes it
