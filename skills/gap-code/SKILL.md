@@ -24,7 +24,9 @@ of `docs/gap-analysis.md`, and still searches the whole repository for the mecha
 rules, the config and the gate (sections 2 to 4) and every guideline rule added since that
 commit's date. It catches what a week of features introduced, cheaply, so the fix lot
 lands before the full pass and that pass is spent on what only a fresh full reading
-finds. It writes no `docs/gap-analysis.md`: its findings go straight to a fix lot.
+finds. It writes no `docs/gap-analysis.md`: its Haute and Moyenne findings still go through
+the refutation of section 5, then to a fix lot. Skipping it is how a deliberate choice
+reaches a fix lot as a defect.
 
 ## 1. Identify the stack, read its guidelines in full
 
@@ -296,6 +298,10 @@ Re-read these figures when a new model ships.
   (a doubt nothing in the repository could settle). A doubt the code, the tests or the
   commit that introduced the line can settle is settled by the scan, not passed on. A
   confidence is not a severity, which the priority already carries.
+- **Never remove what may serve.** Data the product collects, a feature, a text: "nothing
+  uses it yet" is not a reason to remove it. Read the commit that added it, and when the
+  doubt remains, ask. Seen: the address of each price search, collected on purpose for a
+  dashboard to come, removed as "personal data nobody reads".
 - **A product question reaches the user only when nothing answers it.** Before listing a
   behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
   cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
