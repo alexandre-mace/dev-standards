@@ -19,23 +19,11 @@ symfony-react/performance-cores/performance-cores   # 6 on an M5 Max
 
 ## In a project
 
-`bin/ci-local` finds it next to the project's main checkout, through
-`git rev-parse --git-common-dir`, the lookup that works from every worktree, including one
-under `.claude/worktrees/` (`../machine-lock/README.md`, "Finding dev-standards from a
-worktree"). It keeps its own variable as an override, and says so on the PHPUnit line when
-the script was not found, rather than falling back to one process in silence: on
-28/10/2026 one project's ParaTest dropped to one process from a `.claude/worktrees/`
-worktree without a word.
-
-```bash
-DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")/../../dev-standards}
-PERFORMANCE_CORES=$DEV_STANDARDS_DIR/symfony-react/performance-cores/performance-cores
-if [ -n "${CI_LOCAL_PHPUNIT_PROCESSES:-}" ]; then
-    PHPUNIT_PROCESSES=$CI_LOCAL_PHPUNIT_PROCESSES
-elif [ -x "$PERFORMANCE_CORES" ]; then
-    PHPUNIT_PROCESSES=$("$PERFORMANCE_CORES")
-else
-    PHPUNIT_PROCESSES=1
-    PHPUNIT_NOTE=" (performance-cores introuvable : $PERFORMANCE_CORES)"
-fi
-```
+`bin/ci-local` reads it through its shared library (`ci_phpunit_processes`,
+`../ci-local/README.md`), from the same `dev-standards` as the library, which the
+project's script found next to its main checkout, the lookup that works from every
+worktree, including one under `.claude/worktrees/` (`../machine-lock/README.md`, "Finding
+dev-standards from a worktree"). `CI_LOCAL_PHPUNIT_PROCESSES` overrides the count, and the
+PHPUnit line says so when the script was not found, rather than falling back to one
+process in silence: on 28/10/2026 one project's ParaTest dropped to one process from a
+`.claude/worktrees/` worktree without a word.

@@ -46,7 +46,7 @@ project's local CI, once, on the commit about to ship:
 - A red step stops the deploy. A test red then green on a rerun is a finding to report, not a
   pass (`agent/long-running-checks.md`): never rerun until it is green.
 - If `origin/main` moves during the run, rebase again; rerun the groups the incoming commits
-  reach (`bin/ci-local --only <group>`), a second full pass only when they touch the same
+  reach (`bin/ci-local --only php|front|e2e`), a second full pass only when they touch the same
   files as the branch.
 
 ## 3. Deploy

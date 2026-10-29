@@ -1833,10 +1833,11 @@ trigger only after weighing it against the allowance.
 
 `bin/ci-local` (or the project's alias for it, `pnpm ci:local`, `make ci-local`) replays every job of `ci.yml`, with the same options, on
 the current checkout or worktree. One line per step with its status and duration, logs in
-`var/ci-local/`, `--fast` without the E2E, `--only <group>` to rerun one group.
-It reruns itself under `machine-lock run` (`dev-standards/symfony-react/machine-lock/`), one
+`var/ci-local/`, `--fast` without the E2E, `--only php|front|e2e` to rerun one family of
+groups. It reruns itself under `machine-lock run` (`dev-standards/symfony-react/machine-lock/`), one
 lock for the whole machine: it takes every core, and two runs at once, from two sessions
-or two projects, make unrelated tests miss their timeouts.
+or two projects, make unrelated tests miss their timeouts. Its core is shared
+(`dev-standards/symfony-react/ci-local/`): the project's script keeps only its own steps.
 
 - **Groups run in parallel, each stopping at its first failure**: the PHP analysis, the
   front checks, the E2E preparation (build, schema), then the suites. A common
@@ -1937,34 +1938,24 @@ above give the details. `/gap-code` checks this list.
 
 #### `bin/ci-local`
 
+- [ ] **Built on the shared library** (`ci-local/ci-local-lib.sh`): the project's script
+  sources it, declares its groups, each in a family (`php`, `front`, `e2e`), and keeps
+  only its own steps. The library carries the mechanisms, described in
+  `ci-local/README.md`: `--fast`, `--only <family>` and `--spec <file>` with the refusal of
+  the combinations that contradict each other, the rerun under `machine-lock`, the groups
+  and their meeting points through marker files, the timeline, the processor sampled while
+  Vitest runs, the throwaway databases dropped by a `trap … EXIT`, the warnings at start
+  and the summary. Three copies of 866 to 981 lines had drifted apart: a fix landed in one
+  and not the others.
 - [ ] **Four groups in parallel after a common preparation** (dependencies, environments,
   databases): PHP, Front, Vitest, E2E, each stopping at its first failure, PHP and Front at
-  `nice 10`. Meeting points through marker files that a failing group sets too, so no
-  group waits forever: the Vite build waits for `pnpm types`, PHPUnit for the build.
+  `nice 10`. The Vite build waits for `pnpm types`, PHPUnit for the build.
 - [ ] **Vitest alone**, after the analyses and the build, before PHPUnit, ESLint and the
-  E2E server. Next to them it missed its timeouts (see « Vitest runs alone » above).
-- [ ] **Under `machine-lock run`**, rerun once the arguments are read; the lock keeps a Mac
-  awake while the run lasts (`machine-lock/README.md`).
-- [ ] **A timeline of the steps**: start and end to the second and the load average, into
-  `var/ci-local/timeline`. A log's date is only its last write, and `ls -l` rounds it to
-  the minute: a step ended just before Vitest looked as if it had run during it.
-- [ ] **The processor sampled while Vitest runs** (`ps` every 2 s), and a line under the
-  group naming what else used it: the rest of the run, or the rest of the machine. It is
-  the « what ran alongside » that `agent/long-running-checks.md` asks of a flaky report; on
-  one Mac it named `fseventsd` at about 105 % and Spotlight's `mdworker_shared` at about
-  30 % on every pass.
-- [ ] **Throwaway databases**, `<project>_ci_<branch>_<hash>`, recorded before they are
-  created and dropped by a `trap … EXIT`; the E2E workers' copies made with `createdb -T`.
-- [ ] **Warnings at start**: uncommitted changes (the steps read the working tree, the
-  drift check the committed state), `.husky/_` missing (git then runs no hook in that
-  worktree), a branch that does not contain a freshly fetched `origin/main`.
-- [ ] **A clear refusal of a Symfony server already serving the folder**, and of a taken
-  E2E port, or a free port derived from the worktree's path, so two worktrees never meet
-  on one.
-- [ ] **`--fast`, `--only <group>` and `--spec <file>`**, and a refusal of the combinations
-  that contradict each other: `--spec x --fast` ran no group and concluded « OK », and a
-  second `--only` replaced the first without a word. `--spec` is the targeted
-  run `agent/long-running-checks.md` asks for between two full passes.
+  E2E server, through `vitest_step`. Next to them it missed its timeouts (see « Vitest runs
+  alone » above).
+- [ ] **A fixed E2E port refused when taken, or a free port derived from the worktree's
+  path**, so two worktrees never meet on one; `ci_e2e_preflight` refuses a Symfony server
+  already serving the folder.
 
 #### PHPUnit
 

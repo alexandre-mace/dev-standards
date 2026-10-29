@@ -49,24 +49,12 @@ machine-lock held                        # exit 0 if this process chain holds it
 
 ## In a project
 
-`bin/ci-local` takes the lock by itself: it reruns itself under `machine-lock run` at
-start, once its arguments are read (so `--help` does not wait) and before it touches
-`var/ci-local/`. It finds `dev-standards` next to the project's main checkout, the one
-lookup that works from every worktree (see "Finding dev-standards from a worktree" below).
-
-```bash
-ARGS=("$@")
-# … arguments read …
-if [ "${GITHUB_ACTIONS:-}" != true ]; then
-    DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir)")/../../dev-standards}
-    MACHINE_LOCK=$DEV_STANDARDS_DIR/symfony-react/machine-lock/machine-lock
-    if [ ! -x "$MACHINE_LOCK" ]; then
-        echo "machine-lock introuvable : $MACHINE_LOCK" >&2
-        exit 2
-    fi
-    "$MACHINE_LOCK" held || exec "$MACHINE_LOCK" run -- "$0" ${ARGS[@]+"${ARGS[@]}"}
-fi
-```
+`bin/ci-local` takes the lock by itself: the shared library it sources reruns it under
+`machine-lock run` at start, once its arguments are read (so `--help` does not wait) and
+before it touches `var/ci-local/` (`ci_machine_lock`, `../ci-local/README.md`). The
+library reads `machine-lock` from its own `dev-standards`, which the project's script
+found next to its main checkout, the one lookup that works from every worktree (see
+"Finding dev-standards from a worktree" below).
 
 A full suite run on its own, `playwright test` or `phpunit` without a filter, goes through
 `machine-lock run` too. A filtered run (one file, one test) does not need it.
