@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Disciplined bug-fix loop - reproduce, one hypothesis, instrument, root cause, regression test. Triggers - bug, regression, "it stopped working", production error, Sentry issue, 500.
+description: Disciplined bug-fix loop for one precise defect - reproduce, one hypothesis, instrument, root cause, regression test. Triggers - bug, regression, "it stopped working", one production error, one Sentry issue, a 500. A global audit of production health or of all Sentry issues is check-logs.
 ---
 
 # Diagnosing bugs

@@ -68,8 +68,8 @@ with how the compiler is enabled.
 | `gap-sota` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
 | `gap-repo` | This repo against itself: broken cross-references, siblings that disagree |
 | `attack-surface` | What can someone reach, and do with it? Maps the entry points, follows untrusted input, proves each finding |
-| `check-logs` | Prod health audit: CleverCloud logs, Messenger state, Sentry |
-| `technical-writing` | Rewrites a text into Alexandre's writing voice |
+| `check-logs` | Global prod health audit: CleverCloud logs, Messenger state, every Sentry issue. One precise issue is `diagnosing-bugs` |
+| `technical-writing` | Rewrites technical writing and code-adjacent text into Alexandre's voice. French prose for publication goes to the `feve-editorial` plugin's `relecture` |
 
 ### The thread of a feature
 

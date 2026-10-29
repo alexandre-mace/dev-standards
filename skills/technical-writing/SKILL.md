@@ -1,11 +1,13 @@
 ---
 name: technical-writing
 description: >-
-  Rewrites technical writing into Alexandre's own voice: documentation, guidelines,
-  skills, the reports the other skills produce, commit messages, a note to a colleague.
-  Use when a text is about to be committed, published or sent, or when asked to relire,
-  réécrire or clean up a text. Not for product or marketing copy, which has its own reviewer.
-  `--chat` switches to the register of a message between colleagues.
+  Rewrites technical writing and the text that lives next to code into Alexandre's own
+  voice: documentation, guidelines, skills, the reports the other skills produce, commit
+  messages, code comments, a technical note to a colleague. Use when such a text is about to
+  be committed or sent, or when asked to réécrire or clean one up. Not for French prose meant
+  for publication (a site page, a newsletter, a public post) nor for product or marketing
+  copy: that is the relecture skill of the feve-editorial plugin. `--chat` switches to the
+  register of a message between colleagues.
 argument-hint: "[--chat] <text>"
 ---
 
@@ -14,7 +16,12 @@ argument-hint: "[--chat] <text>"
 $ARGUMENTS
 
 Rewrite the text to the rules below. The meaning does not change. French and English
-alike. When the arguments start with `--chat`, the text is a message between colleagues:
+alike.
+
+**Scope**: technical writing and the text next to code, the ones listed in the description.
+French prose for publication (a site page, a newsletter, an article, a public post) goes
+to the `feve-editorial:relecture` plugin skill, which checks spelling, grammar, the tu or vous register,
+internal consistency and the tics of generated text; asked for both, run that one. When the arguments start with `--chat`, the text is a message between colleagues:
 apply the rules below, then the **Chat register** section on top of them.
 
 ## Formatting

@@ -1,11 +1,13 @@
 ---
 name: check-logs
-description: Audits the health of a production app by correlating CleverCloud logs, Messenger state and Sentry issues. Use when checking on prod, triaging Sentry, or chasing down noise in the logs.
+description: Audits the overall health of a production app by correlating CleverCloud logs, Messenger state and every open Sentry issue, then triages them. Use when checking on prod as a whole, triaging Sentry in bulk, or chasing down noise in the logs. One precise bug or Sentry issue to fix is diagnosing-bugs.
 ---
 
 # Check prod logs
 
-Pull the signals, correlate them against the current code, triage.
+Pull the signals, correlate them against the current code, triage. This is the audit of
+production as a whole; one precise bug or Sentry issue to fix goes to `/diagnosing-bugs`,
+and each real bug this audit finds goes there too.
 
 The window differs by source, because they do not keep their data for the same time.
 CleverCloud retains logs for 7 days, so `--since 7d` is the ceiling and asking for more
