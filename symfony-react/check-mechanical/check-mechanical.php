@@ -842,6 +842,62 @@ function orphanLabels(string $content, string $path): array
 }
 
 /**
+ * The matches of the pattern whose whole line does not match `$unless`: a class that removes
+ * the outline is fine when its line also draws a ring.
+ *
+ * @return list<array{int, string}>
+ */
+function matchesUnless(string $pattern, string $unless, string $content, ?string $searched = null): array
+{
+    return array_values(array_filter(
+        matches($pattern, $content, $searched),
+        static fn (array $hit): bool => !preg_match($unless, $hit[1]),
+    ));
+}
+
+/**
+ * A document cited by its path from the root (`docs/….md`) or by a capitalised name
+ * (`AGENTS.md`) that the repository does not hold: a comment that sends the reader to it
+ * sends them nowhere. A path outside the repository (`../dev-standards/…`) is not read.
+ *
+ * @return list<array{int, string}>
+ */
+function missingDocuments(string $content): array
+{
+    $lines = explode("\n", $content);
+    $out = [];
+    if (!preg_match_all('#(?<![\w/.-])(docs/[\w./-]*\w\.md|[A-Z][A-Z0-9_-]*\.md)\b#', $content, $all, \PREG_OFFSET_CAPTURE)) {
+        return [];
+    }
+    foreach ($all[1] as [$document, $offset]) {
+        if (!file_exists($document)) {
+            $line = substr_count($content, "\n", 0, $offset) + 1;
+            $out[] = [$line, $lines[$line - 1] ?? ''];
+        }
+    }
+
+    return sortedByLine($out);
+}
+
+/**
+ * A colour written as a value instead of a token. Everywhere: a Tailwind arbitrary value
+ * (`bg-[#68C85D]`) and a colour function with literal numbers (`hsl(142 76% 36%)`,
+ * `oklch(0.7 0.1 140)`). In a template, a colour attribute (`stroke="#e5e7eb"`) and a
+ * `class` or `style` holding one. In a script, a string that opens on one (`'#fff'`,
+ * `'1px solid #ccc'`). rgb() and rgba() have their own rule.
+ */
+function hardcodedColour(string $path): string
+{
+    $hex = '#[0-9a-fA-F]{3,8}\b';
+    $everywhere = '-\['.$hex.'\]|(?<![\w-])(?:hsla?|oklch|oklab|lch|lab)\(\s*[\d.]';
+    if ('twig' === extension($path)) {
+        return '/'.$everywhere.'|\b(?:class|style|fill|stroke|color|stop-color|flood-color|bgcolor)=[^>]*?'.$hex.'|\s[\w:-]+=["\']'.$hex.'["\']/';
+    }
+
+    return '/'.$everywhere.'|(?<=[\'"`\s:,(])'.$hex.'/';
+}
+
+/**
  * Each rule: its message, the extensions and paths it reads, its kind ("fichier": every
  * line; "ajout": added lines only), and the function that finds its occurrences.
  *
@@ -891,13 +947,13 @@ function rules(): array
             'find' => static fn (string $c): array => matches('/(?<!\p{L})\x{00B7}|\x{00B7}(?!\p{L})|&(?:middot|#0*183|#x0*B7);|\\\\u00b7/ui', $c),
         ],
         'faute' => [
-            'message' => 'faute déjà relevée par un audit : réessayez, configurée, vous allez, raisonnable, répétez, expliquez-nous, À très vite, majuscule accentuée (État, Équipe, Écrivez, Êtes)',
+            'message' => 'faute déjà relevée par un audit : réessayez, configurée, vous allez, raisonnable, répétez, expliquez-nous, Ce champ, Êtes-vous sûr, régional, dérivé, prises en charge, tous projets confondus, œuvre, À très vite, majuscule accentuée (État, Équipe, Écrivez, Êtes)',
             'ext' => $prose,
             'paths' => $everywhere,
             'kind' => 'fichier',
             // Written in pieces: this file holds none of the misspellings it looks for.
             'find' => static fn (string $c, string $p): array => matches(
-                '/(?i:r[ée]é{1}ssay|\bconfigur(?:ee)s?\b|\bvous\s(?:aller)\b|\brai(?:sonable)|\br(?:é)petez\b|\bexpliquez\s(?:nous)\b)|\bA\s(?:très\svite)\b'
+                '/(?i:r[ée]é{1}ssay|\bconfigur(?:ee)s?\b|\bvous\s(?:aller)\b|\brai(?:sonable)|\br(?:é)petez\b|\bexpliquez\s(?:nous)\b|\bce\schamp(?:s)\b|\b[Êê]tes-vous\ss(?:ur)\b|\br[ée]gion(?:n)al|\bdrif(?:f)[ée]|\bprises\sen\scharge(?:s)\b|\bprojet\sc(?:onfondus)\b|\bo(?:e)uvre)|\bA\s(?:très\svite)\b'
                 // A type name (`interface Etape {`, `Etape[]`, and in code `(e: Etape)`,
                 // `type Etape,`, `from './Etapes'`) is not text.
                 .'|\bE(?:tats?|quipes?|crivez|crire|tes|tapes?|chéances?|vénements?|vènements?|crans?|léments?|galement|tablissements?|ligibilité|pargne|tudes?|leveurs?|conomies?|lectricité)\b(?![\w\[\]<>({}=;]|\s+[{=(<]'
@@ -954,7 +1010,7 @@ function rules(): array
             'message' => 'diacritique combinant (U+0300 à U+036F) écrit tel quel : invisible à la lecture comme dans un diff, l\'échappement (`\\u0301`) ou la lettre précomposée',
             'ext' => $prose,
             'paths' => $everywhere,
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/[\x{0300}-\x{036F}]/u', $c),
         ],
         'guillemets-anglais' => [
@@ -1028,9 +1084,9 @@ function rules(): array
         // The design system and the kit.
         'couleur-brute' => [
             'message' => 'couleur Tailwind de la palette brute : un jeton du design system',
-            'ext' => $front,
-            'paths' => $ui,
-            'kind' => 'ajout',
+            'ext' => [...$front, 'php'],
+            'paths' => '#^(assets|templates|src/Twig)/#',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/(?<![-\w])(?:[\w-]+:)*(?:'.$utility.')-(?:'.$palette.')-\d{2,3}\b/', $c),
         ],
         'rgba' => [
@@ -1039,17 +1095,17 @@ function rules(): array
             'ext' => [...$front, 'php'],
             'paths' => '#^(assets|templates|src/Twig)/#',
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/(?<![a-zA-Z])rgba?\(\s*\d/', $c),
+            'find' => static fn (string $c): array => matches('/(?<![a-zA-Z])rgba?\(\s*(?:[\d.]|var\()/', $c),
         ],
         'blanc-noir' => [
             'message' => '`white`/`black` posé hors jetons, en classe ou dans un style : `bg-card`, `text-foreground`, `text-primary-foreground`, `var(--primary-foreground)`…',
-            'ext' => $front,
-            'paths' => $ui,
-            'kind' => 'ajout',
+            'ext' => [...$front, 'php'],
+            'paths' => '#^(assets|templates|src/Twig)/#',
+            'kind' => 'fichier',
             // The Tailwind classes, then a colour property written in an inline style, a CSS
             // string or a React `style` object (`color: white`, `backgroundColor: 'black'`).
             'find' => static fn (string $c): array => matches(
-                '/(?<![-\w\[])(?:[\w-]+:)*(?:bg|text|fill|stroke|ring|border|from|to|via|divide|outline|decoration)-(?:white|black)\b'
+                '/(?<![-\w\[])(?:[\w-]+:)*(?:bg|text|fill|stroke|ring|border(?:-[trblxy])?|from|to|via|divide|outline|decoration)-(?:white|black)\b'
                 .'|(?<![-\w])(?:color|background(?:-color)?|backgroundColor|fill|stroke|border-color|borderColor|outline-color|outlineColor)\s*:\s*[\'"]?(?:white|black)\b/',
                 $c,
             ),
@@ -1107,9 +1163,9 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => matches('/<label\b/', $c, withoutComments($c, $p)),
         ],
         'label-orphelin' => [
-            'message' => '`<Label>` qui ne nomme aucun champ : `htmlFor` vers l\'`id` du contrôle, ou le contrôle dans le libellé ; sinon un texte (`<p>`, `<span>`), un titre de groupe (`<legend>`, `aria-labelledby`)',
-            'ext' => ['tsx'],
-            'paths' => '#^assets/#',
+            'message' => '`<Label>` ou `<label>` qui ne nomme aucun champ : `htmlFor` (`for` dans un gabarit) vers l\'`id` du contrôle, ou le contrôle dans le libellé ; sinon un texte (`<p>`, `<dt>`, `<span>`), un titre de groupe (`<legend>`, `aria-labelledby`)',
+            'ext' => ['tsx', 'twig'],
+            'paths' => '#^(assets|templates)/#',
             'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^assets/components/ui/label\.tsx$#',
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => orphanLabels($c, $p),
@@ -1130,6 +1186,114 @@ function rules(): array
             'except' => $tests,
             'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/<main\b|role=[\'"{]+main\b/', $c, withoutComments($c, $p)),
+        ],
+        'main-gabarit' => [
+            'message' => '`<main>` hors de templates/base.html.twig : le gabarit de base pose le seul de la page, que vise le lien d\'évitement, un gabarit enfant pose un `<div>` ou une `<section>` (une page autonome, la mise en page d\'un back-office, porte son exception)',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'except' => '#^templates/base\.html\.twig$#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/<main\b/', $c, withoutComments($c, $p)),
+        ],
+        'boite-native' => [
+            'message' => 'boîte native `confirm()` ou `alert()` : un `Dialog` du kit, stylé et atteignable au clavier, ou un `toast` (reactony §10) ; dans un gabarit, un contrôleur qui ouvre ce `Dialog`',
+            'ext' => ['ts', 'tsx', 'js', 'mjs', 'twig'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'fichier',
+            // Only `window.` or `globalThis.` may stand before the name: the method of
+            // another object (`dialog.confirm(`, `$this->confirm(`) is not the browser's box.
+            'find' => static fn (string $c, string $p): array => matches(
+                '/(?:(?<![\w.>$:])|(?<=\bwindow\.)|(?<=\bglobalThis\.))(?:confirm|alert)\(/',
+                $c,
+                withoutComments($c, $p),
+            ),
+        ],
+        'contour-sans-anneau' => [
+            'message' => '`outline-none` ou `outline-hidden` sans anneau de focus sur la ligne : `focus-visible:ring-2 focus-visible:ring-ring` (WCAG 2.4.7), sinon le clavier s\'arrête sur un élément qu\'on ne voit pas',
+            'ext' => ['ts', 'tsx', 'twig'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matchesUnless('/(?<![\w-])outline-(?:none|hidden)(?![\w-])/', '/ring/', $c, withoutComments($c, $p)),
+        ],
+        'couleur-litterale' => [
+            'message' => 'couleur écrite en dur (hexadécimal, `hsl()`, `oklch()`…) dans une classe, un attribut ou un littéral : un jeton du design system (`bg-success`, `text-link`, `fill-border`), `var(--color-…)` dans un style ; une carte ou un graphique qui ne lit pas la feuille porte son exception',
+            'ext' => ['ts', 'tsx', 'twig'],
+            'paths' => $ui,
+            // A mail and a PDF are rendered outside the browser, without the application's
+            // stylesheet: their inline styles carry their colours.
+            'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^templates/(?:.*/)?(?:emails?|pdf)/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches(hardcodedColour($p), $c, withoutComments($c, $p)),
+        ],
+        'contenu-attenue' => [
+            'message' => 'opacité posée sur un contenu au repos (`opacity-50`) : son texte tombe sous 4,5:1 ; `text-muted-foreground` ou un fond, l\'opacité restant aux états (`disabled:`, `hover:`, `group-hover:`)',
+            'ext' => ['ts', 'tsx', 'twig'],
+            'paths' => $ui,
+            'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^templates/(?:.*/)?(?:emails?|pdf)/#',
+            'kind' => 'ajout',
+            // A variant before it (`disabled:opacity-50`) is a state; `opacity-0` hides,
+            // `opacity-100` shows.
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w:\/-])opacity-(?:[1-9]\d?(?![\w-])|\[)/', $c, withoutComments($c, $p)),
+        ],
+
+        // Twig templates.
+        'script-en-ligne' => [
+            'message' => 'script en ligne, attribut `on…=` ou lien `javascript:` dans un gabarit : le comportement vit dans un îlot React ou un contrôleur Stimulus testé (reactony §6) ; un `<script src>` et un bloc de données JSON passent',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches(
+                '/(?i:<script\b(?![^>]*\bsrc=)(?![^>]*\btype=["\'](?:application\/(?:ld\+)?json|text\/template)["\']))|\son[a-z]+=\s*["\']|(?i:\b(?:href|src|action|formaction)\s*=\s*["\']\s*javascript:)/',
+                $c,
+                withoutComments($c, $p),
+            ),
+        ],
+        'hauteur-vh' => [
+            'message' => 'hauteur arbitraire calée sur la fenêtre en `vh` (`h-[calc(100vh-56px)]`) : sur mobile, `vh` compte la barre d\'adresse et le bas passe dessous ; `dvh`, qui suit la partie visible',
+            'ext' => ['ts', 'tsx', 'twig'],
+            'paths' => $ui,
+            'except' => $tests,
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w-])(?:[a-z0-9-]+:)*h-\[(?:calc\()?\d+vh\b/', $c, withoutComments($c, $p)),
+        ],
+        'chart-gabarit' => [
+            'message' => 'jeton `chart-*` dans un gabarit : il colore les séries des graphiques et changera le jour où un graphique en demandera d\'autres ; le jeton d\'interface qui porte le sens',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w-])(?:[\w-]+:)*(?:text|bg|border|ring|fill|stroke|from|via|to|outline|decoration)-chart-[1-5]\b/', $c, withoutComments($c, $p)),
+        ],
+        'style-en-ligne' => [
+            'message' => 'style en ligne dans un gabarit : une classe Tailwind et les jetons du design system ; un mail et un PDF, rendus sans la feuille de l\'application, passent',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'except' => '#^templates/(?:.*/)?(?:emails?|pdf)/#',
+            'kind' => 'ajout',
+            // The attribute, or its key in a Twig hash (`{ style: '…' }`).
+            'find' => static fn (string $c, string $p): array => matches('/\sstyle="|(?<![\w-])[\'"]?style[\'"]?\s*:\s*[\'"]/', $c, withoutComments($c, $p)),
+        ],
+        'classe-en-morceaux' => [
+            'message' => 'classe composée en morceaux dans un attribut `class` : Tailwind ne génère que les classes écrites entières, `{{ cond ? \'md:grid-cols-3\' : \'md:grid-cols-2\' }}`',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/\bclass="[^"]*[a-z0-9:]-(?:\{%|\{\{)/', $c, withoutComments($c, $p)),
+        ],
+        'balise-en-chaine' => [
+            'message' => 'balise Twig dans une chaîne concaténée : Twig ne l\'interprète pas, elle part telle quelle au navigateur ; l\'écrire en expression, `~ (condition ? \' hidden\' : \'\') ~`',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c): array => matches('/~\s*\'(?:[^\'\\\\\n]|\\\\.)*\{[%{]|\'(?:[^\'\\\\\n]|\\\\.)*\{[%{](?:[^\'\\\\\n]|\\\\.)*\'\s*~/', $c),
+        ],
+        'pourcentage-colle' => [
+            'message' => 'pourcentage collé à sa valeur : une espace insécable avant « % » (`{{ taux }}\u{a0}%`) ; dans une déclaration CSS (`width: {{ … }}%`), l\'unité reste collée',
+            'ext' => ['twig'],
+            'paths' => '#^templates/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c): array => matchesUnless('/\}\}%(?![0-9A-Fa-f]{2})/', '/[a-z-]+:\s*\{\{[^}]*\}\}%/', $c),
         ],
 
         // What the page loads and opens.
@@ -1256,6 +1420,77 @@ function rules(): array
             'except' => '#^src/Entity/|^tests/Factory/#',
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => openClasses($c, str_starts_with($p, 'tests/')),
+        ],
+        'map-query-statut' => [
+            'message' => '`#[MapQueryString]` ou `#[MapQueryParameter]` sans `validationFailedStatusCode` : un paramètre invalide répondrait le 404 de Symfony, sans `violations` ; `Response::HTTP_UNPROCESSABLE_ENTITY` pour une route d\'API, `HTTP_BAD_REQUEST` pour une page',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*validationFailedStatusCode)/', $c, withoutComments($c, $p)),
+        ],
+        'ancre-sans-d' => [
+            'message' => 'motif `/^…$/` sans le modificateur `D` : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c): array => matches('/\'\/\^[^\']*\$\/(?![a-zA-Z]*D)[a-zA-Z]*\'/', $c),
+        ],
+        'find-all' => [
+            'message' => '`->findAll()` dans un contrôleur ou un service : sans `ORDER BY`, l\'ordre des lignes change après une simple mise à jour ; `findBy([], [...])` avec un ordre, ou une méthode de dépôt qui porte le sien (symfony-guidelines, « A query without ORDER BY has no order »)',
+            'ext' => ['php'],
+            'paths' => '#^src/(?:Controller|Service)/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/->findAll\(\)/', $c, withoutComments($c, $p)),
+        ],
+        'accord-parenthese' => [
+            'message' => '« (s) » ou « (x) » collé à un mot : accorder selon le nombre, singulier à 0 et 1, pluriel au-delà (« 1 justificatif supprimé », « 3 justificatifs supprimés »)',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/\p{L}\([sx]\)/u', $c, withoutComments($c, $p)),
+        ],
+        'guillemets-message' => [
+            'message' => 'guillemets droits autour de `%s` dans un message : « » avec leurs espaces insécables (`«\\u{a0}%s\\u{a0}»`) ; un attribut HTML (`href="%s"`) passe, comme la sortie d\'une commande, lue en console',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'except' => '#^src/Command/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/(?<![=\w])"%[sd]"/', $c, withoutComments($c, $p)),
+        ],
+        'non-applicable' => [
+            'message' => '« N/A » écrit en dur : de l\'anglais, et un texte de repli servi comme une valeur se trie et se filtre avec les vraies ; `null` côté serveur, « – » à l\'affichage',
+            'ext' => ['php', 'twig'],
+            'paths' => '#^(src|templates)/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/(?:[\'"]|>\s*)N\/A(?:[\'"]|\s*<)/', $c, withoutComments($c, $p)),
+        ],
+        'methode-depot' => [
+            'message' => '`@method` qui redit `find`, `findOneBy`, `findAll` ou `findBy` sur un dépôt : `@extends ServiceEntityRepository<Entite>` les donne déjà à PHPStan, et le `Entite[] findAll()` du générateur affaiblit le `list<Entite>` générique',
+            'ext' => ['php'],
+            'paths' => '#^src/Repository/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c): array => matches('/@method\s.*\b(?:find|findOneBy|findAll|findBy)\(/', $c),
+        ],
+        'balise-console' => [
+            'message' => 'balise de style que la console Symfony ne connaît pas : elle s\'imprime telle quelle ; `<info>`, `<comment>`, `<question>`, `<error>`, ou `<fg=green>`',
+            'ext' => ['php'],
+            'paths' => '#^src/Command/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => matches('#<(?!(?:info|comment|question|error)>)([a-z]+)>[^<\n]*</\1>#', $c, withoutComments($c, $p)),
+        ],
+        'sommeil-test' => [
+            'message' => '`sleep()` ou `usleep()` dans un test : l\'horloge simulée (`MockClock::sleep`) avance sans attendre, un client HTTP simulé répond tout de suite',
+            'ext' => ['php'],
+            'paths' => '#^tests/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w>:$])u?sleep\(/', $c, withoutComments($c, $p)),
+        ],
+        'document-introuvable' => [
+            'message' => 'document cité introuvable : corriger le chemin, écrit depuis la racine du dépôt (`docs/…`, `AGENTS.md`)',
+            'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml', 'sh', 'neon', 'json', ''],
+            'paths' => '#^(src|templates|assets|tests|e2e|config|translations|scripts|bin|\.github|\.husky)/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c): array => missingDocuments($c),
         ],
         'gitignore-src' => [
             'message' => '`.gitignore` sous src/ : le dépôt n\'a qu\'un .gitignore de code, à la racine',

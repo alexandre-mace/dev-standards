@@ -1,0 +1,2 @@
+<?php
+return $nom ?? 'N/A';

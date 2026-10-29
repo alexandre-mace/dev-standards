@@ -1,0 +1,2 @@
+<?php
+$libelle = 'Comité régionnal';

@@ -1,0 +1,4 @@
+<?php
+/**
+ * @extends ServiceEntityRepository<Ferme>
+ */

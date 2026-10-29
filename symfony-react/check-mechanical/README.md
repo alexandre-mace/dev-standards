@@ -54,8 +54,8 @@ declaration, which only a new file adds, and judge new files only.
 
 | Kind | Rules |
 |---|---|
-| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `docblock-double`, `gitignore-src`, `id-sans-borne` |
-| ajout | `identifiant-audit`, `couleur-brute`, `rgba`, `blanc-noir`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `diacritique-invisible`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin` |
+| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `couleur-brute`, `blanc-noir`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `balise-console`, `sommeil-test`, `document-introuvable`, `gitignore-src` |
+| ajout | `identifiant-audit`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable` |
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
@@ -63,9 +63,25 @@ PHP, where two projects keep links with `rel="noopener"` alone and CLI messages
 or third-party labels with a spaced hyphen; `label-natif` in `assets/components/ui/`, whose
 composites used to be skipped with the registry.
 
-`couleur-brute`, `blanc-noir`, `rgba` and `commentaire-anglais` become **fichier** once every
-project has cleaned them. Measured on 18/10/2026, one project was clean of all four, a
-second of the first two, and the third held 74, 17, 2 and 1,738 of them.
+`rgba` and `commentaire-anglais` become **fichier** once every project has cleaned them.
+`couleur-brute`, `blanc-noir` and `diacritique-invisible` became **fichier** on 29/10/2026:
+measured on the three projects of the stack, one occurrence was left, a design-system page
+quoting a class, which carries its exception.
+
+Twenty-two rules came, the same day, from the convention checks the projects kept each on
+their side: a grep script, Vitest guards, PHPUnit tests reading files with a regex, ESLint
+selectors that only matched a literal against a pattern. Seven were clean on every project
+and are **fichier**: `boite-native`, `balise-en-chaine`, `pourcentage-colle`,
+`methode-depot`, `balise-console`, `sommeil-test`, `document-introuvable`. The others, from
+`main-gabarit` to `non-applicable` in the **ajout** row, were refused in full by one project
+and held by another, up to 196 occurrences of `couleur-litterale` on one of them: they judge
+the new lines, and become **fichier** once the stocks are gone. `label-orphelin` reads the
+templates as well. What needs the syntax tree (a call's structure, a scope, a type) stays in
+the project's ESLint or PHPStan rules.
+
+`couleur-litterale`, `contenu-attenue` and `style-en-ligne` leave the `emails/` and `pdf/`
+folders of `templates/` out, at any depth: a mail client and a PDF renderer read neither the application's
+stylesheet nor its tokens, and inline styles are how those templates carry their colours.
 
 `commentaire-anglais` reads a comment line by line, and calls a line English when it
 holds two English function words or more, no French one and no accented letter, among
