@@ -15,6 +15,7 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 - **`machine-lock/`**, the lock `bin/ci-local` takes for the whole machine, so two sessions never run two full suites at once, and keeps a Mac awake while it runs
 - **`performance-cores/`**, the machine's performance cores, which set ParaTest's process count in `bin/ci-local`
 - **`worktree-setup/`**, the script a project's `bin/worktree-setup` calls, so a new worktree's first commit passes the hook
+- **`deploy/`**, the script `/deploy` runs: pushes the branch to `main` once `main` has nothing it lacks, follows the CleverCloud deployment to its verdict, and can realign `preprod` and remove the worktree
 
 ### `next/`: static-first Next.js sites
 
@@ -129,7 +130,9 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 
 `install.sh` links both halves of what Claude Code reads: `skills/` into
 `~/.claude/skills/`, and `agent/` into `~/.claude/rules/`. Re-run it whenever a skill or
-a rule is added or renamed.
+a rule is added or renamed. It also links the shared scripts run by name from any project,
+`deploy`, `machine-lock` and `performance-cores`, into `~/.local/bin`, which it creates
+when missing and which has to be on the `PATH`.
 
 It also links `local/skills/`, which is gitignored. This repository is public, so a
 procedure whose publication is itself the problem lives there instead: it is installed

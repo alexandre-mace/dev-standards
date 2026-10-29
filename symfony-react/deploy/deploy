@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+# Puts the current branch into production on a CleverCloud project and follows the
+# deployment to its verdict (README.md, next to it). Run from the project's checkout or
+# any of its worktrees, on the branch to deploy, once the user has given the go.
+#
+#   deploy                     push HEAD to main, follow the production deployment
+#   deploy --preprod           then bring preprod back in line with main, if it holds nothing else
+#   deploy --remove-worktree   then remove this worktree and its local branch, if clean and merged
+#   deploy --app <alias|id>    the CleverCloud application to follow, instead of the prod alias
+#   deploy --timeout <s>       how long to wait for the verdict (default 1800)
+#
+# Exit codes: 0 deployed, 1 deployment failed, 2 refused before pushing (or usage),
+# 3 no verdict within the timeout, 4 deployed but preprod or the worktree left as they were.
+
+set -o pipefail
+
+usage() {
+    sed -n '6,10p' "$0" | sed 's/^# \{0,1\}//'
+    exit "${1:-0}"
+}
+
+PREPROD=0
+REMOVE_WORKTREE=0
+APP=
+TIMEOUT=1800
+POLL=${DEPLOY_POLL_INTERVAL:-15}
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --preprod) PREPROD=1 ;;
+        --remove-worktree) REMOVE_WORKTREE=1 ;;
+        --app) APP=${2:-}; [ -n "$APP" ] || usage 2 >&2; shift ;;
+        --timeout)
+            TIMEOUT=${2:-}
+            case "$TIMEOUT" in '' | *[!0-9]*) echo "--timeout attend un nombre de secondes." >&2; exit 2 ;; esac
+            shift
+            ;;
+        -h | --help) usage 0 ;;
+        *) echo "Option inconnue : $1" >&2; usage 2 >&2 ;;
+    esac
+    shift
+done
+
+say() { printf '%s\n' "$*"; }
+refuse() { printf 'Refusé : %s\n' "$*" >&2; exit 2; }
+
+ROOT=$(git rev-parse --show-toplevel 2> /dev/null) || refuse "pas dans un dépôt git."
+cd "$ROOT" || exit 2
+command -v php > /dev/null || refuse "php manque, il lit .clever.json et la sortie de clever."
+
+BRANCH=$(git symbolic-ref --quiet --short HEAD) || refuse "HEAD détachée : se placer sur la branche à déployer."
+case "$BRANCH" in
+    main | preprod) refuse "on est sur $BRANCH ; le déploiement part de la branche de la fonctionnalité." ;;
+esac
+
+if [ -n "$(git status --porcelain)" ]; then
+    git status --short >&2
+    refuse "des changements ne sont pas commités."
+fi
+
+# --- The CleverCloud applications, read from the project's .clever.json -------------------
+# The file is tracked, so a worktree has it; the main checkout's copy is the fallback.
+
+CLEVER_JSON=$ROOT/.clever.json
+if [ ! -f "$CLEVER_JSON" ]; then
+    CLEVER_JSON=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.clever.json
+fi
+
+# app_for <prefix|alias|id>: prints the app_id of the entry whose alias starts with the
+# prefix (case-insensitive), or whose alias or app_id equals the value; nothing when no
+# entry, or more than one, matches.
+app_for() {
+    local wanted=$1 mode=$2
+    [ -f "$CLEVER_JSON" ] || return 1
+    php -r '
+        $apps = json_decode((string) file_get_contents($argv[1]), true)["apps"] ?? [];
+        [$wanted, $mode] = [strtolower($argv[2]), $argv[3]];
+        $hits = array_values(array_filter($apps, fn ($a) => "prefix" === $mode
+            ? str_starts_with(strtolower($a["alias"] ?? ""), $wanted)
+            : in_array($wanted, [strtolower($a["alias"] ?? ""), strtolower($a["app_id"] ?? "")], true)));
+        if (1 === count($hits)) { echo $hits[0]["app_id"]; }
+    ' "$CLEVER_JSON" "$wanted" "$mode"
+}
+
+if [ -n "$APP" ]; then
+    APP_ID=$(app_for "$APP" exact)
+    [ -n "$APP_ID" ] || case "$APP" in app_*) APP_ID=$APP ;; esac
+    [ -n "$APP_ID" ] || refuse "aucune application « $APP » dans $CLEVER_JSON."
+else
+    [ -f "$CLEVER_JSON" ] || refuse "pas de .clever.json dans $ROOT : passer --app <id>."
+    APP_ID=$(app_for prod prefix)
+    [ -n "$APP_ID" ] || refuse "pas exactement une application dont l'alias commence par « prod » dans $CLEVER_JSON : passer --app <alias|id>."
+fi
+command -v clever > /dev/null || refuse "clever (clever-tools) manque : il suit le déploiement."
+
+# --- main has nothing this branch lacks ---------------------------------------------------
+
+say "git fetch origin"
+git fetch --quiet origin || refuse "git fetch a échoué."
+git rev-parse --verify --quiet origin/main > /dev/null || refuse "origin/main n'existe pas."
+
+BEHIND=$(git rev-list --oneline HEAD..origin/main)
+if [ -n "$BEHIND" ]; then
+    say "origin/main porte des commits absents de $BRANCH :" >&2
+    say "$BEHIND" | sed 's/^/  /' >&2
+    refuse "rebaser $BRANCH sur origin/main (git rebase origin/main), repasser les vérifications, puis relancer."
+fi
+
+SHA=$(git rev-parse HEAD)
+SHORT=$(git rev-parse --short HEAD)
+
+# Deployments older than this are not ours. A margin covers a clock that drifts from
+# CleverCloud's.
+SINCE_MS=$((($(date +%s) - 120) * 1000))
+
+if [ "$SHA" = "$(git rev-parse origin/main)" ]; then
+    say "origin/main est déjà en $SHORT : rien à pousser, suivi de son déploiement."
+    SINCE_MS=0
+else
+    say "Poussé sur main : $(git rev-list --count origin/main..HEAD) commit(s), jusqu'à $SHORT."
+    git log --oneline origin/main..HEAD | sed 's/^/  /'
+    git push --quiet origin HEAD:main || refuse "git push origin HEAD:main a échoué (jamais forcé)."
+fi
+
+# --- The deployment, followed to its verdict ----------------------------------------------
+
+duration() {
+    local s=$1
+    if [ "$s" -ge 60 ]; then printf '%d min %02d s' $((s / 60)) $((s % 60)); else printf '%d s' "$s"; fi
+}
+
+# deployments <app_id>: one line per deployment, "date_ms state commit", oldest first.
+deployments() {
+    clever activity --app "$1" --format json 2> /dev/null | php -r '
+        foreach (json_decode((string) stream_get_contents(STDIN), true) ?? [] as $d) {
+            if ("DEPLOY" === ($d["action"] ?? "DEPLOY")) {
+                printf("%d %s %s\n", $d["date"] ?? 0, $d["state"] ?? "?", $d["commit"] ?? "-");
+            }
+        }'
+}
+
+# follow <app_id> <sha> <since_ms> <label>: waits for a deployment of that commit, or of
+# a later one that contains it, and returns 0 on OK, 1 on FAIL, 3 on timeout.
+follow() {
+    local app=$1 sha=$2 since=$3 label=$4 start last= now verdict list errors=0
+    start=$(date +%s)
+    say "Suivi du déploiement $label ($app), $(duration "$TIMEOUT") au plus."
+    while :; do
+        verdict=
+        if list=$(deployments "$app"); then
+            errors=0
+        else
+            errors=$((errors + 1))
+            if [ "$errors" -ge 3 ]; then
+                say "clever activity --app $app échoue trois fois de suite (connecté ? « clever login ») : le push est fait, le verdict reste à lire." >&2
+                return 3
+            fi
+        fi
+        while read -r date state commit; do
+            [ -n "$date" ] && [ "$date" -ge "$since" ] || continue
+            if [ "$commit" != "$sha" ]; then
+                git merge-base --is-ancestor "$sha" "$commit" 2> /dev/null || continue
+            fi
+            verdict="$state ${commit:0:8}"
+        done <<< "$list"
+        now=$(($(date +%s) - start))
+        if [ "$verdict" != "$last" ]; then
+            say "  $(duration "$now")  ${verdict:-en attente du déploiement de ${sha:0:8}}"
+            last=$verdict
+        fi
+        case "$verdict" in
+            OK*) say "Déploiement $label OK en $(duration "$now") (${verdict#OK })."; return 0 ;;
+            FAIL*) say "Déploiement $label en ÉCHEC (${verdict#FAIL }) : la version précédente reste en ligne. Lire « clever logs --app $app --deployment-id <id> », l'id dans « clever activity --app $app »." >&2; return 1 ;;
+        esac
+        # CANCELLED: CleverCloud dropped it for a newer push, which carries the commit
+        # once it appears; anything else is still running.
+        if [ "$now" -ge "$TIMEOUT" ]; then
+            say "Aucun verdict en $(duration "$TIMEOUT") : « clever activity --app $app » dira où il en est." >&2
+            return 3
+        fi
+        sleep "$POLL"
+    done
+}
+
+DEPLOYED_AT=$(date '+%Y-%m-%d %H:%M')
+follow "$APP_ID" "$SHA" "$SINCE_MS" production
+code=$?
+[ "$code" -eq 0 ] || exit "$code"
+
+say "Sentry : regarder les issues nouvelles ou en hausse depuis $DEPLOYED_AT, environnement de production, avant d'annoncer le déploiement."
+FINAL=0
+
+# --- preprod brought back in line with main -----------------------------------------------
+
+align_preprod() {
+    local unique merge preprod_id
+    git rev-parse --verify --quiet origin/preprod > /dev/null || { say "Pas de branche preprod sur origin : rien à aligner."; return 0; }
+    if [ "$(git rev-parse origin/preprod)" = "$SHA" ]; then
+        say "preprod est déjà en $SHORT."
+        return 0
+    fi
+    # What preprod holds that main has no patch-equivalent of; merges are left out, their
+    # content being the commits they bring.
+    unique=$(git cherry origin/main origin/preprod | sed -n 's/^+ //p')
+    if [ -n "$unique" ]; then
+        say "preprod porte des commits que main n'a pas, laissée telle quelle :" >&2
+        for c in $unique; do git log -1 --format='  %h %an, %ar : %s' "$c" >&2; done
+        say "Les déployer ou les abandonner est une décision : à remonter, jamais forcé." >&2
+        return 4
+    fi
+    if git merge-base --is-ancestor origin/preprod "$SHA"; then
+        merge=$SHA
+    else
+        # preprod holds only merges and commits main already has: a merge commit whose
+        # tree is main's, on top of preprod, so the push is a fast-forward.
+        merge=$(git commit-tree "$SHA^{tree}" -p origin/preprod -p "$SHA" \
+            -m "Merge main into preprod: preprod suit main après le déploiement de $SHORT") || return 4
+    fi
+    git push --quiet origin "$merge:refs/heads/preprod" || { say "git push origin …:preprod a échoué (jamais forcé)." >&2; return 4; }
+    say "preprod alignée sur main ($(git rev-parse --short "$merge"))."
+    preprod_id=$(app_for preprod prefix)
+    if [ -n "$preprod_id" ]; then
+        follow "$preprod_id" "$merge" "$((($(date +%s) - 120) * 1000))" preprod || return 4
+    fi
+}
+
+if [ "$PREPROD" -eq 1 ]; then
+    align_preprod || FINAL=4
+fi
+
+# --- This worktree and its local branch, once deployed ------------------------------------
+
+remove_worktree() {
+    local common main_checkout
+    common=$(git rev-parse --path-format=absolute --git-common-dir)
+    if [ "$(git rev-parse --path-format=absolute --git-dir)" = "$common" ]; then
+        say "On est dans le checkout principal, pas dans un worktree : rien à retirer."
+        return 0
+    fi
+    if [ -n "$(git status --porcelain)" ]; then
+        say "Le worktree n'est plus propre, gardé :" >&2
+        git status --short >&2
+        return 4
+    fi
+    if ! git merge-base --is-ancestor HEAD origin/main; then
+        say "HEAD n'est pas dans origin/main, worktree gardé." >&2
+        return 4
+    fi
+    main_checkout=$(dirname "$common")
+    cd "$main_checkout" || return 4
+    git worktree remove "$ROOT" || { say "git worktree remove a refusé, worktree gardé." >&2; return 4; }
+    # -D because -d compares with the main checkout's HEAD, which pushes from worktrees
+    # leave behind; the branch was checked against origin/main just above.
+    git branch -D "$BRANCH" > /dev/null || return 4
+    say "Worktree $ROOT et branche $BRANCH retirés."
+    if git rev-parse --verify --quiet "origin/$BRANCH" > /dev/null; then
+        say "La branche distante origin/$BRANCH existe encore : git push origin --delete $BRANCH"
+    fi
+}
+
+if [ "$REMOVE_WORKTREE" -eq 1 ]; then
+    remove_worktree || FINAL=4
+fi
+
+exit "$FINAL"

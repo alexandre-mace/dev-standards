@@ -3,6 +3,7 @@
 #   ~/.claude/skills/<name>  ->  dev-standards/skills/<name>
 #   ~/.claude/rules/<file>   ->  dev-standards/agent/<file>
 #   ~/.claude/output-styles/  ->  dev-standards/agent/output-styles/<file>
+#   ~/.local/bin/<name>      ->  dev-standards/symfony-react/<name>/<name> (shared scripts)
 # Idempotent: safe to re-run.
 #
 # Usage:
@@ -30,7 +31,7 @@ for skill_dir in "$SKILLS_DIR"/*/ "$ROOT_DIR"/local/skills/*/; do
     echo "RELINK   $skill_name (was pointing to $existing_target)"
     rm "$link_path"
   elif [ -e "$link_path" ]; then
-    echo "CONFLICT $skill_name — $link_path exists and is not a symlink. Skipping. Back it up manually and re-run."
+    echo "CONFLICT $skill_name: $link_path exists and is not a symlink. Skipping. Back it up manually and re-run."
     continue
   fi
 
@@ -57,7 +58,7 @@ if [ -d "$RULES_SRC" ]; then
       fi
       rm "$link_path"
     elif [ -e "$link_path" ]; then
-      echo "CONFLICT rules/$rule_name — exists and is not a symlink. Skipping."
+      echo "CONFLICT rules/$rule_name: exists and is not a symlink. Skipping."
       continue
     fi
 
@@ -84,7 +85,7 @@ if [ -d "$STYLES_SRC" ]; then
       fi
       rm "$link_path"
     elif [ -e "$link_path" ]; then
-      echo "CONFLICT output-styles/$style_name — exists and is not a symlink. Skipping."
+      echo "CONFLICT output-styles/$style_name: exists and is not a symlink. Skipping."
       continue
     fi
 
@@ -92,6 +93,33 @@ if [ -d "$STYLES_SRC" ]; then
     echo "LINKED   output-styles/$style_name"
   done
 fi
+
+# Shared scripts run from any project: symfony-react/<name>/<name> -> ~/.local/bin/<name>
+BIN_DIR="$HOME/.local/bin"
+mkdir -p "$BIN_DIR"
+for name in deploy machine-lock performance-cores; do
+  script="$ROOT_DIR/symfony-react/$name/$name"
+  [ -x "$script" ] || continue
+  link_path="$BIN_DIR/$name"
+
+  if [ -L "$link_path" ]; then
+    if [ "$(readlink "$link_path")" = "$script" ]; then
+      echo "OK       bin/$name (symlink already correct)"
+      continue
+    fi
+    rm "$link_path"
+  elif [ -e "$link_path" ]; then
+    echo "CONFLICT bin/$name: $link_path exists and is not a symlink. Skipping."
+    continue
+  fi
+
+  ln -s "$script" "$link_path"
+  echo "LINKED   bin/$name"
+done
+case ":$PATH:" in
+  *":$BIN_DIR:"*) ;;
+  *) echo "NOTE     $BIN_DIR is not on the PATH: add it to your shell profile to run deploy, machine-lock and performance-cores by name." ;;
+esac
 
 # Prune: a skill renamed or deleted here leaves a dangling link behind.
 # Only ever touch links that point INTO this repo, never someone else's skill.
@@ -111,6 +139,7 @@ prune_links() {
 prune_links "$TARGET_DIR"
 prune_links "$RULES_DIR"
 prune_links "$STYLES_DIR"
+prune_links "$BIN_DIR"
 
 # The repository's own consistency check runs before every commit made here.
 git -C "$ROOT_DIR" config core.hooksPath .githooks
