@@ -2,11 +2,11 @@
 
 Prints the machine's performance cores, so that `bin/ci-local` sets ParaTest's process
 count from the machine instead of a number written in each project. Measured on
-28/10/2026 on an Apple M5 Max (6 performance cores, 12 efficiency): Fabacée, Le Grenier and
-La Grange all landed on six processes, the performance cores. ParaTest's default, one per
-core, took every efficiency core too: on Fabacée eight processes saved only 6 s over six,
-and La Grange ran as fast on six as on eighteen with half the load (the measurements are in
-each project's test documentation).
+28/10/2026 on an Apple M5 Max (6 performance cores, 12 efficiency): three projects all
+landed on six processes, the performance cores. ParaTest's default, one per core, took
+every efficiency core too: on one project eight processes saved only 6 s over six, and
+another ran as fast on six as on eighteen with half the load (the measurements are in each
+project's test documentation).
 
 ```sh
 symfony-react/performance-cores/performance-cores   # 6 on an M5 Max
@@ -24,7 +24,7 @@ symfony-react/performance-cores/performance-cores   # 6 on an M5 Max
 under `.claude/worktrees/` (`../machine-lock/README.md`, "Finding dev-standards from a
 worktree"). It keeps its own variable as an override, and says so on the PHPUnit line when
 the script was not found, rather than falling back to one process in silence: on
-28/10/2026 Le Grenier's ParaTest dropped to one process from a `.claude/worktrees/`
+28/10/2026 one project's ParaTest dropped to one process from a `.claude/worktrees/`
 worktree without a word.
 
 ```bash

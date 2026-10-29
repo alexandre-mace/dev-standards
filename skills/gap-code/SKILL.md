@@ -270,7 +270,7 @@ a reading by eye was wrong by five points on Opus `low`.
   positives; the next logic fix lots alternate `high` and `medium`, and the delta after
   them counts what it finds behind each. Write the outcome in the role table.
 
-Measured on La Grange, 2026-10-17, three mechanical lots of comparable work, then a delta
+Measured on one project, 2026-10-17, three mechanical lots of comparable work, then a delta
 reading their files at equal depth (Opus `high`):
 
 | Lot | Fixed | Tokens | Duration | Introduced, per 100 files touched |

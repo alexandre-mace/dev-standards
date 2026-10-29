@@ -6,7 +6,7 @@ coherence entre skills freres et qualite d'ecriture, est dans le SKILL.md.
 
 Usage: python3 check-repo.py [racine]   (defaut: le parent du dossier du script)
 """
-import os, re, sys
+import os, re, subprocess, sys
 
 def read(p):
     with open(p, encoding='utf-8', errors='replace') as f:
@@ -87,7 +87,37 @@ def check(root):
         if '\r\n' in raw:
             out.append(f'{rel}: fins de ligne CRLF')
 
+    # 6. aucun nom de projet ni d'entreprise : le depot est public et vaut pour tout projet.
+    # La liste vit dans local/, ignore par git, puisque la publier serait citer les noms.
+    # Depuis un worktree, local/ est celui du depot principal.
+    names = forbidden_names(root)
+    if names:
+        pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, names)) + r')\b', re.I)
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in ('.git', '.claude', 'local', 'node_modules')]
+            for n in filenames:
+                path = os.path.join(dirpath, n)
+                rel = os.path.relpath(path, root)
+                for i, line in enumerate(read(path).split('\n'), 1):
+                    m = pattern.search(line)
+                    if m:
+                        out.append(f'{rel}:{i}: nomme « {m.group(0)} »')
+
     return out
+
+def forbidden_names(root):
+    candidates = [os.path.join(root, 'local', 'noms-interdits')]
+    try:
+        common = subprocess.run(['git', '-C', root, 'rev-parse', '--path-format=absolute',
+                                 '--git-common-dir'], capture_output=True, text=True,
+                                check=True).stdout.strip()
+        candidates.append(os.path.join(os.path.dirname(common), 'local', 'noms-interdits'))
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    for p in candidates:
+        if os.path.isfile(p):
+            return [l.strip() for l in read(p).split('\n') if l.strip() and not l.startswith('#')]
+    return []
 
 if __name__ == '__main__':
     root = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(

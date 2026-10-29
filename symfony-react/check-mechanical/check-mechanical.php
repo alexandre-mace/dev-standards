@@ -491,7 +491,7 @@ function enclosing(string $content, int $offset, string $open, string $close): ?
 /**
  * A hyphen between spaces in displayed text: it stands for a dash. A range takes the en
  * dash without spaces (« 10–20 ha »), a page title the en dash between spaces
- * (« Annonces – La Grange »), an aside commas.
+ * (« Annonces – Le site »), an aside commas.
  *
  * The displayed text that can be isolated without false positives: Twig template text,
  * outside tags, scripts, styles and expressions; JSX text between two tags on one line;

@@ -24,7 +24,7 @@ Two decisions, not one.
   nuance, and the nuance is better in the language it was thought in; the identifiers
   around it already carry the English.
 
-Measured on La Grange and Le Grenier: 4 of 468 entity properties are not in English, and
+Measured on two projects: 4 of 468 entity properties are not in English, and
 each of the three real ones is a French legal term. The rule describes what the code
 already does.
 
@@ -34,7 +34,7 @@ already does.
   aside takes commas, an explanation a colon, a digression parentheses. No em dash (`—`)
   at all, and no hyphen standing in for a dash.
 - The en dash (`–`) is allowed where it joins rather than interrupts: between a page and
-  the site in a title (« Annonces – La Grange »), and in a range (« 10–20 ha »).
+  the site in a title (« Annonces – Le site »), and in a range (« 10–20 ha »).
 - No middle dot (`·`) as a separator.
 - Bold only what should catch a scanning eye, never to punctuate a paragraph.
 

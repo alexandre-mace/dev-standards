@@ -41,7 +41,7 @@ machine-lock held                        # exit 0 if this process chain holds it
 - **First come, first served.** Each waiter draws a numbered ticket in
   `~/.local/state/machine-lock/queue/` and tries the lock only once its ticket is the
   oldest alive. Without it, the waiter that happened to retry first took the lock: on
-  28/10/2026 a Fabacée CI waited 28 minutes while three runs started after it went first.
+  28/10/2026 a local CI waited 28 minutes while three runs started after it went first.
   A ticket names its process and that process's start time, so a waiter killed with
   `kill -9`, or a pid reused by another process, is swept away by the next waiter that
   looks; Ctrl-C or a bounded wait takes the ticket back at once. `status` lists the queue
@@ -83,11 +83,11 @@ DEV_STANDARDS_DIR=${DEV_STANDARDS:-$(dirname "$(git -C "$(dirname "$0")" rev-par
 ```
 
 - **Not from the script's own path** (`$(dirname "$0")/../../../dev-standards`): it works
-  from a worktree that sits next to the project (`~/dev/feve/fabacee-x`), and fails from
+  from a worktree that sits next to the project (`~/dev/<project>-x`), and fails from
   one under `.claude/worktrees/<name>/`, where Claude Code puts them, by looking for
-  `dev-standards` inside `.claude/`. On 28/10/2026, Fabacée's `bin/ci-local` and
-  `bin/check-mechanical` and Le Grenier's still looked that way: the local CI and the
-  pre-commit hook exited in 2 there, and Le Grenier's ParaTest fell silently to one process.
+  `dev-standards` inside `.claude/`. On 28/10/2026, two projects' `bin/ci-local` and
+  `bin/check-mechanical` still looked that way: the local CI and the pre-commit hook
+  exited in 2 there, and one project's ParaTest fell silently to one process.
 - **`DEV_STANDARDS`** points at another copy, a worktree of this repository for instance,
   to try a change to a shared script before it is merged.
 - **`--path-format=absolute`** (git 2.31): without it, the main checkout answers a

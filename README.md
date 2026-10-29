@@ -171,3 +171,7 @@ Conventions de la stack : `docs/next-guidelines.md`, lien vers [dev-standards](h
 ### Adding a skill or rule
 
 Create `skills/<name>/SKILL.md` or `agent/<name>.md`, run `./install.sh`, commit.
+
+No project or company name, anywhere in the repository: a lesson drawn from a project
+keeps its reason and its measure, not the project's name, which says nothing to another
+reader and goes stale. The pre-commit hook refuses one (`gap-repo`).

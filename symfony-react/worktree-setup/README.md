@@ -12,7 +12,7 @@ bin/worktree-setup --build   # the same, then pnpm build, to look at the result 
 ```
 
 One line per step with its duration; at the first failure, the end of that step's log
-and a stop. Logs in `var/worktree-setup/`. Measured on Fabacée on 28/10/2026: 15 s on a
+and a stop. Logs in `var/worktree-setup/`. Measured on one project on 28/10/2026: 15 s on a
 new worktree, 5 s on a second run, and the commit after it passed the hook in 78 s.
 
 - **`composer install` with `memory_limit=1G`**, through a `php.d` added to
@@ -34,7 +34,7 @@ new worktree, 5 s on a second run, and the commit after it passed the hook in 78
   next to it. From `.claude/worktrees/<name>/`, where Claude Code puts its worktrees, the
   same text points into `<main checkout>/.claude/dev-standards`: the script makes a link
   there, to the `dev-standards` it runs from, in a folder the project already ignores.
-  Nothing tracked changes. Without it, Fabacée's hook refused the commit on 28/10/2026,
+  Nothing tracked changes. Without it, a project's hook refused the commit on 28/10/2026,
   its conventions check reading the documents a comment cites. A link made while
   `DEV_STANDARDS` pointed at a worktree of this repository follows it: remove
   `<main checkout>/.claude/dev-standards` once that worktree is gone.

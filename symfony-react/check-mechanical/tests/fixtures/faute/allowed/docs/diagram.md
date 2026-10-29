@@ -1,3 +1,3 @@
 ```mermaid
-    actor Equipe as Équipe FEVE
+    actor Equipe as Équipe projet
 ```

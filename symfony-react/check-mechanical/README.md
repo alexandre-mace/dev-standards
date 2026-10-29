@@ -59,24 +59,24 @@ declaration, which only a new file adds, and judge new files only.
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
-PHP, where La Grange and Le Grenier keep links with `rel="noopener"` alone and CLI messages
+PHP, where two projects keep links with `rel="noopener"` alone and CLI messages
 or third-party labels with a spaced hyphen; `label-natif` in `assets/components/ui/`, whose
 composites used to be skipped with the registry.
 
 `couleur-brute`, `blanc-noir`, `rgba` and `commentaire-anglais` become **fichier** once every
-project has cleaned them. Measured on 18/10/2026, La Grange is clean of all four, Fabacée's
-integration branch of the first two, and Le Grenier holds 74, 17, 2 and 1,738 of them.
+project has cleaned them. Measured on 18/10/2026, one project was clean of all four, a
+second of the first two, and the third held 74, 17, 2 and 1,738 of them.
 
 `commentaire-anglais` reads a comment line by line, and calls a line English when it
 holds two English function words or more, no French one and no accented letter, among
 four words or more, once its code spans, URLs, double-quoted citations, phpdoc types and
-variables are set aside. It is a measure, not a parser: on La Grange's `assets/` and
+variables are set aside. It is a measure, not a parser: on one project's `assets/` and
 `templates/`, it found 493 lines before their translation, and the 30 sampled were all real
 English comments. A third-party text quoted as is takes an exception.
 
 A rule that holds for one project only stays out of the script. `cta-je` (a button in
-« Je ») stays in La Grange's design system: Le Grenier's asks for the first person when
-the button commits the investor (« J'investis »).
+« Je ») stays in the design system of the project that wants it: another asks for the
+first person only when the button commits the user (« J'investis »).
 
 ## Exceptions
 

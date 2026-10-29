@@ -16,7 +16,11 @@ python3 <this skill's directory>/check-repo.py
 
 It settles what needs no judgement: a skill cited by name but absent, a README table out
 of step with the skills on disk, an installation path hardcoded into a skill, a cross-
-reference to a guideline section that does not exist, an em dash, CRLF line endings.
+reference to a guideline section that does not exist, an em dash, CRLF line endings, and
+the name of a project or a company. The repository is public and holds for any project: a
+lesson keeps its reason and its measure, « measured on one project », never whose. The
+names it refuses are listed one per line in `local/noms-interdits`, ignored by git, since
+publishing the list would name them; from a worktree, the main checkout's is read.
 
 It also runs before every commit in this repository (`.githooks/pre-commit`, enabled by
 `install.sh`), which refuses the commit on a finding.

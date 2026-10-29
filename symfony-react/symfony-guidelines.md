@@ -1630,7 +1630,7 @@ The only choices in `playwright.config.ts` you can't guess:
   consumed, a password changed) sets `test.describe.configure({retries: 0})`: its retry
   would fail for another reason, or pass on a state the test never meant to check.
 - **`forbidOnly: true`**, everywhere and not only in CI: a forgotten `.only` once reduced a
-  suite to one test under a green local CI (Fabacée).
+  suite to one test under a green local CI.
 
 **The seed command** (`app:e2e:seed`) is idempotent, wipes then inserts, prefixes its rows with `__e2e__` so they stay isolable, and depends on no external API.
 
@@ -1650,10 +1650,10 @@ test. One project helper runs it, strict:
 - **`target-size` turned on** (WCAG 2.5.8), which axe leaves off by default. Through
   `options()` before any `withTags()`, which `options()` would erase; a helper that lets a
   page disable a rule adds it to the same rules object, since `disableRules()` replaced it
-  and switched `target-size` off again (La Grange).
+  and switched `target-size` off again.
 - **The incomplete results fail too** when axe could not read a colour (`colorParse`):
   contrast is then not measured at all, and Tailwind's `oklch(L 0 none)` greys passed while
-  too light (La Grange).
+  too light.
 - **Animations settled first**, the finite ones: axe measures contrast on the colour of the
   instant, and a page mid-fade passed or failed depending on the run.
 - **A soft mode** for a journey that chains checks, and a rule disabled at the call carries
@@ -1675,14 +1675,14 @@ Keep `@axe-core/playwright` at `^4.14`: every bump of the axe engine surfaces ne
 `assertRendersCleanly(page, path, content)`: no redirect (`page.goto` follows it and hands
 back the last response), the exact status, an element only that page renders, and no
 console error. Under the old « less than 500 », an error page, a 404 and a redirect to
-the login page all passed (Fabacée).
+the login page all passed.
 
 **The E2E server hashes passwords at the test cost.** Symfony's recipe lowers the hasher
 cost under `when@test`; an E2E server running in another environment wires the same
 values. At the production cost (bcrypt 13) one hash took 490 ms of a core, 90 % of the
 server time of a request that creates an account, and under a loaded local CI it missed a
 5 s assertion; at the test cost, the median of that request went from 1.02 s to 0.18 s
-under the same load (La Grange, `E2eFastPasswordHasherFactory`).
+under the same load.
 
 **Never call an external integration from an E2E**, same constraints as in `tests/`. Three ways: empty key environment variables so the services fall into their no-op branch, a service override in the `e2e` environment config, or an injected `MockHttpClient`.
 
@@ -1768,12 +1768,12 @@ if (!str_starts_with($url, 'sqlite') && !str_contains($name, 'test')) {
 ```
 
 - **Every connection**, not only `DATABASE_URL`: a second connection that nothing redefines
-  in test reaches whatever `.env` names (Fabacée checks three, La Grange two).
+  in test reaches whatever `.env` names.
 - **The pattern is looked for in the host**, the whole URL when it has none: `bin/ci-local`
   names its throwaway database after the branch, and a `fix/preprod-…` branch gave a local
-  database the guard refused (Fabacée, `RemoteDatabase`, with its own test).
+  database the guard refused. The guard has its own test.
 - **The name must contain « test »**: a `DATABASE_URL` pointing at the dev database by
-  mistake would have its schema dropped by Foundry's reset (Le Grenier).
+  mistake would have its schema dropped by Foundry's reset.
 
 ### Mocking external APIs with `MockHttpClient`
 
@@ -1891,7 +1891,7 @@ jobs:
 
 The E2E job writes and uploads its HTML report itself. A one-shard matrix whose blob a
 second job merges reinstalls Composer and pnpm every night to merge one report (40 s of
-merging measured on La Grange, plus the install).
+merging measured, plus the install).
 
 **Measure on the runner, not on your machine.** The standard runner of a private
 repository has a fraction of a laptop's cores: a suite that takes seconds locally takes
@@ -1933,8 +1933,7 @@ the number of tests. Read the step timings before cutting any test.
 
 What every Symfony + React project of the stack runs, one line per fact that can be read
 in the repository, with its reason and, where there is one, its measure. The subsections
-above give the details; a project named after a line is the one where it was first done,
-to read as the example. `/gap-code` checks this list.
+above give the details. `/gap-code` checks this list.
 
 #### `bin/ci-local`
 
@@ -1948,12 +1947,11 @@ to read as the example. `/gap-code` checks this list.
   awake while the run lasts (`machine-lock/README.md`).
 - [ ] **A timeline of the steps**: start and end to the second and the load average, into
   `var/ci-local/timeline`. A log's date is only its last write, and `ls -l` rounds it to
-  the minute: a step ended just before Vitest looked as if it had run during it (Fabacée,
-  21/10/2026).
+  the minute: a step ended just before Vitest looked as if it had run during it.
 - [ ] **The processor sampled while Vitest runs** (`ps` every 2 s), and a line under the
   group naming what else used it: the rest of the run, or the rest of the machine. It is
   the « what ran alongside » that `agent/long-running-checks.md` asks of a flaky report; on
-  Fabacée it named `fseventsd` at about 105 % and Spotlight's `mdworker_shared` at about
+  one Mac it named `fseventsd` at about 105 % and Spotlight's `mdworker_shared` at about
   30 % on every pass.
 - [ ] **Throwaway databases**, `<project>_ci_<branch>_<hash>`, recorded before they are
   created and dropped by a `trap … EXIT`; the E2E workers' copies made with `createdb -T`.
@@ -1961,11 +1959,11 @@ to read as the example. `/gap-code` checks this list.
   drift check the committed state), `.husky/_` missing (git then runs no hook in that
   worktree), a branch that does not contain a freshly fetched `origin/main`.
 - [ ] **A clear refusal of a Symfony server already serving the folder**, and of a taken
-  E2E port; La Grange derives a free port from the worktree's path, so two worktrees never
-  meet on one.
+  E2E port, or a free port derived from the worktree's path, so two worktrees never meet
+  on one.
 - [ ] **`--fast`, `--only <group>` and `--spec <file>`**, and a refusal of the combinations
   that contradict each other: `--spec x --fast` ran no group and concluded « OK », and a
-  second `--only` replaced the first without a word (La Grange). `--spec` is the targeted
+  second `--only` replaced the first without a word. `--spec` is the targeted
   run `agent/long-running-checks.md` asks for between two full passes.
 
 #### PHPUnit
@@ -1974,60 +1972,54 @@ to read as the example. `/gap-code` checks this list.
   overrides the count, and the count printed on the PHPUnit line, the missing script
   included (`performance-cores/README.md`).
 - [ ] **One database per process**: `dbname_suffix: '…_test%env(default::TEST_TOKEN)%'`
-  on PostgreSQL, one SQLite file per `TEST_TOKEN` otherwise (La Grange). The bootstrap
+  on PostgreSQL, one SQLite file per `TEST_TOKEN` otherwise. The bootstrap
   creates its database when missing, so a `vendor/bin/paratest` run by hand works: where
   `bin/ci-local` creates them instead, a hand run meets missing databases and Foundry logs
-  a CRITICAL (Le Grenier). The ParaTest parent, which only lists the tests, touches no
-  database (Fabacée).
+  a CRITICAL. The ParaTest parent, which only lists the tests, touches no database.
 - [ ] **`TEST_TOKEN` read before Dotenv** in `tests/bootstrap.php`: the ParaTest parent goes
   through the bootstrap too, and its `SYMFONY_DOTENV_VARS`, inherited by every process,
-  makes Dotenv put the empty `TEST_TOKEN=` of `.env` back over the token ParaTest gave
-  (La Grange).
+  makes Dotenv put the empty `TEST_TOKEN=` of `.env` back over the token ParaTest gave.
 - [ ] **`cache.app` and every pool on disk, one folder per process**:
   `framework.cache.directory: '%kernel.share_dir%/pools/app%env(default::TEST_TOKEN)%'`
   under `when@test`, the disk pools cleared before each test since DAMA's rollback does not
-  reach them, and a test that keeps their list complete (La Grange, `DiskCachePools` and
-  `CacheIsolationTest`). Shared, a test clears the rate limiter another process is
-  testing; on Fabacée the login throttling, counted in `cache.app` on disk, gave 429s on
-  close runs.
+  reach them, and a test that keeps their list complete. Shared, a test clears the rate
+  limiter another process is testing: the login throttling, counted in `cache.app` on
+  disk, gave 429s on close runs.
 - [ ] **Disk storages one folder per process and per E2E worker**: a local Flysystem
   adapter suffixes its folder with `TEST_TOKEN`, or `E2E_WORKER` on the E2E server. Shared,
-  a test that compares a folder before and after a request (Fabacée, `ItkPhotoTest`) reads
+  a test that compares a folder before and after a request reads
   what the E2E seed and the other processes write there meanwhile. A storage on a mocked
-  S3 client has nothing to share (La Grange).
+  S3 client has nothing to share.
 - [ ] **The bootstrap refuses a remote database and a name without « test »**, on every
   connection (« Mandatory safeguard » below).
 - [ ] **One test database per role**: the hook and the local CI each take theirs. Foundry's
   reset cuts every other connection to the database (`pg_terminate_backend`), so a commit
   made during a local CI cut its PHPUnit, « terminating connection due to administrator
-  command » (Le Grenier, `bin/test-database-suffix ci|hook`). A hook whose tests need no
-  database avoids the question (Fabacée, `tests/bootstrap-sans-base.php`).
+  command ». A hook whose tests need no database avoids the question.
 - [ ] **The schema built once per process by the bootstrap**, outside DAMA's transaction
   (« Before switching » above).
 - [ ] **Random order, seed printed**: `executionOrder="random"` in `phpunit.xml.dist`;
   PHPUnit prints `Random Seed:`, replayed with
   `--order-by=random --random-order-seed=<seed>`. Under ParaTest, which process takes which
   file depends on timing, so an order dependency between files can take several seeds to
-  come back. One already broke a test through a cache that survived its rollback (La
-  Grange).
+  come back. One already broke a test through a cache that survived its rollback.
 
 #### Playwright
 
 - [ ] **Four workers, one database each**, behind one server, the worker index bounded by
-  the middleware (15 on Fabacée and La Grange), and every `bin/console` a spec runs
+  the middleware, and every `bin/console` a spec runs
   carrying its worker (`E2E_WORKER`, through a `workerEnv()` helper).
 - [ ] **Seed and `storageState` per worker**: `setup` seeds every database in parallel and
-  logs in on each, its timeout multiplied by the number of workers (Fabacée).
+  logs in on each, its timeout multiplied by the number of workers.
 - [ ] **`failOnFlakyTests` in CI, `retries: 0` on the specs that change a state**, and
-  `forbidOnly: true` everywhere (« E2E with Playwright » above). La Grange sets
-  `retries: 0` on 19 spec files.
+  `forbidOnly: true` everywhere (« E2E with Playwright » above).
 - [ ] **One strict axe helper** on every page a spec reaches: no tag filter, `target-size`
   on, the `colorParse` incomplete results failing, animations settled (above).
 - [ ] **One clean-render helper** (`assertRendersCleanly`, above).
 - [ ] **Passwords hashed at the test cost** on the E2E server (above).
 - [ ] **Guards that keep the specs in step with the app**: every EasyAdmin CRUD has its
   line in the admin smoke spec (`AdminSmokeCoverageTest`), and every URL written in
-  `e2e/` still matches a route (`BrowserSpecRoutesTest`), both PHPUnit tests (Le Grenier).
+  `e2e/` still matches a route (`BrowserSpecRoutesTest`), both PHPUnit tests.
 - [ ] **A separate kernel cache for the E2E server** (`APP_CACHE_DIR=var/cache/e2e`),
   emptied before and after, since the PHP group warms `var/cache/test` at the same time;
   the server's log printed when a spec fails.
@@ -2035,25 +2027,23 @@ to read as the example. `/gap-code` checks this list.
 #### Vitest
 
 - [ ] **Projects by environment, then by isolation**: a `node` project for the `.ts` tests
-  that need no DOM, with a strict list of the exceptions that fails on a stale entry (Le
-  Grenier, `DOM_TESTS_IN_TS`); in jsdom, a shared project (`isolate: false`,
+  that need no DOM, with a strict list of the exceptions that fails on a stale entry; in jsdom, a shared project (`isolate: false`,
   `pool: 'threads'`) and an isolated one for the files that call `vi.mock` or change the
-  time zone (Fabacée). One jsdom per worker instead of one per file: 81 s to 17 s on La
-  Grange.
+  time zone. One jsdom per worker instead of one per file: 81 s to 17 s on one project.
 - [ ] **State undone after each test**: `restoreMocks`, `unstubGlobals`, real timers back
-  in the setup file, and the query client cleared (`queryClient.clear()`, Le Grenier).
+  in the setup file, and the query client cleared (`queryClient.clear()`).
 - [ ] **MSW fails on any request no handler serves**: `server.listen({onUnhandledFrame:
   'error'})` in MSW 3 (`onUnhandledRequest` in MSW 2). A request that falls through
   otherwise reaches the network or waits for its timeout, and the test passes on the
   caller's fallback.
 - [ ] **One pass, under the CI's Node**: the latest of the major the workflow installs
-  (`npx -y node@22 …`), since a test once broke only under 22.23 (Fabacée). Not two full
+  (`npx -y node@22 …`), since a test once broke only under 22.23. Not two full
   passes, one under each Node: Vitest is on the critical path, run alone. `npx -y`
   resolves the version from the registry on every run.
 - [ ] **Random order, seed printed**: `sequence: {shuffle: true}`, replayed with
   `pnpm vitest run --sequence.seed=<seed>`. A form test whose request left before an email
-  check answered only failed in another order (La Grange).
-- [ ] **ESLint guards on the test files** (La Grange): an assignment, a `delete` or an
+  check answered only failed in another order.
+- [ ] **ESLint guards on the test files**: an assignment, a `delete` or an
   `Object.defineProperty`/`Reflect.defineProperty` on a global, an inline
   `vi.useFakeTimers`, and a real wait (`setTimeout` in a `new Promise`, MSW's `delay`
   except `'infinite'`) are refused at commit. The doctrine of
@@ -2065,7 +2055,7 @@ to read as the example. `/gap-code` checks this list.
 - [ ] **PHPStan's `tmpDir` in `var/cache/phpstan`**, which the local CI does not empty, and
   the PHP-CS-Fixer cache, both kept between hosted runs.
 - [ ] **ESLint's `--cache` only without typed rules**; with `recommendedTypeChecked`, no
-  cache (Le Grenier, with its reason in `ci.yml`).
+  cache, with its reason in `ci.yml`.
 - [ ] **No Psalm cache.**
 
 #### Pre-commit hook
@@ -2077,27 +2067,25 @@ to read as the example. `/gap-code` checks this list.
 - [ ] **The debug container repaired** before `lint:container`: when
   `var/cache/dev/*DevDebugContainer.ser` is missing or empty (`-s`, not `-f`), the dev
   cache is rebuilt with 1 GB (« 128M is not enough », §14).
-- [ ] **Its duration measured and written down**, like the local CI's. On a new Fabacée
-  worktree on 28/10/2026 it took 78 s, 53 of them in the architecture tests on a cold test
+- [ ] **Its duration measured and written down**, like the local CI's. On a new worktree
+  on 28/10/2026 it took 78 s, 53 of them in the architecture tests on a cold test
   cache.
 
 #### Hosted CI
 
-- [ ] **`timeout-minutes` on every job**, held by a test that reads the workflows (La
-  Grange, `WorkflowJobTimeoutTest`): without it a hung job runs 360 minutes, GitHub's
+- [ ] **`timeout-minutes` on every job**, held by a test that reads the workflows: without it a hung job runs 360 minutes, GitHub's
   default, billed.
 - [ ] **The fast jobs at night too, with the E2E**: `composer audit` and `pnpm audit` turn
-  main red the morning a CVE is published, with no PR open (La Grange, 26 and 27/10/2026;
-  `symfony/mime`, CVE-2026-45070, on 29/10/2026 on all three projects). So the audits run
+  main red the morning a CVE is published, with no PR open (`symfony/mime`,
+  CVE-2026-45070, on 29/10/2026). So the audits run
   every night, whether main moved or not; only the long E2E may skip a night when main has
-  not moved in 24 h (Le Grenier's `fresh` job), since it tests nothing new. GitHub
+  not moved in 24 h, since it tests nothing new. GitHub
   sends the failure of a scheduled run only to whoever last changed its `cron`: the others
   read it on the Actions page.
-- [ ] **Everything pinned**: actions by commit SHA, the tag in a trailing comment (Le
-  Grenier), and every binary downloaded by its version and checked against its SHA-256
-  (`sha256sum -c`: oasdiff on Fabacée, the Symfony CLI on La Grange).
+- [ ] **Everything pinned**: actions by commit SHA, the tag in a trailing comment, and every binary downloaded by its version and checked against its SHA-256
+  (`sha256sum -c`).
 - [ ] **`permissions: contents: read`** at the top of the workflow, since no job pushes,
-  comments or publishes (Le Grenier).
+  comments or publishes.
 
 #### A new worktree
 

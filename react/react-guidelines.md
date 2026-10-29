@@ -303,8 +303,8 @@ instead of sleeping. It is also the proof owed before sharing one jsdom between 
 
 **These rules are checks, not advice.** ESLint refuses in the test files an assignment, a
 `delete` or a `defineProperty` on a global, an inline `vi.useFakeTimers`, and a real wait (a
-`setTimeout` in a `new Promise`, MSW's `delay` except `'infinite'`). La Grange does it
-with `no-restricted-syntax` selectors registered as named rules of a local plugin: under
+`setTimeout` in a `new Promise`, MSW's `delay` except `'infinite'`), through
+`no-restricted-syntax` selectors registered as named rules of a local plugin: under
 the one core rule, the last block that sets it would replace the others' selectors. The Symfony + React checklist lists the rest
 (`symfony-react/symfony-guidelines.md` §13, « The recipe, as a checklist »).
 
