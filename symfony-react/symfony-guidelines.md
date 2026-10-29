@@ -1055,6 +1055,34 @@ Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context befor
 
 **sentry-symfony 5.14 adds `data_collection`**, which states per category what the SDK may attach to events: user info, HTTP headers through an allow-list, bodies, query data. Prefer it to the all-or-nothing `send_default_pii`: allow the headers a triage needs (`x-request-id`), leave the bodies out.
 
+### A log level describes the fault, not the retry around it
+
+One failure, one event, logged by whoever knows what the fault is:
+
+- **In an API client, a transient fault is a `warning`**: a timeout, a connection reset, a
+  5xx, a 429, a 404 the upstream documents as transient (a read just after a write). The
+  client logs it and throws a dedicated exception (`ExternalApiUnavailableException`), which
+  says a retry can succeed. **A fault of our own request is an `error`**: a 400, 401, 403,
+  422, data the upstream refuses. A retry would fail the same way.
+- **The client is the only one to log it.** A service or a controller above it does not log
+  the same fault again.
+- **A Messenger handler never logs what it rethrows.** It lets a transient exception bubble,
+  so Messenger retries, and wraps a permanent one in
+  `UnrecoverableMessageHandlingException`, so it goes straight to the `failed` transport.
+  Symfony logs the final rejection at CRITICAL (`SendFailedMessageForRetryListener`), which
+  reaches Sentry and the alert mail. sentry-symfony's own Messenger listener is turned off
+  (`messenger.enabled: false` in `sentry.yaml`), since it captured every rejection a second
+  time; a listener on `WorkerMessageFailedEvent`, just above priority 100, puts the message
+  class and the transport back as tags on the event that is kept.
+- **A synchronous call that nothing replays has no rejection to report it**: the service
+  that gives up logs an `error` itself, on top of the client's `warning`, since nothing else
+  will report the final failure. « Catch upstream + log + swallow », below, is that case.
+- The retry rate stays watched (the monitor's history, §16): a `warning` creates no Sentry
+  event, so a flaky upstream is seen there, and its final failure still reaches Sentry.
+
+Reference: Microsoft's transient-fault handling guidance, the Symfony Messenger
+documentation, and sentry-symfony's Messenger and Monolog integrations.
+
 ### The `failed` transport is purged
 
 It keeps a message until someone retries or removes it, and `messenger:failed:remove` takes
@@ -1073,7 +1101,7 @@ To add a class to the ignore list, avoid broad categories (ignoring every `HttpE
 
 ### Catch upstream + log + swallow
 
-The pattern for non-critical external APIs (Webflow, Hubspot, Airtable): catch, log at `error`, don't rethrow. The next cron will retry naturally.
+The pattern for non-critical external APIs (Webflow, Hubspot, Airtable): catch, log at `error`, don't rethrow. The next cron will retry naturally. This is the synchronous case of the rule above: the client already logged a transient fault at `warning`, and the caller that gives up logs the `error`.
 
 The exception goes under the `exception` key, the only one the Sentry handler reads to attach the stack trace: under `error` with `getMessage()`, Sentry receives a line of text and no trace. The record is named by its id, never by an email or a name: the log context leaves for Sentry and the host's log drain, where personal data has no business.
 
@@ -2467,7 +2495,7 @@ If the entity will be deleted right after the dispatch, pass the data you need a
 
 ### Retry and failed
 
-3 retries with exponential backoff (1s, 2s, 4s). After 3 failures the message goes to the `failed` transport. CRITICAL errors surface in Sentry.
+3 retries with exponential backoff (1s, 2s, 4s). After 3 failures the message goes to the `failed` transport. CRITICAL errors surface in Sentry. The handler logs nothing it rethrows: the final rejection is the one event (Logging & Sentry, « A log level describes the fault »).
 
 **Decoding** failures (a corrupted message, a renamed class) go through the retry/failed pipeline too. For high volumes, `messenger:consume --fetch-size=N` fetches in batches.
 
@@ -2548,9 +2576,41 @@ class AnalyticsCommand
 }
 ```
 
-The scheduler is consumed by the same worker as Messenger (the `scheduler_default` transport). Errors surface in Sentry and the Symfony logs.
+The scheduler is consumed by the same worker as Messenger (the `scheduler_default` transport). Errors surface in Sentry and the Symfony logs, once, as below.
 
 For memory-hungry commands, use `ini_set('memory_limit', ...)` inside the command rather than a PHP CLI flag.
+
+### A cron reports its failure once, by throwing
+
+A command carrying `#[AsCronTask]` runs as a `RunCommandMessage` on the scheduler transport.
+An exception it throws, or a non-zero exit code, becomes a `RunCommandFailedException`, which
+Messenger logs once at CRITICAL (`SendFailedMessageForRetryListener`): that reaches Sentry
+and the alert mail. So a cron that fails **logs nothing itself and throws an exception
+carrying the cause**, with `previous` when there is one.
+
+- Returning `Command::FAILURE` gives an event that only says « exited with code 1 ».
+- Logging an `error` before failing gives two events for one failure.
+- A fault an API client already logged (Logging & Sentry) is not logged again.
+- **A batch keeps going past an item that fails**, flushes what succeeded, and throws a
+  summary at the end. An upstream outage (`ExternalApiUnavailableException`) stops the loop at
+  the first item, since every following one would fail the same way.
+- A task whose upstream has known outages may log a `warning` on a first failure and
+  dispatch a new attempt some hours later; the failure of that attempt is reported once,
+  like any other.
+
+Two other reporters have to stay quiet for « once » to hold:
+
+- **The console's own `ErrorListener`**, which logs the command's exception at CRITICAL
+  on the `console` channel while `RunCommandMessageHandler` runs it in the worker. A
+  decorator of `console.messenger.execute_command_handler` stops `console.error` just
+  before that listener (priority -127, the listener sits at -128) for the duration of the
+  command, unless the message sets `catchExceptions`, in which case the console's log is the
+  only one that carries the cause. A command run by hand still logs as before.
+- **sentry-symfony's Messenger listener**, off as above; the tag listener also sets a
+  `cron.command` tag from the message's input.
+
+A test sends a failing `RunCommandMessage` through the worker and counts the Sentry events:
+one.
 
 ---
 
