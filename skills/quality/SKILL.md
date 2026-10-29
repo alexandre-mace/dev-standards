@@ -10,8 +10,7 @@ Everything a machine can settle on its own, fast and headless.
 - What needs a browser is `/live-test` for the change at hand, and the whole Playwright
   suite runs in `bin/ci-local`, the gate before any merge.
 - **The full suites belong to `bin/ci-local`.** Where the repository has one (it replays
-  every CI job, PHPUnit, Vitest and Playwright in full, under `machine-lock`; some
-  projects alias it `pnpm ci:local` or `make ci-local`), run here only the tests the
+  every CI job, PHPUnit, Vitest and Playwright in full, under `machine-lock`), run here only the tests the
   change can reach: the test files the branch touches, the tests that mirror the source
   files it touches, and Vitest's `related` on the changed sources. Running the whole
   suite here, then again in `bin/ci-local`, is the same fact paid for twice. With no
@@ -60,11 +59,10 @@ data), the reach is the whole suite: run it.
 ### Contract drift, when the SDK is generated from OpenAPI
 
 An `openapi.yaml` at the root, and the project's types target that regenerates the SDK
-from it: a `types` script in `package.json` (`pnpm types`), or a `types` target where the
-project has a `Makefile` (`make types`). Its `AGENTS.md` names it.
+from it, `pnpm types` on the Symfony stack (`symfony-guidelines.md` §14, « Commands »).
 
 ```bash
-pnpm types            # or make types: the project's types target
+pnpm types
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
@@ -84,7 +82,7 @@ that `tsc` alone misses.
 ## Any project with a `package.json`
 
 ```bash
-pnpm tsc --noEmit      # skip: no tsconfig.json
+pnpm type-check        # where the script exists (Symfony stack), else pnpm tsc --noEmit; skip: no tsconfig.json
 pnpm lint              # skip: no lint script
 pnpm format:check      # skip: no format:check script
 pnpm test              # skip: no test script

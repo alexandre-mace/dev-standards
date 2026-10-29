@@ -1,7 +1,7 @@
 ---
 name: deploy
 description: Puts the current feature branch into production through the shared deploy script, then checks Sentry. Triggers - "mets en prod", "tu peux déployer", "ship it", "merge dans main", once the user has given the go.
-allowed-tools: Bash(git *), Bash(deploy *), Bash(clever *), Bash(bin/ci-local *), Bash(pnpm ci:local*), Bash(machine-lock *), mcp__sentry__*
+allowed-tools: Bash(git *), Bash(deploy *), Bash(clever *), Bash(bin/ci-local *), Bash(machine-lock *), mcp__sentry__*
 ---
 
 # Deploy to production
@@ -40,7 +40,7 @@ The hosted CI runs only on pull requests and at night, so a push to `main` start
 `gh run list --branch` shows nothing to wait for and is not a gate. The gate is the
 project's local CI, once, on the commit about to ship:
 
-- `bin/ci-local` (`pnpm ci:local`), which takes `machine-lock` by itself. Where a project has
+- `bin/ci-local`, which takes `machine-lock` by itself. Where a project has
   none, its full suites through `machine-lock run -- <command>`, one at a time.
 - Name the commit it ran on. A CI green on an earlier commit says nothing about this one.
 - A red step stops the deploy. A test red then green on a rerun is a finding to report, not a

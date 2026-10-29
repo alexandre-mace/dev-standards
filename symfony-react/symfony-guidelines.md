@@ -62,8 +62,8 @@ The standard sequence for implementing a full-stack feature. Following it in ord
 
 ### 3. Type generation
 
-- The project's types target (`pnpm types`, or `make types` where a Makefile has one) → TS types + Zod + SDK + queryOptions/mutationOptions into `assets/lib/api/`
-- CI: the types target, then `git diff --exit-code openapi.yaml assets/lib/api/`, catches the drift
+- `pnpm types` → TS types + Zod + SDK + queryOptions/mutationOptions into `assets/lib/api/`
+- CI: `pnpm types`, then `git diff --exit-code openapi.yaml assets/lib/api/`, catches the drift
 
 ### 4. React component
 
@@ -1730,14 +1730,14 @@ A project behind a login with none of this is a gap for `/gap-code`.
 
 ### Contract drift: the OpenAPI diff in CI
 
-The frontend SDK is generated from `openapi.yaml` (Nelmio) through the project's types target (`pnpm types`, or `make types` where a Makefile has one). If the backend runtime drifts from the checked-in dump, the frontend breaks silently. A free CI gate:
+The frontend SDK is generated from `openapi.yaml` (Nelmio) through `pnpm types`. If the backend runtime drifts from the checked-in dump, the frontend breaks silently. A free CI gate:
 
 ```bash
-pnpm types        # the project's types target
+pnpm types
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
-**In CI, call the `types` target, never recopy its commands.** The target ends with a `prettier --write` on the generated directory, since what is committed is formatted. A workflow that inlines the dump and the generator drops that step: the format check then fails on files nobody wrote, and the drift gate right after compares formatted committed code with unformatted output. The CI stays red on every commit, for a reason that has nothing to do with the commit.
+**In CI, call `pnpm types`, never recopy its commands.** The generator formats what it writes when the project commits formatted code (`output.postProcess` of `openapi-ts.config.ts`). A workflow that inlines the dump and calls another formatter, or none, drops that step: the format check then fails on files nobody wrote, and the drift gate right after compares formatted committed code with unformatted output. The CI stays red on every commit, for a reason that has nothing to do with the commit.
 
 On top of that, [oasdiff](https://github.com/oasdiff/oasdiff) (a GitHub Action) classifies the `openapi.yaml` diff as breaking or non-breaking: `git diff` says there is drift, oasdiff says whether it breaks the contract.
 
@@ -1831,7 +1831,7 @@ trigger only after weighing it against the allowance.
 
 #### `bin/ci-local`: the same jobs, on the machine
 
-`bin/ci-local` (or the project's alias for it, `pnpm ci:local`, `make ci-local`) replays every job of `ci.yml`, with the same options, on
+`bin/ci-local` replays every job of `ci.yml`, with the same options, on
 the current checkout or worktree. One line per step with its status and duration, logs in
 `var/ci-local/`, `--fast` without the E2E, `--only php|front|e2e` to rerun one family of
 groups. It reruns itself under `machine-lock run` (`dev-standards/symfony-react/machine-lock/`), one
@@ -2065,8 +2065,9 @@ above give the details. `/gap-code` checks this list.
 
 #### Pre-commit hook
 
-- [ ] **What it runs**: lint-staged on the staged files, `bin/check-mechanical`, `tsc`,
-  PHPStan, `lint:container`, `doctrine:schema:validate`, the drift of `pnpm types`, the
+- [ ] **What it runs**, in the order of the example in §14 (« Project-wide checks in the
+  pre-commit hook »): lint-staged on the staged files, `bin/check-mechanical`,
+  `pnpm type-check`, PHPStan, `lint:container`, `doctrine:schema:validate`, the drift of `pnpm types`, the
   OpenAPI diff, and the architecture tests (without a database, or on a database of the
   hook's own).
 - [ ] **The debug container repaired** before `lint:container`: when
@@ -2092,6 +2093,20 @@ above give the details. `/gap-code` checks this list.
 - [ ] **`permissions: contents: read`** at the top of the workflow, since no job pushes,
   comments or publishes.
 
+#### Entry points
+
+- [ ] **The commands of the table in §14 (« Commands »), under those names**: `bin/ci-local`,
+  `bin/worktree-setup`, `bin/check-mechanical`, `bin/phpunit` (the recipe's file), and the
+  `package.json` scripts `dev`, `build`, `types`, `test`, `test:watch`, `test:e2e`,
+  `test:e2e:ui`, `type-check`, `lint`, `lint:fix`, `format` (writes), `format:check`.
+- [ ] **No Makefile**, or one under a month old that only aliases the commands above and
+  prints them.
+- [ ] **The same pnpm in `packageManager`** as the other projects of the stack, `.nvmrc` on
+  the Node major of CleverCloud and read by every workflow, the CI's PostgreSQL image on
+  the production add-on's major.
+- [ ] **`docs/tests-et-ci.md`** for the hook, the local CI and the tests, and a
+  « Commands » section in `AGENTS.md` that names them.
+
 #### A new worktree
 
 - [ ] **`bin/worktree-setup`** before the first commit: the shared script
@@ -2106,6 +2121,80 @@ above give the details. `/gap-code` checks this list.
 ## 14. Quality Assurance: static analysis and formatting
 
 Static analysis replaces the IDE inspections (PHPStorm, the Symfony plugin). These tools are bundled in the **`/quality` skill** (Claude Code), to run before committing or to check quality mid-development.
+
+### Commands: the same entry points in every project
+
+An agent arriving in any project of the stack types the same commands, and they do the
+same thing. Three projects had drifted apart: `make types` in two and `pnpm types` in the
+third, `make ci-local` against `pnpm ci:local`, a `make test` that existed in one only,
+a `bin/phpunit` missing from one, a `pnpm format` that wrote in two and only checked in
+the third. Each name was right where it was born; together they made every instruction
+a guess.
+
+Three layers, each with one job:
+
+- **`bin/` orchestrates**: what chains several tools, takes the machine lock or calls
+  into `dev-standards`. Bash or PHP, runnable as is, no task runner to install.
+- **`package.json` scripts** name the front tasks and the types pipeline, which ends in
+  a Node tool (`pnpm run` lists them).
+- **The PHP tools are called directly**: `vendor/bin/phpstan analyse`,
+  `vendor/bin/php-cs-fixer fix`, `bin/console`, `bin/phpunit`. Each finds its own
+  configuration (`phpstan.neon`, `phpstan.dist.neon`, `.php-cs-fixer.dist.php`), so a
+  Composer script would only add a layer, and its 300-second process timeout.
+
+**No Makefile, and no Castor.** Symfony's documentation prescribes no task runner (it
+documents the Symfony CLI, `bin/console` and Flex recipes), and the scripts above already
+cover every task: a Makefile only renamed them, with targets that drifted from one project
+to the next. Castor is one more tool to install on every machine and in CI for the same
+renaming. A project that still has a Makefile keeps it as a deprecated alias layer for one
+month after the switch, each target printing the canonical command before running it, then
+deletes it.
+
+| Task | Command | Notes |
+|---|---|---|
+| Set up a new worktree | `bin/worktree-setup` | `--build` adds `pnpm build` (`worktree-setup/README.md`) |
+| The gate before a merge | `bin/ci-local` | `--fast`, `--only php\|front\|e2e`, `--spec e2e/x.spec.ts`; takes `machine-lock` |
+| The whole PHP suite | `bin/ci-local --only php` | ParaTest on the performance cores, under the lock |
+| One PHPUnit file or filter | `bin/phpunit <path>` / `--filter` | the file of the `phpunit/phpunit` recipe, nothing added |
+| One Playwright spec | `bin/ci-local --spec e2e/x.spec.ts` | `pnpm test:e2e <spec>` against a server already running |
+| Mechanical rules | `bin/check-mechanical` | `--all`, `--rules` |
+| Generated types and SDK | `pnpm types` | the dump written beside then renamed, then `openapi-ts` |
+| Vitest | `pnpm test` | `pnpm test:watch` |
+| Playwright, interactive | `pnpm test:e2e:ui` | |
+| TypeScript | `pnpm type-check` | every `tsconfig` the project has, `tsc --noEmit` each |
+| ESLint | `pnpm lint` | `pnpm lint:fix` writes |
+| Prettier | `pnpm format:check` | `pnpm format` writes |
+| Every check at once | `/quality` | the skill, which reads this table |
+| Dev server | `symfony server:start`, `pnpm dev` | `pnpm build` for production |
+| Schema | `bin/console doctrine:schema:update --force` | no migrations, §19 |
+
+A command a project adds for itself (a data import, a guard of its own) gets a name no
+other project uses for something else, and its `AGENTS.md` lists it. The `types` script
+dumps OpenAPI to `openapi.yaml.tmp` and renames it once the dump succeeds: a redirection
+straight into `openapi.yaml` truncates the file before the kernel boots, and a kernel that
+fails to boot left an empty contract in the tree. Formatting the generated code, when a
+project formats it, belongs to `openapi-ts.config.ts` (`output.postProcess`), not to the
+script.
+
+**Versions read from one place each**, the same in every project:
+
+- **pnpm**: the `packageManager` field, one version for the stack (corepack reads it on
+  CleverCloud, pnpm itself on the machine, `pnpm/action-setup` in CI), its settings in
+  `pnpm-workspace.yaml`, which pnpm 11 reads instead of `package.json` and `.npmrc`.
+- **Node**: `.nvmrc` holds the major CleverCloud runs (`CC_NODE_VERSION`, 22 today), every
+  workflow reads it (`node-version-file: .nvmrc`), and `engines.node` gives the floor.
+- **PHP**: the `CC_PHP_VERSION` of the production app (« PHP 8.5 » above). A project whose
+  production still runs an older minor keeps a CI job that holds the code to it, until
+  production moves.
+- **PostgreSQL**: the major of the production add-on (`POSTGRESQL_ADDON_VERSION` in
+  `clever env`), in `server_version`, every `serverVersion=` of the `.env` files, the CI
+  service image and the compose file. A CI on 15 against a production on 18 tests another
+  server: PostgreSQL 18 changed the SQLSTATE of a refused `ON DELETE RESTRICT` (23001),
+  which DBAL 4.5 no longer maps to `ForeignKeyConstraintViolationException`.
+
+**The same documents in the same places**: `AGENTS.md` names these commands in a
+« Commands » section and lists only what the project adds; `docs/tests-et-ci.md` describes
+the hook, `bin/ci-local`, the test helpers and the measurements, whatever the project.
 
 ### PHPStan: static analysis
 PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
@@ -2309,26 +2398,39 @@ diff to find the guilty file instead of searching the commit's own changes.
 
 lint-staged works at file level. But the checks that need the whole project (static analysis, DI validation, generated-type drift) are **fast enough for a pre-commit hook** on an average Symfony project: no excuse for relegating them to CI only. Measure the real cost before deciding.
 
-An example `.husky/pre-commit`:
+The `.husky/pre-commit` every project of the stack runs, in this order; a project inserts
+its own checks where they belong and says why in a comment:
 
 ```sh
 #!/usr/bin/env sh
 set -e
 
+# The debug container: PHPStan reads its .xml, lint:container its .ser (« 128M is not enough »).
+container_ser=$(ls var/cache/dev/*DevDebugContainer.ser 2> /dev/null | head -n 1)
+if [ -z "$container_ser" ] || [ ! -s "$container_ser" ]; then
+    rm -rf var/cache/dev
+    php -d memory_limit=1G bin/console cache:warmup --env=dev -q
+fi
+
 bin/check-mechanical
 pnpm exec lint-staged
 
-pnpm tsc --noEmit
+pnpm type-check
 vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 php -d memory_limit=256M bin/console lint:container -q
 php -d memory_limit=512M bin/console doctrine:schema:validate --skip-sync -q
 
+# The architecture tests, without a database or on one of the hook's own
+bin/phpunit --no-progress tests/Architecture
+
 # Detect drift between generated types and current entities/DTOs
-pnpm types > /dev/null   # the project's types target
+pnpm types > /dev/null
 if ! git diff --quiet -- openapi.yaml assets/lib/api/; then
     echo "✖ Generated types drifted. Re-stage with: git add openapi.yaml assets/lib/api/"
     exit 1
 fi
+
+# Then the API contract against main (oasdiff), as the project runs it
 ```
 
 Orders of magnitude observed on a mid-sized Symfony + React project:
