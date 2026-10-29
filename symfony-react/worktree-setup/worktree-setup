@@ -3,7 +3,8 @@
 # passes the pre-commit hook (README.md, next to it). Run from the worktree, usually
 # through the project's own bin/worktree-setup.
 #
-#   worktree-setup           PHP and JS dependencies, dev cache warmed, hook checked
+#   worktree-setup           PHP and JS dependencies, dev cache warmed, hook checked,
+#                            the main checkout's gitignored local files linked
 #   worktree-setup --build   the same, then the Vite build (to look at it in a browser)
 #
 # One line per step with its duration; at the first failure, the end of the step's log
@@ -13,7 +14,7 @@
 set -o pipefail
 
 usage() {
-    sed -n '6,7p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '6,8p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -175,6 +176,36 @@ link_dev_standards() {
     done < <(git ls-files -s | awk '$1 == "120000" { sub(/^[^\t]*\t/, ""); print }')
 }
 
+# What a project keeps out of git on purpose lives only in its main checkout: its own
+# skills (.claude/skills/), the preview launcher (.claude/launch.json), the local notes of
+# docs/ (docs/*.local.md, test accounts for one). A new worktree has none of them, so an
+# agent working there misses the project's skills and notes. Each one is linked from the
+# main checkout, never copied, so there is one copy to keep up to date; a path that already
+# exists is left alone, and one git would not ignore here is not linked, so nothing of it
+# can be committed.
+link_local_files() {
+    local main entry rel
+    main=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+    if [ "$(cd "$main" && pwd -P)" = "$(pwd -P)" ]; then
+        echo "Checkout principal : rien à lier."
+        return 0
+    fi
+    for entry in "$main"/.claude/skills/* "$main/.claude/launch.json" "$main"/docs/*.local.md; do
+        [ -e "$entry" ] || continue
+        rel=${entry#"$main"/}
+        if [ -e "$rel" ] || [ -L "$rel" ]; then
+            echo "$rel existe déjà, laissé tel quel"
+            continue
+        fi
+        if ! git check-ignore -q "$rel"; then
+            echo "$rel n'est pas ignoré par git ici, pas lié"
+            continue
+        fi
+        mkdir -p "$(dirname "$rel")" && ln -s "$entry" "$rel" || return 1
+        echo "$rel -> $entry"
+    done
+}
+
 vite_build() { pnpm build; }
 
 step "composer install (memory_limit=1G)" composer_install
@@ -184,6 +215,7 @@ step "Cache dev préchauffé (memory_limit=1G)" cache_warmup
 step "Conteneur de debug présent (var/cache/dev/*DevDebugContainer.ser)" check_container
 step "Hook pre-commit installé" check_hook
 step "Liens de docs/ vers dev-standards" link_dev_standards
+step "Fichiers locaux du checkout principal liés (.claude/skills/, .claude/launch.json, docs/*.local.md)" link_local_files
 [ "$BUILD" -eq 1 ] && step "pnpm build" vite_build
 
 echo "Worktree prêt en $(duration $(($(date +%s) - TOTAL_START)))."

@@ -7,7 +7,7 @@ debug container that was never written, the guides of `docs/` pointing nowhere. 
 or later, plus what the project already needs (PHP, Composer, pnpm).
 
 ```sh
-bin/worktree-setup           # dependencies, dev cache warmed, hook and links checked
+bin/worktree-setup           # dependencies, dev cache warmed, hook and links checked, local files linked
 bin/worktree-setup --build   # the same, then pnpm build, to look at the result in a browser
 ```
 
@@ -38,6 +38,14 @@ new worktree, 5 s on a second run, and the commit after it passed the hook in 78
   its conventions check reading the documents a comment cites. A link made while
   `DEV_STANDARDS` pointed at a worktree of this repository follows it: remove
   `<main checkout>/.claude/dev-standards` once that worktree is gone.
+- **The local files of the main checkout are linked.** What a project keeps out of git
+  on purpose lives only in its main checkout, and a new worktree starts without it: every
+  entry of `.claude/skills/` (the project's own skills), `.claude/launch.json` (the
+  preview launcher), `docs/*.local.md` (local notes, test accounts for one). Each is a
+  symlink to the main checkout's copy, never a copy, so there is one version to keep up to
+  date. A path that already exists in the worktree is left alone, and a path git would not
+  ignore there is not linked, so none of it can be committed. Nothing happens from the main
+  checkout itself.
 - **`.env.local` is never read, written nor copied.** A new worktree has none, Symfony
   runs on `.env`, and a copy would carry the main checkout's secrets and database into a
   folder an agent works in.
