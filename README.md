@@ -11,7 +11,7 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 
 - **`symfony-guidelines.md`**, the backend: architecture, Doctrine, commands, tests, quality gate
 - **`reactony.md`**, the React side and its seam with Symfony: forms, data fetching, generated types
-- **`check-mechanical/`**, the script every project of the stack calls from its pre-commit hook and `make ci-local`: the anti-patterns that reduce to a pattern, refused at commit
+- **`check-mechanical/`**, the script every project of the stack calls from its pre-commit hook and `bin/ci-local`: the anti-patterns that reduce to a pattern, refused at commit
 - **`machine-lock/`**, the lock `bin/ci-local` takes for the whole machine, so two sessions never run two full suites at once, and keeps a Mac awake while it runs
 - **`performance-cores/`**, the machine's performance cores, which set ParaTest's process count in `bin/ci-local`
 - **`worktree-setup/`**, the script a project's `bin/worktree-setup` calls, so a new worktree's first commit passes the hook
@@ -48,7 +48,7 @@ with how the compiler is enabled.
 
 ### Transverse
 
-- **`agent/`**, how the agent should work whatever the stack: writing rules, register, how to research
+- **`agent/`**, how the agent should work whatever the stack: writing rules, where things get written down, long-running checks, the register of a reply
 - **`design-system-page.md`**, how to present a design system: one format across the three worlds (classic repo, Webflow via API, the kit itself)
 
 ## Claude Code Skills

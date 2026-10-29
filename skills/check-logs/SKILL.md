@@ -32,7 +32,12 @@ clever accesslogs --alias <ALIAS> --since <PERIOD> --before 30s -F json \
   | sort | uniq -c | sort -rn
 ```
 
-Messenger state, from the prod `DATABASE_URL` in `clever env`:
+Messenger state, read in the production database through `/prod-sql`: read-only `psql` on
+the instance, the SQL in a file. Never a `DATABASE_URL` copied out of `clever env` into a
+local client, which puts the production credentials in a terminal and a shell history, and
+never `dbal:run-sql`, whose least typo is logged CRITICAL and lands in Sentry as an
+incident of its own. Without that private skill, the project's documented read-only script
+does the same.
 
 ```sql
 SELECT message_type, failure_type, COUNT(*) AS n, MAX(received_at) AS last
@@ -43,7 +48,9 @@ GROUP BY 1,2 ORDER BY n DESC;
 
 `processed_messages` comes from the monitor bundle the guidelines prescribe. A project
 without it only has the `failed` transport, which keeps the final failures and no history:
-count them per queue, then read them with `php bin/console messenger:failed:show` over `clever ssh`.
+count them per queue, then read them with
+`clever ssh --alias <ALIAS> --command 'cd "$APP_HOME" && php bin/console messenger:failed:show'`,
+as `/prod-sql` runs a console command: without `--command`, the shell has no environment.
 
 ```sql
 SELECT queue_name, COUNT(*) AS n, MAX(created_at) AS last

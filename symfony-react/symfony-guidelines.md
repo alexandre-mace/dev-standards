@@ -32,7 +32,7 @@ Read the **playbook + Definition of Done** (below) and the **anti-patterns (§18
 
 Written down so it isn't re-litigated every session (in an AI-first codebase, the model would otherwise propose these migrations on a loop).
 
-- **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (`make types`) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost. (Re-validated October 2026: still true with API Platform 5.0, a cleanup major that changes nothing in this reasoning.)
+- **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (the project's types target) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost. (Re-validated October 2026: still true with API Platform 5.0, a cleanup major that changes nothing in this reasoning.)
 - **No RSC / React Server Components** (see `reactony.md`): Symfony + Twig **is** the server layer already; the React islands are the intentional client leaves. Bolting RSC on means running a Node rendering server next to PHP, for a role PHP already fills.
 - **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks (August 2026): FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. October 2026 confirmed the price: seventeen FrankenPHP advisories in one month, most of them in worker mode. The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
 
@@ -62,8 +62,8 @@ The standard sequence for implementing a full-stack feature. Following it in ord
 
 ### 3. Type generation
 
-- `make types` (or the project equivalent) → TS types + Zod + SDK + queryOptions/mutationOptions into `assets/lib/api/`
-- CI: `make types && git diff --exit-code openapi.yaml assets/lib/api/` catches the drift
+- The project's types target (`pnpm types`, or `make types` where a Makefile has one) → TS types + Zod + SDK + queryOptions/mutationOptions into `assets/lib/api/`
+- CI: the types target, then `git diff --exit-code openapi.yaml assets/lib/api/`, catches the drift
 
 ### 4. React component
 
@@ -93,7 +93,7 @@ Details and setup: section 13.
 
 `/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
 
-**`make ci-local` must be green before merge** (CI section below): it replays every CI job,
+**`bin/ci-local` must be green before merge** (CI section below): it replays every CI job,
 the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
 
 ### Definition of Done
@@ -101,8 +101,8 @@ the PHPUnit, Vitest and Playwright suites included, on the branch merged with ma
 A feature is only "done" when **every** one of these is green:
 
 - [ ] `/quality` passes
-- [ ] `make ci-local` passes on the branch merged with main
-- [ ] `make types` produces no drift in `assets/lib/api/` (CI gate: `git diff --exit-code`)
+- [ ] `bin/ci-local` passes on the branch merged with main
+- [ ] the project's types target produces no drift in `assets/lib/api/` (CI gate: `git diff --exit-code`)
 - [ ] `doctrine:schema:validate --skip-sync` OK
 - [ ] `lint:container` OK
 - [ ] A functional test written for every non-trivial new API route
@@ -1191,7 +1191,7 @@ Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 1
 
 **On 18, a delete refused by `ON DELETE RESTRICT` raises SQLSTATE 23001**, `restrict_violation`, no longer 23503. The change is an upstream commit the 18 release notes do not mention. `NO ACTION`, Doctrine's default when `onDelete` is left out, and an insert or update on the child row still raise 23503: only a foreign key declared `onDelete: 'RESTRICT'` changes. DBAL 4.5.0 maps 23503 alone to `ForeignKeyConstraintViolationException`, so the refusal reaches the code as a bare `DriverException`, and a `catch` written for the foreign key misses it: the user gets a 500 where the controller meant to answer « still in use ». Until the fix ships (doctrine/dbal#7530, open at the 28 October 2026 watch), a DBAL driver middleware converts 23001 into `ForeignKeyConstraintViolationException`, with a functional test that deletes a referenced row. Drop the middleware at the DBAL release that maps it.
 
-**`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (`clever ssh` + `dbal:run-sql`), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
+**`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (read-only `psql`, §19 « SQL in production »), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
 ### Id generation on Postgres: `IDENTITY`, explicitly
 
@@ -1377,7 +1377,7 @@ the same day: `@testing-library/react` 16.3, `@testing-library/user-event` 14.6,
 | Integration | **PHPUnit** + a transactional DB (DAMA bundle) | services orchestrating Doctrine, repositories, listeners | fast |
 | Functional | **PHPUnit** `WebTestCase` + `KernelBrowser` | the HTTP contract of the API endpoints | medium |
 | E2E | **Playwright** + **`@axe-core/playwright`** | multi-page user journeys, a11y | slow |
-| Contract drift | `make types && git diff --exit-code openapi.yaml assets/lib/api/` in CI | rejects a PR that drifts the front/back contract | instant |
+| Contract drift | the types target, then `git diff --exit-code openapi.yaml assets/lib/api/`, in CI | rejects a PR that drifts the front/back contract | instant |
 
 Every layer runs on **every PR**. No mutation testing: Eris (property-based) already covers the critical money math, and adding Infection on top isn't worth its cost at this project size.
 
@@ -1730,10 +1730,10 @@ A project behind a login with none of this is a gap for `/gap-code`.
 
 ### Contract drift: the OpenAPI diff in CI
 
-The frontend SDK is generated from `openapi.yaml` (Nelmio) through `make types`. If the backend runtime drifts from the checked-in dump, the frontend breaks silently. A free CI gate:
+The frontend SDK is generated from `openapi.yaml` (Nelmio) through the project's types target (`pnpm types`, or `make types` where a Makefile has one). If the backend runtime drifts from the checked-in dump, the frontend breaks silently. A free CI gate:
 
 ```bash
-make types
+pnpm types        # the project's types target
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
@@ -1803,7 +1803,7 @@ That goes double for anything on a payment or subscription path: a silent regres
 
 ### CI: orchestrating the pyramid
 
-**`make ci-local` is the gate before any merge; the hosted CI is a light safety net.** A
+**`bin/ci-local` is the gate before any merge; the hosted CI is a light safety net.** A
 hosted run is billed per job and per started minute, so a workflow fired on every push of
 every branch, eight jobs each, emptied a private organisation's free Actions allowance in
 two days once agents pushed dozens of branches in parallel. The full check runs on the
@@ -1831,7 +1831,7 @@ trigger only after weighing it against the allowance.
 
 #### `bin/ci-local`: the same jobs, on the machine
 
-`bin/ci-local` (`make ci-local`) replays every job of `ci.yml`, with the same options, on
+`bin/ci-local` (or the project's alias for it, `pnpm ci:local`, `make ci-local`) replays every job of `ci.yml`, with the same options, on
 the current checkout or worktree. One line per step with its status and duration, logs in
 `var/ci-local/`, `--fast` without the E2E, `--only <group>` to rerun one group.
 It reruns itself under `machine-lock run` (`dev-standards/symfony-react/machine-lock/`), one
@@ -1882,7 +1882,7 @@ jobs:
   backend:
     # PHPStan, CS-Fixer, lint:container, doctrine:schema:validate, PHPUnit
   frontend:
-    # make types + drift check, tsc, ESLint, Prettier
+    # types target + drift check, tsc, ESLint, Prettier
   vitest:
     # pnpm test, alone: it is the slowest front step
   e2e:
@@ -2326,7 +2326,7 @@ php -d memory_limit=256M bin/console lint:container -q
 php -d memory_limit=512M bin/console doctrine:schema:validate --skip-sync -q
 
 # Detect drift between generated types and current entities/DTOs
-make types > /dev/null
+pnpm types > /dev/null   # the project's types target
 if ! git diff --quiet -- openapi.yaml assets/lib/api/; then
     echo "✖ Generated types drifted. Re-stage with: git add openapi.yaml assets/lib/api/"
     exit 1
@@ -2339,7 +2339,7 @@ Orders of magnitude observed on a mid-sized Symfony + React project:
 |---|---|
 | `lint:container` | ~0.5s |
 | `schema:validate --skip-sync` | ~0.3s |
-| `make types` + drift | ~2s |
+| types target + drift | ~2s |
 | `tsc --noEmit` | ~8s |
 | PHPStan level 9/10 (full) | ~8s |
 | **Pre-commit total** | **~15-20s** |
@@ -2359,7 +2359,7 @@ Every forbidden anti-pattern that reduces to a pattern in the text is refused by
 - **Two kinds of rule.** A file rule reads every line of the files it sees. An addition rule reads only the lines added since the merge base. A new rule starts as an addition rule, so it refuses new occurrences without turning every project red on its old stock, and becomes a file rule once each project has cleaned that stock.
 - **An exception lives in the code, with its reason**, never in a list: `check-mechanical-ignore <rule>: <reason>` on the line above, or in the first three lines of a file for the whole file (the prompts sent to a language model, whose punctuation changes the answers). It goes away with the code it covers; one without a reason, naming an unknown rule or covering nothing any more is refused like an occurrence.
 - **No folder is out of reach.** Old code, a feature waiting to be replaced, a page nobody visits: the rules apply to all of it, and what they find gets fixed. What every project shares is skipped by the script itself: `docs/gap-analysis.md`, which quotes the deviations, `data/`, which holds imported datasets and sources quoted as they are (prefectoral orders, official texts) rather than the project's prose, the shadcn registry components, the generated code (`assets/lib/api/`, `openapi.yaml`), `vendor/`, `node_modules/` and the lockfiles.
-- **Where it runs**: the pre-commit hook on the staged files, in their staged version, and `make ci-local` on every tracked file. `make ci-local` is the gate; the hosted CI can clone `dev-standards`, which is public, if it runs it too.
+- **Where it runs**: the pre-commit hook on the staged files, in their staged version, and `bin/ci-local` on every tracked file. `bin/ci-local` is the gate; the hosted CI can clone `dev-standards`, which is public, if it runs it too.
 - **Where rules come from**: every finding of `/gap-code` or `/review-diff` that reduces to a pattern, added to the shared script in the same pull request that fixes it, with a test that feeds it a violating file and a clean one.
 
 ### When to run `/quality` during a session
@@ -2625,7 +2625,9 @@ and only merge `main` afterwards.
 
 Each project's `AGENTS.md` carries its own aliases and application IDs. Follow a deploy
 with `clever activity --app <ID>` (the `--alias` form does not resolve from the working
-directory when the app is not linked) and read a build with
+directory when the app is not linked); the shared `deploy` script
+(`symfony-react/deploy/`) pushes and follows that way, reading the ID from `.clever.json`.
+Read a build with
 `clever logs --alias <alias> --since <ISO> --until <ISO>`. Always bound `--until`: without
 it the command streams and hangs.
 
@@ -2644,9 +2646,21 @@ reflex for a transient failure. Two signatures worth recognising: cascading 429s
 GitHub (check its status page before reading your own diff), and build logs stopping dead
 mid-`pnpm install` with no error line, which is the builder being killed, not your code.
 
-### `post_build.sh`, and where a data back-fill goes
+### The post-build hook, and where a data back-fill goes
 
-The build hook regenerates the SDK, builds the front and applies the schema. A data
+The post-build hook lives in one of two places, and a project says which in its
+`AGENTS.md`:
+
+- **A versioned `clevercloud/post_build.sh`**, named by `CC_POST_BUILD_HOOK`. It is
+  reviewed with the code, identical on every application, and a one-off step leaves with the
+  commit that removes it.
+- **The commands written in the `CC_POST_BUILD_HOOK` variable itself**, on each
+  application, outside the repository: read it with
+  `clever env --alias <alias> | grep CC_POST_BUILD_HOOK`, for every application. A step a
+  deploy needs is added to each application's variable before that deploy and taken out of
+  each once it has run; left in, it runs again at every deploy.
+
+Either way, the hook regenerates the SDK, builds the front and applies the schema. A data
 back-fill is a one-shot `app:*` console command, wired into the hook **before** the
 schema-update line when the data has to be fixed while the columns still have their old
 type. Each one carries a comment saying when it becomes a no-op and can be removed.
@@ -2659,6 +2673,19 @@ refuses, and the deploy stops. Back-fill first, in the same hook, above the sche
 
 Reading `clever activity`: the `OK` appears **before** the commit hash on the line, so a
 shell pattern written as `*<sha>*OK*` never matches. Match the sha, then the status.
+
+### SQL in production: read-only `psql`, never `dbal:run-sql`
+
+A query on a production database goes through `psql` on the application's instance, in a
+read-only session, through the script the project documents (a private `prod-sql` skill
+on the developer's machine, which sends the SQL file encoded so its quotes survive the
+shell). Never `clever ssh … php bin/console dbal:run-sql`: the least typo in it is a console
+exception logged at CRITICAL, which reaches Sentry and the alert mail and reads as a
+production incident, where a `psql` error stays in the terminal. A write is a transaction
+dry-run first (`begin; … rollback;`), shown, then committed on the user's go. A console
+command run there goes through `clever ssh --alias <alias> --command 'cd "$APP_HOME" &&
+php bin/console <command>'`: without `--command` the shell has no environment, and a
+command gated on the environment silently does nothing.
 
 ### An environment variable set on the app wins over `.env`
 

@@ -61,7 +61,7 @@ search over the whole repository, listed exhaustively before any agent starts. A
 reading for it finds most of the hits; the search finds all of them. A rule that reduces to a pattern and is not yet refused by the
 gate is a finding of its own, Moyenne, against the gate: name the rule that will close it
 (`bin/check-mechanical`, an ESLint rule, a PHPStan rule) and where it runs (the hook and
-`make ci-local`). A family that comes back from a previous pass is that finding by
+`bin/ci-local`). A family that comes back from a previous pass is that finding by
 definition.
 
 **Coverage is proven, not declared.**
@@ -193,7 +193,7 @@ the fix lots these rules with the findings:
   the previous fix lot repaired in one place only.
 - **Close the family in the gate.** When the defect reduces to a pattern, the same pull
   request adds the rule that refuses it (`bin/check-mechanical`, ESLint, PHPStan), run by
-  the hook and `make ci-local`, with a test of the rule. A fix without the rule is undone
+  the hook and `bin/ci-local`, with a test of the rule. A fix without the rule is undone
   by the next feature: seen, the hand-read island props and the stale oasdiff exceptions,
   fixed in one pass and back in new files at the next.
 - **Re-check on the current main.** Other lots merge while one works; a finding may

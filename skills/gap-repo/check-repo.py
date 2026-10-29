@@ -31,10 +31,10 @@ def check(root):
                     if os.path.isfile(os.path.join(skills_dir, d, 'SKILL.md')))
 
     # 1. tout /skill cite existe. Hors perimetre : les commandes livrees par Claude Code,
-    # et les skills qui vivent dans un autre depot.
+    # les skills qui vivent dans un autre depot, et ceux de local/skills/, prives (prod-sql).
     known = set(skills) | {'run', 'code-review', 'debug', 'verify', 'doctor', 'batch',
                            'loop', 'compact', 'help', 'review', 'mcp',
-                           'propagate-kit', 'sentry-fix-issues'}
+                           'propagate-kit', 'sentry-fix-issues', 'prod-sql'}
     for path in markdown_files(root):
         body = re.sub(r'```.*?```', '', read(path), flags=re.S)
         for i, line in enumerate(body.split('\n'), 1):

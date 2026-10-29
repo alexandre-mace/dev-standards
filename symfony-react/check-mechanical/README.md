@@ -36,7 +36,7 @@ exit($code);
 ```
 
 - The pre-commit hook runs `bin/check-mechanical`: the staged files, in their staged version.
-- `make ci-local` (or `bin/ci-local`) runs `bin/check-mechanical --all`: every tracked file,
+- `bin/ci-local` runs `bin/check-mechanical --all`: every tracked file,
   the added lines counted from the merge base with `origin/main` (`--base` for another).
 - A hosted CI that runs it clones this public repository next to the project first:
   `git clone --depth 1 https://github.com/alexandre-mace/dev-standards.git ../../dev-standards`.

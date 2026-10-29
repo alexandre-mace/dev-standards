@@ -8,13 +8,15 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 Everything a machine can settle on its own, fast and headless.
 
 - What needs a browser is `/live-test` for the change at hand, and the whole Playwright
-  suite runs in `make ci-local`, the gate before any merge.
-- **The full suites belong to `make ci-local`.** Where the repository has one (it replays
-  every CI job, PHPUnit, Vitest and Playwright in full), run here only the tests the
+  suite runs in `bin/ci-local`, the gate before any merge.
+- **The full suites belong to `bin/ci-local`.** Where the repository has one (it replays
+  every CI job, PHPUnit, Vitest and Playwright in full, under `machine-lock`; some
+  projects alias it `pnpm ci:local` or `make ci-local`), run here only the tests the
   change can reach: the test files the branch touches, the tests that mirror the source
   files it touches, and Vitest's `related` on the changed sources. Running the whole
-  suite here, then again in `make ci-local`, is the same fact paid for twice. With no
-  `make ci-local` and no hosted CI running the suites in full, run them in full here.
+  suite here, then again in `bin/ci-local`, is the same fact paid for twice. With no
+  `bin/ci-local` and no hosted CI running the suites in full, run them in full here,
+  through `machine-lock run --` (`agent/long-running-checks.md`).
 - **Run once per commit.** A check that passed on this exact tree does not run again
   before something moves; say which run you rely on.
 
@@ -57,10 +59,12 @@ data), the reach is the whole suite: run it.
 
 ### Contract drift, when the SDK is generated from OpenAPI
 
-A `types` target in the `Makefile`, or an `openapi.yaml` at the root:
+An `openapi.yaml` at the root, and the project's types target that regenerates the SDK
+from it: a `types` script in `package.json` (`pnpm types`), or a `types` target where the
+project has a `Makefile` (`make types`). Its `AGENTS.md` names it.
 
 ```bash
-make types
+pnpm types            # or make types: the project's types target
 git diff --exit-code openapi.yaml assets/lib/api/
 ```
 
@@ -91,13 +95,13 @@ ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran 
 report nobody can act on.
 
 `pnpm test` is Vitest, mandated on all three stacks. Use whatever flag the project needs
-for a single non-watch run. When `make ci-local` runs it in full, run here
+for a single non-watch run. When `bin/ci-local` runs it in full, run here
 `pnpm vitest related --run <changed source files>` instead; same rule as PHPUnit for a
 change to shared setup (`test-setup.ts`, a provider, the Vite config): the whole suite.
 
-**Not run here**: Playwright, which needs a browser and minutes, and which `make ci-local`
-and `/live-test` own. Psalm taint analysis runs in `make ci-local`. Say so rather than letting the report imply full
-coverage.
+**Not run here**: Playwright, which needs a browser and minutes, and which `bin/ci-local`
+and `/live-test` own. Psalm taint analysis runs in `bin/ci-local`. Say so rather than
+letting the report imply full coverage.
 
 ## Report
 
