@@ -1996,6 +1996,13 @@ above give the details. `/gap-code` checks this list.
   reset cuts every other connection to the database (`pg_terminate_backend`), so a commit
   made during a local CI cut its PHPUnit, « terminating connection due to administrator
   command ». A hook whose tests need no database avoids the question.
+- [ ] **One test database per worktree**: `bin/phpunit` or `vendor/bin/paratest` run in a
+  linked worktree appends that worktree's suffix (`worktree-database/`) to the name, on
+  every connection the tests write to, and the main checkout keeps its name. The
+  bootstrap drops and recreates the schema: two runs from two worktrees on the one
+  database of `.env.test` broke each other. The local CI and the hook keep the names of
+  their role, and the leftovers of removed worktrees are listed by `worktree-database
+  orphans`. A SQLite file in the worktree's `var/` is already its own.
 - [ ] **The schema built once per process by the bootstrap**, outside DAMA's transaction
   (« Before switching » above).
 - [ ] **Random order, seed printed**: `executionOrder="random"` in `phpunit.xml.dist`;

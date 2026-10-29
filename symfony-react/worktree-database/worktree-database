@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# A test database per worktree, so that two worktrees of one project never run their
+# tests on the same database (README.md, next to it).
+#
+#   worktree-database suffix [folder]     _wt_<folder>_<hash> in a linked worktree,
+#                                         nothing in the main checkout or outside git
+#   worktree-database orphans <prefix>…   reads database names on stdin and prints those
+#                                         that carry a suffix after one of the prefixes,
+#                                         from a worktree of this repository that no
+#                                         longer exists
+#
+# The hash is the first eight characters of the SHA-1 of the worktree's physical path:
+# it is what tells two worktrees apart, the folder name only helps a reader. A process
+# number may follow it (ParaTest's TEST_TOKEN), so `orphans` reads the eight characters
+# after the last underscore.
+
+set -u
+
+usage() {
+    echo "Usage : worktree-database suffix [dossier] | orphans <préfixe>…" >&2
+    exit 2
+}
+
+sha1() { if command -v shasum > /dev/null; then shasum; else sha1sum; fi; }
+
+# The hash of the worktree whose root is $1, a physical absolute path.
+hash_of() { printf '%s' "$1" | sha1 | cut -c1-8; }
+
+suffix_of() {
+    local slug
+    slug=$(basename "$1" | LC_ALL=C tr -cs 'A-Za-z0-9' '_' | tr 'A-Z' 'a-z' | cut -c1-20 | sed 's/^_//; s/_$//')
+    printf '_wt_%s_%s\n' "$slug" "$(hash_of "$1")"
+}
+
+suffix() {
+    local dir=${1:-.} git_dir common_dir top
+    git_dir=$(git -C "$dir" rev-parse --path-format=absolute --git-dir 2> /dev/null) || return 0
+    common_dir=$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir) || return 0
+    # The main checkout keeps the name it always had.
+    [ "$git_dir" = "$common_dir" ] && return 0
+    top=$(git -C "$dir" rev-parse --show-toplevel) || return 0
+    suffix_of "$(cd "$top" && pwd -P)"
+}
+
+orphans() {
+    [ $# -ge 1 ] || usage
+    local live='' path name prefix tail
+    # Every linked worktree git still knows and whose folder is there; the first entry
+    # is the main checkout, whose databases carry no suffix.
+    while IFS= read -r path; do
+        [ -d "$path" ] && live="$live $(hash_of "$(cd "$path" && pwd -P)")"
+    done < <(git worktree list --porcelain | awk '
+        /^worktree / { if (path != "" && !prunable && n > 1) print path; path = substr($0, 10); prunable = 0; n++ }
+        /^prunable/ { prunable = 1 }
+        END { if (path != "" && !prunable && n > 1) print path }')
+    while IFS= read -r name; do
+        for prefix in "$@"; do
+            case "$name" in
+                "${prefix}_wt_"*)
+                    tail=${name##*_}
+                    case " $live " in *" ${tail:0:8} "*) ;; *) echo "$name" ;; esac
+                    break
+                    ;;
+            esac
+        done
+    done
+}
+
+case "${1:-}" in
+    suffix) shift; [ $# -le 1 ] || usage; suffix "$@" ;;
+    orphans) shift; orphans "$@" ;;
+    *) usage ;;
+esac

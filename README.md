@@ -15,6 +15,7 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 - **`check-mechanical/`**, the script every project of the stack calls from its pre-commit hook and `bin/ci-local`: the anti-patterns that reduce to a pattern, refused at commit
 - **`machine-lock/`**, the lock `bin/ci-local` takes for the whole machine, so two sessions never run two full suites at once, and keeps a Mac awake while it runs
 - **`performance-cores/`**, the machine's performance cores, which set ParaTest's process count in `bin/ci-local`
+- **`worktree-database/`**, the suffix a linked worktree appends to its test database, so two worktrees never run their tests on the same one, and the list of the databases left by removed worktrees
 - **`worktree-setup/`**, the script a project's `bin/worktree-setup` calls, so a new worktree's first commit passes the hook
 - **`deploy/`**, the script `/deploy` runs: pushes the branch to `main` once `main` has nothing it lacks, follows the CleverCloud deployment to its verdict, and can realign `preprod` and remove the worktree
 
