@@ -48,6 +48,20 @@ Read the **Principles** (below) and the **anti-patterns (§10)** for every task;
 }) }}></div>
 ```
 
+**An internal URL is never written in an island.** Twig computes it with `path()` and
+passes it as a prop, so a renamed route breaks at render instead of leaving a dead link.
+
+- A parameter known only in the browser (a search result's slug, the id of a record just
+  saved): Twig passes a template, `path('…', {slug: '__SLUG__'})`, that a small helper
+  fills and encodes. A parameter with `requirements` (an integer id, a UUID) rejects the
+  placeholder and `path()` throws in dev and test: generate the template with a Twig
+  function that skips the check, rather than loosening the route.
+- Links deep inside rendered editorial content: the island sets the routes in a context
+  at its root, read by the link component.
+- One exception, `navigator.sendBeacon`, which the SDK cannot emit. Type its argument as
+  the union of the SDK's `…Data` types, which carry each route's literal URL, and build
+  it with `client.buildUrl`: a renamed route still breaks `tsc` after `pnpm types`.
+
 ### Dynamic (filters, pagination): TanStack Query
 
 `queryOptions()` are **auto-generated** by hey-api's `@tanstack/react-query` plugin (see section 5). No need to write them by hand:
@@ -643,7 +657,7 @@ assets/
 │   └── queryClient.ts        # Shared QueryClient instance
 ```
 
-- **`react/controllers/`** = page components mounted from Twig (entry points)
+- **`react/controllers/`** = page components mounted from Twig (entry points), and nothing else: the glob makes every file there an island. A test fails on a file no `react_component()` names, and an ESLint rule on a value an island exports next to its component (types stay allowed): imported elsewhere, it drags the island's whole graph along
 - **`components/`** = reusable components (UI primitives, domain components)
 - **`lib/`** = utilities, API client, helpers
 - **`lib/api/`** = everything hey-api generates (types, Zod v4, SDK, queryOptions, mutationOptions)
@@ -689,6 +703,18 @@ only: a nested second one costs no crash but renders a second `<Toaster />`.
 To recover the real error behind a blank island, wrap the inner component in a temporary
 class error boundary whose `componentDidCatch` logs `error.stack`, read the console, then
 revert.
+
+**An island reserves its height.** It mounts after Stimulus boots: its container is 0 px,
+then its real height, and the page jumps. Put a skeleton inside the container
+(`createRoot` empties it at mount) and the height on the skeleton: a `min-h` on the
+container outlives the mount and leaves a gap wherever the island renders shorter. A
+height class stays on the container only for a fixed-size box. The skeleton follows the
+content's shape when known, otherwise one block at the most common height, and zero
+height when Twig already knows the island renders nothing. An island outside the flow (a
+modal, a fixed header, one that renders `null`) is exempt by a
+`{# ilot-sans-hauteur: <reason> #}` comment above its container. An architecture test over
+the templates holds it: no container without a skeleton or height class, no zero or
+relative height (`min-h-0`, `h-full`), no height set only from a breakpoint.
 ### Vite
 
 The Symfony integration is **Symfony Reprise** (`composer require symfony/reprise` + `pnpm add -D @symfony/reprise`), Webpack Encore's official heir for Vite and Rsbuild, under the Symfony backward-compatibility promise. It replaces `pentatrion/vite-bundle` and `vite-plugin-symfony`, whose whole scope it covers. A project still on pentatrion is a gap **to close**, and not urgent, pentatrion not being deprecated.
@@ -742,6 +768,34 @@ startStimulusApp();
 - Other useful options: `integrity` (SRI), `copy` (files referenced by `asset()` from Twig), `builds` (several bundles), and the `RenderAssetTagEvent` to stamp a CSP nonce on every tag.
 - **Commands**: `pnpm dev` (dev + HMR), `pnpm build` (production).
 
+**Group the libraries every island loads.** Each `react_component()` is a dynamic entry,
+and Rolldown emits one chunk per set of shared modules. Measured on one project: 82
+requests on a page, 52 under 2 KB, each waiting 820 ms on average in the browser's queue
+while the server answered in 42 ms. HTTP/2 moves that queue, it does not remove it. One
+group each for Base UI, React Query and `lucide-react` brought it to 21 chunks and 241 KB
+gzip, from 82 and 264 KB:
+
+```ts
+build: {
+  rolldownOptions: {
+    output: {
+      codeSplitting: {
+        groups: [
+          { name: "vendor-baseui", test: /@base-ui[+/]/ },
+          { name: "vendor-query", test: /@tanstack[+/](react-query|query-core)[@/]/ },
+          { name: "vendor-icons", test: /lucide-react/ },
+        ],
+      },
+    },
+  },
+},
+```
+
+Measure before adding or widening a group. An open `@tanstack` group also took
+react-table, virtualisation and the generated SDK, 138 KB every island downloaded;
+grouping `components/ui` gave 12 chunks but 389 KB, every page pulling every shadcn
+component.
+
 #### EasyAdmin
 
 `Assets::addRepriseEntry()` is native since EasyAdmin 5.3, the exact counterpart of `addWebpackEncoreEntry()`. No layout override:
@@ -762,7 +816,7 @@ Removing `symfony/webpack-encore-bundle` deletes the files its Flex recipe owned
 One interactivity model:
 
 - **A page is static Twig by default. Interactivity is a React island** (`react_component()`), however small: the pipeline (types, SDK, shadcn) makes an island cheaper to maintain than a Stimulus controller living outside that ecosystem.
-- **Stimulus is mounting infrastructure only.** The `symfony/ux-react` bridge is itself a Stimulus controller, invisible, and untouched. **Do not write new custom Stimulus controllers**: no state, no fetch, no business logic in Stimulus. Tolerance: stateless micro DOM behaviour (under ~30 lines, copy-to-clipboard say) where an island would be disproportionate. Existing custom controllers are legacy, not a model to copy.
+- **Stimulus is mounting infrastructure only.** The `symfony/ux-react` bridge is itself a Stimulus controller, invisible, and untouched. **Do not write new custom Stimulus controllers**, not even a stateless one of a few lines: a behaviour that renders nothing (pushing an analytics event, say) is an island returning `null`. Existing custom controllers are legacy to fix, each rewritten as an island, and never a model to copy.
 - **Special case, a field of an existing Symfony Form** (rich editor, datepicker, autocomplete on a server-rendered `<input>`/`<textarea>`): the form itself is legacy (principle 6), and the lasting fix is to move it to a React island. Until then, if the React equivalent already exists (a `Wysiwyg` component, say), **reuse it as an island** rather than writing a Stimulus controller that duplicates it: mount the React component and have it **sync into the hidden field** (`document.getElementById(targetId).value = ...` on update) so it goes out with the POST. One editor for the whole app, the Symfony field stays the submitted source.
 - **Turbo Drive: disabled globally (`<body data-turbo="false">`), on purpose.** Turbo navigation remounts React islands (state lost, double mount). Do not re-enable it without an explicit decision; for navigation polish, the route is native View Transitions (cross-document CSS). `ux-turbo` stays installed for possible Turbo Streams / Mercure use, not for the drive.
 
