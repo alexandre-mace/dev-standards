@@ -59,7 +59,7 @@ with how the compiler is enabled.
 | `investigate` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
-| `live-test` | Does it work? Drives the feature in a real browser, then runs the Playwright suite |
+| `live-test` | Does it work? Drives the feature in a real browser, then runs the specs the change touches |
 | `commit` | Conventional Commits message for what is staged |
 | `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the DoD, at arm's length in a forked context |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |

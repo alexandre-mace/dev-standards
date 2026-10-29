@@ -50,22 +50,26 @@ Not a smoke test of the page that was touched.
 - the empty list, the missing image, the file that is too large
 - mobile width, if the feature has any layout to it
 
-## Then run the specs
+## Then run the specs the change touches
 
-The hand walk covers the new path. The Playwright suite covers everything the change
-could have broken without you noticing.
+The hand walk covers the new path. The specs that exercise the feature cover what the
+walk skipped: the specs the branch adds or changes, and those that walk the pages or
+routes it touches.
 
 ```bash
-pnpm test:e2e                       # whole suite
-pnpm test:e2e <spec>                # while iterating
+bin/ci-local --spec e2e/<feature>.spec.ts    # where the project has it, repeatable
+pnpm test:e2e e2e/<feature>.spec.ts          # otherwise, one file at a time
 ```
 
+- **Only those specs, never the whole suite from here.** The whole suite belongs to the
+  full `bin/ci-local`, the gate `/deploy` runs once on the commit that ships. A full
+  Playwright run outside `machine-lock` fights any other suite on the machine and makes
+  unrelated tests miss their timeouts (`agent/long-running-checks.md`); when it really has
+  to run whole, it goes through `machine-lock run --`.
 - **A spec the plan owed must have been seen to fail before the fix, and pass after.**
   One that passes on its first run may be asserting nothing.
-- A failure here is a finding, whether it belongs to this feature or not: a spec broken
-  by a neighbouring change is exactly what this step is for.
-- On a suite too slow to run whole each time, run the specs touching the feature while
-  iterating and the whole suite once before `/review-diff`, saying which you ran.
+- A failure here is a finding, whether it belongs to this feature or not. A spec red then
+  green on a rerun with nothing changed is instability: report it, never rerun it away.
 - Say it when the project has no suite at all. The guidelines mandate one, so its
   absence is a `/gap-code` finding, not a neutral fact.
 
@@ -85,7 +89,8 @@ A screen that looks right and logs errors is not right.
 Live test : <feature> @ <target>
 Golden path :  OK | broken at <step>
 Edge case :    <which one> : OK | broken
-E2E suite :    N passed | N failed (which) | scope run
+Specs :        <files run> : N passed | N failed (which)
+Full CI :      last full bin/ci-local : <commit>, green | red | none during this work
 Console :      clean | N errors, M new warnings
 Network :      clean | <what is wrong>
 Proof :        <screenshot, or the trace that matters>

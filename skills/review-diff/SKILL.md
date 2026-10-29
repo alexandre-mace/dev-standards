@@ -78,7 +78,11 @@ It is a checklist, so check it rather than trusting it was followed:
 - **The tests owed exist and pass**: take the "Tests owed" list from `.claude/plan.md`,
   confirm each one is in the diff, and confirm the `## Live test` block reports them green.
   A test planned and not written, or written and never run, is caught here or nowhere.
-- The `## Live test` block exists, the golden path passed, the E2E suite is green.
+- The `## Live test` block exists, the golden path passed, the specs it ran are green.
+- **The whole E2E suite**: the last full `bin/ci-local` and the commit it ran on, from
+  the `Full CI` line of that block. Report it as it is: green on this commit, green on an
+  older one (name it), or none. Never ask `/live-test` to run the suite; before UAT it
+  blocks nothing, and `/deploy` runs a full one on the commit that ships.
 - `#[IsGranted]` and `format: 'json'` on new `/api/` routes.
 - No anti-pattern from the guidelines' forbidden list.
 
@@ -114,6 +118,7 @@ Audit grid :             conform | deviations listed
 Tests owed :             written | N missing
 /quality :               PASS | FAIL
 /live-test :                passed | never run
+Full bin/ci-local :      green on <commit> | none since <commit> | none
 Verdict :                ready for /deploy | send back (list)
 ```
 
