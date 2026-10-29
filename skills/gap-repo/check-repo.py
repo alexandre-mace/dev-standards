@@ -12,9 +12,14 @@ def read(p):
     with open(p, encoding='utf-8', errors='replace') as f:
         return f.read()
 
+# Hors du depot : les worktrees de .claude/worktrees/ en sont des copies, local/ est
+# ignore par git, node_modules n'est pas a nous. Les lire refusait un commit fait depuis
+# main des qu'un worktree trainait.
+SKIPPED_DIRS = ('.git', '.claude', 'local', 'node_modules')
+
 def markdown_files(root):
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d != '.git']
+        dirnames[:] = [d for d in dirnames if d not in SKIPPED_DIRS]
         for n in filenames:
             if n.endswith('.md'):
                 yield os.path.join(dirpath, n)
@@ -94,7 +99,7 @@ def check(root):
     if names:
         pattern = re.compile(r'\b(?:' + '|'.join(map(re.escape, names)) + r')\b', re.I)
         for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if d not in ('.git', '.claude', 'local', 'node_modules')]
+            dirnames[:] = [d for d in dirnames if d not in SKIPPED_DIRS]
             for n in filenames:
                 path = os.path.join(dirpath, n)
                 rel = os.path.relpath(path, root)
