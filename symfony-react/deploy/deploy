@@ -8,14 +8,17 @@
 #   deploy --remove-worktree   then remove this worktree and its local branch, if clean and merged
 #   deploy --app <alias|id>    the CleverCloud application to follow, instead of the prod alias
 #   deploy --timeout <s>       how long to wait for the verdict (default 1800)
+#   deploy --start-timeout <s> how long before relaunching a deployment that never started (default 180)
 #
 # Exit codes: 0 deployed, 1 deployment failed, 2 refused before pushing (or usage),
 # 3 no verdict within the timeout, 4 deployed but preprod or the worktree left as they were.
+# One relaunch at most per run: a deployment that never started, or one that failed on a
+# download (HTTP 429 or 5xx, connection reset or timed out).
 
 set -o pipefail
 
 usage() {
-    sed -n '6,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '6,11p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
@@ -23,6 +26,7 @@ PREPROD=0
 REMOVE_WORKTREE=0
 APP=
 TIMEOUT=1800
+START_TIMEOUT=180
 POLL=${DEPLOY_POLL_INTERVAL:-15}
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -32,6 +36,11 @@ while [ $# -gt 0 ]; do
         --timeout)
             TIMEOUT=${2:-}
             case "$TIMEOUT" in '' | *[!0-9]*) echo "--timeout attend un nombre de secondes." >&2; exit 2 ;; esac
+            shift
+            ;;
+        --start-timeout)
+            START_TIMEOUT=${2:-}
+            case "$START_TIMEOUT" in '' | *[!0-9]*) echo "--start-timeout attend un nombre de secondes." >&2; exit 2 ;; esac
             shift
             ;;
         -h | --help) usage 0 ;;
@@ -128,20 +137,63 @@ duration() {
     if [ "$s" -ge 60 ]; then printf '%d min %02d s' $((s / 60)) $((s % 60)); else printf '%d s' "$s"; fi
 }
 
-# deployments <app_id>: one line per deployment, "date_ms state commit", oldest first.
+# deployments <app_id>: one line per deployment, "date_ms state commit id", oldest first.
 deployments() {
     clever activity --app "$1" --format json 2> /dev/null | php -r '
         foreach (json_decode((string) stream_get_contents(STDIN), true) ?? [] as $d) {
             if ("DEPLOY" === ($d["action"] ?? "DEPLOY")) {
-                printf("%d %s %s\n", $d["date"] ?? 0, $d["state"] ?? "?", $d["commit"] ?? "-");
+                printf("%d %s %s %s\n", $d["date"] ?? 0, $d["state"] ?? "?", $d["commit"] ?? "-", $d["uuid"] ?? "-");
             }
         }'
+}
+
+# bounded <seconds> <command…>: runs the command, killed once the seconds have passed. The
+# watcher writes nowhere, or a $(…) around the call would wait for its sleep.
+bounded() {
+    local seconds=$1 pid watcher code
+    shift
+    "$@" &
+    pid=$!
+    (sleep "$seconds" && kill "$pid") > /dev/null 2>&1 &
+    watcher=$!
+    wait "$pid"
+    code=$?
+    kill "$watcher" 2> /dev/null
+    return "$code"
+}
+
+# deployment_log <app_id> <deployment_id> <date_ms>: the last lines of that deployment's
+# log, colours and blank lines removed. --before makes clever logs stop instead of
+# streaming, and bounded covers the call that hangs anyway.
+deployment_log() {
+    local after
+    after=$(php -r 'echo gmdate("Y-m-d\TH:i:s\Z", intdiv((int) $argv[1], 1000) - 60);' "$3")
+    bounded 60 clever logs --app "$1" --deployment-id "$2" --after "$after" --before "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" 2> /dev/null \
+        | sed $'s/\x1b\\[[0-9;]*m//g' | sed -E '/^Waiting for application logs/d; /^[^ ]*Z: *$/d; /^[[:space:]]*$/d' | tail -n 30
+}
+
+# A download that failed on the way, which the same build passes a few minutes later.
+TRANSIENT='HTTP/[0-9.]+ (429|502|503|504)|(429|502|503|504) (Too Many Requests|Bad Gateway|Service Unavailable|Gateway Time-?out)|could not be downloaded|connection (reset|timed out|timeout)|reset by peer|operation timed out|ECONNRESET|ETIMEDOUT'
+
+# One relaunch per run, whatever its cause, production and preprod together.
+RELAUNCHED=0
+
+# relaunch <app_id> <commit>: asks CleverCloud to deploy that commit again; clever returns
+# once the deployment has started, and follow reads its verdict like any other.
+relaunch() {
+    local out
+    RELAUNCHED=1
+    if ! out=$(bounded 120 clever restart --app "$1" --commit "$2" --exit-on deploy-start 2>&1); then
+        say "clever restart a échoué ou n'a pas rendu la main en 2 min, le suivi continue :" >&2
+        say "$out" | tail -n 5 | sed 's/^/    /' >&2
+    fi
 }
 
 # follow <app_id> <sha> <since_ms> <label>: waits for a deployment of that commit, or of
 # a later one that contains it, and returns 0 on OK, 1 on FAIL, 3 on timeout.
 follow() {
     local app=$1 sha=$2 since=$3 label=$4 start last= now verdict list errors=0
+    local date state commit id found_date found_commit found_id log
     start=$(date +%s)
     say "Suivi du déploiement $label ($app), $(duration "$TIMEOUT") au plus."
     while :; do
@@ -155,12 +207,13 @@ follow() {
                 return 3
             fi
         fi
-        while read -r date state commit; do
+        while read -r date state commit id; do
             [ -n "$date" ] && [ "$date" -ge "$since" ] || continue
             if [ "$commit" != "$sha" ]; then
                 git merge-base --is-ancestor "$sha" "$commit" 2> /dev/null || continue
             fi
             verdict="$state ${commit:0:8}"
+            found_date=$date found_commit=$commit found_id=$id
         done <<< "$list"
         now=$(($(date +%s) - start))
         if [ "$verdict" != "$last" ]; then
@@ -169,10 +222,37 @@ follow() {
         fi
         case "$verdict" in
             OK*) say "Déploiement $label OK en $(duration "$now") (${verdict#OK })."; return 0 ;;
-            FAIL*) say "Déploiement $label en ÉCHEC (${verdict#FAIL }) : la version précédente reste en ligne. Lire « clever logs --app $app --deployment-id <id> », l'id dans « clever activity --app $app »." >&2; return 1 ;;
+            FAIL*)
+                log=
+                if [ "$found_id" != - ]; then
+                    log=$(deployment_log "$app" "$found_id" "$found_date")
+                fi
+                if [ -n "$log" ]; then
+                    say "Déploiement $label en ÉCHEC (${verdict#FAIL }), fin du journal de $found_id :" >&2
+                    say "$log" | sed 's/^/    /' >&2
+                else
+                    say "Déploiement $label en ÉCHEC (${verdict#FAIL }), journal illisible d'ici : « clever logs --app $app --deployment-id <id> », l'id dans « clever activity --app $app »." >&2
+                fi
+                if ! printf '%s\n' "$log" | grep -Eiq "$TRANSIENT"; then
+                    say "La version précédente reste en ligne." >&2
+                    return 1
+                fi
+                if [ "$RELAUNCHED" -eq 1 ]; then
+                    say "Échec de téléchargement, mais le déploiement a déjà été relancé une fois : la version précédente reste en ligne." >&2
+                    return 1
+                fi
+                say "Échec de téléchargement, passager d'ordinaire : relancé une fois, clever restart --app $app --commit $found_commit"
+                relaunch "$app" "$found_commit"
+                # The failed deployment no longer counts, the one just started will.
+                since=$((found_date + 1))
+                ;;
         esac
         # CANCELLED: CleverCloud dropped it for a newer push, which carries the commit
         # once it appears; anything else is still running.
+        if [ -z "$verdict" ] && [ "$errors" -eq 0 ] && [ "$RELAUNCHED" -eq 0 ] && [ "$now" -ge "$START_TIMEOUT" ]; then
+            say "Aucun déploiement de ${sha:0:8} en $(duration "$START_TIMEOUT") : CleverCloud n'a pas reçu le push (webhook de GitHub perdu ?), relancé une fois : clever restart --app $app --commit $sha"
+            relaunch "$app" "$sha"
+        fi
         if [ "$now" -ge "$TIMEOUT" ]; then
             say "Aucun verdict en $(duration "$TIMEOUT") : « clever activity --app $app » dira où il en est." >&2
             return 3

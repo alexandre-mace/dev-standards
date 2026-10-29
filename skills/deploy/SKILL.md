@@ -67,7 +67,9 @@ deploy --preprod --remove-worktree       # and remove this worktree and its bran
   if clean and in `origin/main`; the session continues from the main checkout. A remote
   branch of the same name: `git push origin --delete <branch>`, as the script says.
 - **Exit codes**: 0 deployed, 1 the deployment failed (production stays on the previous
-  version: read the logs the script names, report, never announce a deploy), 2 refused
+  version: read the end of the log the script prints, report, never announce a deploy; a
+  download failure has already been relaunched once, so a second `clever restart` by hand
+  waits for the cause), 2 refused
   before pushing (read why), 3 no verdict within the bound (`clever activity --app <id>`),
   4 deployed but preprod or the worktree left as they were.
 - The application followed is the `.clever.json` entry whose alias starts with `prod`;
