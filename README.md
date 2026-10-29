@@ -11,6 +11,7 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 
 - **`symfony-guidelines.md`**, the backend: architecture, Doctrine, commands, tests, quality gate
 - **`reactony.md`**, the React side and its seam with Symfony: forms, data fetching, generated types
+- **`watch.md`**, the dated material of the tech watch: the next version's radar, the advisories behind each security floor, when a decision was last re-validated. `/gap-sota` keeps it, the guidelines keep the floors and the rules
 - **`check-mechanical/`**, the script every project of the stack calls from its pre-commit hook and `bin/ci-local`: the anti-patterns that reduce to a pattern, refused at commit
 - **`machine-lock/`**, the lock `bin/ci-local` takes for the whole machine, so two sessions never run two full suites at once, and keeps a Mac awake while it runs
 - **`performance-cores/`**, the machine's performance cores, which set ParaTest's process count in `bin/ci-local`

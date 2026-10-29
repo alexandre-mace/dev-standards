@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.12, Clever's default since October 2026; floor 8.5; **security ≥ 8.5.12**), Symfony 8.1.9 (**security ≥ 8.1.9**; 8.2 expected Nov. 2026, see Radar), Doctrine ORM 3.7.5 / doctrine-bundle 3.3.3 / DBAL 4.5.0, PHPUnit 13.4 (≥ 13.4.4, security; ParaTest ≥ 7.26 requires it: see §13), PHPStan 2.3.3 (Turbo), PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias), Foundry 2.15 (**≥ 2.10.3**), dama 8.7 (PHPUnit 13 supported), Eris 1.3, EasyAdmin 5.8 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7), Twig 3.30 (≥ 3.27), sentry-symfony 5.14, nelmio/api-doc-bundle 5.13, zenstruck/messenger-monitor-bundle 0.6, PostgreSQL 18 (18.6 on CleverCloud, floor 17), Symfony Reprise 1.3 (Vite integration, see reactony §6), VichUploader 3.0.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run; the dated material of the watch (the next-version radar, the advisories behind each security floor, when a decision was last re-validated) is in `watch.md`. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.12, Clever's default since October 2026; floor 8.5; **security ≥ 8.5.12**), Symfony 8.1.9 (**security ≥ 8.1.9**; 8.2 expected Nov. 2026, see `watch.md`), Doctrine ORM 3.7.5 / doctrine-bundle 3.3.3 / DBAL 4.5.0, PHPUnit 13.4 (≥ 13.4.4, security; ParaTest ≥ 7.26 requires it: see §13), PHPStan 2.3.3 (Turbo), PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias), Foundry 2.15 (**≥ 2.10.3**), dama 8.7 (PHPUnit 13 supported), Eris 1.3, EasyAdmin 5.8 (**≥ 5.5.1 required**, security; ≥ 5.6 with ORM 3.7), Twig 3.30 (≥ 3.27), sentry-symfony 5.14, nelmio/api-doc-bundle 5.13, zenstruck/messenger-monitor-bundle 0.6, PostgreSQL 18 (18.6 on CleverCloud, floor 17), Symfony Reprise 1.3 (Vite integration, see reactony §6), VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -32,9 +32,9 @@ Read the **playbook + Definition of Done** (below) and the **anti-patterns (§18
 
 Written down so it isn't re-litigated every session (in an AI-first codebase, the model would otherwise propose these migrations on a loop).
 
-- **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (the project's types target) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost. (Re-validated October 2026: still true with API Platform 5.0, a cleanup major that changes nothing in this reasoning.)
+- **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (the project's types target) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost.
 - **No RSC / React Server Components** (see `reactony.md`): Symfony + Twig **is** the server layer already; the React islands are the intentional client leaves. Bolting RSC on means running a Node rendering server next to PHP, for a role PHP already fills.
-- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks (August 2026): FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. October 2026 confirmed the price: seventeen FrankenPHP advisories in one month, most of them in worker mode. The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
+- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks: FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. The advisory record of worker mode is part of that price (`watch.md`). The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
 
 ---
 
@@ -122,44 +122,15 @@ The `composer.json` floor is `>= 8.5`, with `config.platform.php` pinned to `8.5
 
 **PHP 8.5 features to use**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
 
-**Security floor: runtime ≥ 8.5.12.** 8.5.12 (21 October 2026) fixes CVE-2026-109618 and CVE-2026-109619, two unauthenticated remote code executions (CVSS v4 9.2) on any PHP serving web requests; Clever published it the same day and redeploys PHP apps onto it automatically. It sits on top of 8.5.11 (TLS hostname verification falling back to the CN, credentials leaking across origins on HTTP stream redirects, an FPM IPv6 ACL bypass) and 8.5.9 (CVE-2026-17543, a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()`). An instance whose `php -v` says less has not been redeployed since.
+**Security floor: runtime ≥ 8.5.12**, which closes unauthenticated remote code executions on any PHP serving web requests (the advisories behind this floor and the patches before it: `watch.md`). An instance whose `php -v` says less has not been redeployed since.
 
-**Symfony security floor: 8.1.9** (14 October 2026). It completes the fix for GHSA-7rpj-w9pf-39rr (CVE-2026-109449): a deeply nested expression crashes the process, and `#[Assert\ExpressionSyntax]` hands that parser to user input. The first fix, in 8.1.6, was incomplete. 8.1.6 and 8.1.7 already closed a Yaml inline lexer recursion reachable through `#[MapRequestPayload]` when the Yaml component is installed, and a ReDoS on `Cache-Control`.
+**Symfony security floor: 8.1.9**: it completes the fix of a crash on a deeply nested expression, a parser that `#[Assert\ExpressionSyntax]` hands to user input, which 8.1.6 had left incomplete (the advisories behind this floor: `watch.md`).
 
-## Symfony 8.2 radar (November 2026)
+## Next Symfony version: see `watch.md`
 
-Deprecations and behaviour changes **already merged** on the 8.2 branch (UPGRADE-8.2.md), worth anticipating now:
-
-- **Hardened Serializer**: union-typed collections now denormalize their elements, and arrays denormalized into `list`-typed properties will have to satisfy `array_is_list()` (an exception in 9.0). Worth testing on our collection-carrying `#[MapRequestPayload]` DTOs.
-- `#[IsCsrfTokenValid]` will return a **403** (`InvalidCsrfTokenException`) instead of redirecting to the login page.
-- `File` constraint: `mimeTypes` and `extensions` will be checked independently (no more MIME restriction inferred from the extension).
-- `framework.ide` deprecated in favour of the `SYMFONY_IDE` variable.
-
-Merged since, still on the 8.2 branch (no beta tag at the 29 September watch):
-
-- **FrameworkBundle is split** into bundles shipped by their own components (MessengerBundle, MailerBundle, SerializerBundle, ValidationBundle, RouterBundle and about twenty more), registered automatically when the component is installed. The `framework.*` keys keep working as aliases; `asset`, `translation` and `workflow` become root keys. `debug:config framework <key>` no longer resolves those sections.
-- **HTTP errors below 500 are logged at `warning`**, no longer `error`: a `fingers_crossed` handler with `action_level: error`, and the Sentry alerting built on it, stop firing on 4xx. Check that no alert relied on them.
-- **EventDispatcher**: `addListener()` / `addSubscriber()` on the container's dispatcher are deprecated, tests included (register a listener service, or use a `ScopedEventDispatcher`). The autowiring alias `Symfony\Component\EventDispatcher\EventDispatcherInterface` is deprecated: type `Symfony\Contracts\EventDispatcher\EventDispatcherInterface`.
-- **Secrets vault**: without a `config/secrets/` directory, env vars are no longer loaded from it, and the variable behind `framework.secret` is no longer derived from `SYMFONY_DECRYPTION_SECRET`: define it.
-- **Scheduler**: leaving `framework.scheduler.use_messenger_routing` unset is deprecated (true in 9.0), and `Schedule::with()` is deprecated (clone or build a new schedule) and now returns an empty schedule.
-- **Serializer**: denormalizing a property from its PHP name when `#[SerializedName]` or a name converter maps it to another key is deprecated.
-- **RateLimiter**: `CompoundLimiter` stops at the first limiter that rejects, so list them from the most specific to the most global.
-
-Merged between the 29 September and 28 October watches, still no beta tag:
-
-- **Tests**: `KernelTestCase` reads `KERNEL_CLASS`, `APP_ENV` and `APP_DEBUG` from `$_SERVER` before `$_ENV`, so `phpunit.xml.dist` declares them with `<server>`, not `<env>`.
-- **`#[RateLimit]` consumes on `kernel.controller`, before `#[IsGranted]`**: a request denied by the voter still spends a token. Size the public limiters with that in mind.
-- **`#[IsGranted]` whose subject reads a `#[MapRequestPayload]` argument** now maps and validates the payload before voting, so an invalid payload answers 422 before a 403.
-- **Error bodies from `ProblemNormalizer` are served as `application/problem+json`**: the functional tests that assert the content type, and the OpenAPI drift gate (§13), see it.
-- **doctrine-bundle ≥ 3.3.3** stops extending the FrameworkBundle cache warmer that 8.2 deprecates: take it before the upgrade.
-
-Also worth watching, outside the core:
-
-- **VichUploader 3.0 is stable** (7 September 2026), and 2.x is in maintenance only: migrate. PHP ≥ 8.3; annotations are gone (attributes from `Mapping\Attribute` only); `NamerInterface::name()` and `DirectoryNamerInterface::directoryName()` take `object|array`; `PropertyMapping`, `PropertyMappingFactory` and the metadata readers are final, so a test mocks the new interfaces instead. New: a `vich:cleanup` command for orphaned files.
-- **Doctrine ORM 3.7** deprecates string sort directions in favour of the `SortDirection` enum, and `TypedExpression` in favour of `ExpressionWithReturnType`; it brings cursor-based pagination. It needs **EasyAdmin ≥ 5.6**, which silences the `SortDirection` deprecation. **DBAL 4.5** adds DateTime types stored in UTC and deprecates `SimpleArrayType` and `Column::getType()` (use `getTypeName()`).
-- **Doctrine ORM 4**: still no alpha, only a `4.0.x-dev` branch, with no commit since September 2026 and a 4.0.0 milestone without a due date; the direction is confirmed (PHP 8.4 minimum, built entirely on native lazy objects).
-- **PHP 8.6 and PostgreSQL 19** are both due on 19 November 2026 upstream. Neither moves the reference until Clever publishes it (see the PHP section and §8).
-- **Twig 3.29** brings documentation comments and deprecates macro calls without parentheses and duplicate macro definitions.
+What is already merged on the next Symfony branch and worth anticipating, and the releases
+outside the core worth watching, are in `symfony-react/watch.md` of dev-standards, next
+to this file, which `/gap-sota` keeps. An item becomes a rule here at the release that ships it.
 
 ---
 
@@ -336,7 +307,7 @@ comparisons gone false, which need an assertion on what the page displays.
 
 #### EasyAdmin version floor
 
-⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (GHSA-g2fm-8hr4-j82h, August 2026, CVSS 8.1): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here.
+⚠️ **Security: EasyAdmin ≥ 5.5.1 required** (the advisory: `watch.md`): the `routeName` of custom actions was substituted **after** the firewall was evaluated, allowing URL-pattern `access_control` rules to be bypassed. The `#[IsGranted]` attributes on the controllers stayed effective: our "security by attribute, not by URL pattern" rule was exactly the defence in depth that paid off here.
 
 #### Custom actions (EasyAdmin v5): never read `entityId` from the query
 
@@ -880,6 +851,7 @@ Rules:
 - The identifier goes in the route (`{fieldId}`), not in the payload.
 - `#[MapUploadedFile]` remains the fallback (a lone file with no text fields, or a case that doesn't fit the flat DTO). Never `$request->files->get()` or `$request->request->get()`.
 - Once adopted, check that Nelmio describes the multipart body properly in `openapi.yaml`: the drift gate catches an SDK regression.
+- **VichUploader: 3.x.** 2.x is in maintenance only: migrate. PHP ≥ 8.3; annotations are gone (attributes from `Mapping\Attribute` only); `NamerInterface::name()` and `DirectoryNamerInterface::directoryName()` take `object|array`; `PropertyMapping`, `PropertyMappingFactory` and the metadata readers are final, so a test mocks the new interfaces instead. New: a `vich:cleanup` command for orphaned files.
 
 ### Other `#[MapRequestPayload]` options (SF 8.1)
 
@@ -1215,9 +1187,9 @@ private string $description;
 
 ### PostgreSQL version and `server_version`
 
-Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.6 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. Clever published 18.6 / 17.11 on 20 August 2026: they fix 28 security vulnerabilities, and three issues need extra steps after the update (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes). The next upstream minor is due on 12 November 2026.
+Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.6 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. Three issues need extra steps after the update to 18.6 / 17.11 (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes).
 
-**On 18, a delete refused by `ON DELETE RESTRICT` raises SQLSTATE 23001**, `restrict_violation`, no longer 23503. The change is an upstream commit the 18 release notes do not mention. `NO ACTION`, Doctrine's default when `onDelete` is left out, and an insert or update on the child row still raise 23503: only a foreign key declared `onDelete: 'RESTRICT'` changes. DBAL 4.5.0 maps 23503 alone to `ForeignKeyConstraintViolationException`, so the refusal reaches the code as a bare `DriverException`, and a `catch` written for the foreign key misses it: the user gets a 500 where the controller meant to answer « still in use ». Until the fix ships (doctrine/dbal#7530, open at the 28 October 2026 watch), a DBAL driver middleware converts 23001 into `ForeignKeyConstraintViolationException`, with a functional test that deletes a referenced row. Drop the middleware at the DBAL release that maps it.
+**On 18, a delete refused by `ON DELETE RESTRICT` raises SQLSTATE 23001**, `restrict_violation`, no longer 23503. The change is an upstream commit the 18 release notes do not mention. `NO ACTION`, Doctrine's default when `onDelete` is left out, and an insert or update on the child row still raise 23503: only a foreign key declared `onDelete: 'RESTRICT'` changes. DBAL 4.5.0 maps 23503 alone to `ForeignKeyConstraintViolationException`, so the refusal reaches the code as a bare `DriverException`, and a `catch` written for the foreign key misses it: the user gets a 500 where the controller meant to answer « still in use ». Until the fix ships (doctrine/dbal#7530, followed in `watch.md`), a DBAL driver middleware converts 23001 into `ForeignKeyConstraintViolationException`, with a functional test that deletes a referenced row. Drop the middleware at the DBAL release that maps it.
 
 **`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (read-only `psql`, §19 « SQL in production »), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
@@ -1282,7 +1254,7 @@ class AppExtension
 }
 ```
 
-Version constraint: **Twig ≥ 3.27** is mandatory (it fixes CVE-2026-48805 through 48808). Twig 4 is in alpha, don't get ahead of it.
+Version constraint: **Twig ≥ 3.27** is mandatory, a security floor (the advisories: `watch.md`). Twig 4 is in alpha, don't get ahead of it.
 
 ### Icons: `symfony/ux-icons`, never an inline `<svg>`
 
@@ -1492,7 +1464,7 @@ return [
 
 Every `KernelTestCase` / `WebTestCase` inherits the rollback automatically. `#[SkipDatabaseRollback]` (dama 8.5+) disables the rollback on a test that genuinely has to commit.
 
-PHPUnit constraint: `^13.4.4`. 13.4.0 to 13.4.3 run PHPT tests with coverage in a fixed-name `/tmp/phpunit-phpt` directory that another local user can plant code in (GHSA-9vw2-f4vp-x7gf). ParaTest ≥ 7.26 requires PHPUnit `^13.4`, so the CI's ParaTest (below) settles the minor: `^12.5` (bugfixes until 5 February 2027) only holds with an older ParaTest. dama ≥ 8.7 supports PHPUnit 13 officially. PHPUnit 12+ accepts attributes only, no doc-comment annotations. From 13.3, `--cache-result`/`--do-not-cache-result` are deprecated in favour of `--record-test-run-history`/`--do-not-record-test-run-history`.
+PHPUnit constraint: `^13.4.4`. 13.4.0 to 13.4.3 run PHPT tests with coverage in a fixed-name `/tmp/phpunit-phpt` directory that another local user can plant code in (the advisory: `watch.md`). ParaTest ≥ 7.26 requires PHPUnit `^13.4`, so the CI's ParaTest (below) settles the minor: `^12.5` (bugfixes until 5 February 2027) only holds with an older ParaTest. dama ≥ 8.7 supports PHPUnit 13 officially. PHPUnit 12+ accepts attributes only, no doc-comment annotations. From 13.3, `--cache-result`/`--do-not-cache-result` are deprecated in favour of `--record-test-run-history`/`--do-not-record-test-run-history`.
 
 ### Unit example: a Domain calculator
 

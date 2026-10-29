@@ -11,7 +11,7 @@ where the guidelines are right and the code gets corrected.
 | Stack | Files |
 |---|---|
 | All three | `react/react-guidelines.md` |
-| Symfony + React | `symfony-react/symfony-guidelines.md`, `symfony-react/reactony.md` |
+| Symfony + React | `symfony-react/symfony-guidelines.md`, `symfony-react/reactony.md`, and the watch file `symfony-react/watch.md` |
 | Next | `next/next-guidelines.md` |
 | TanStack Start | `tanstack-start/tanstack-start-guidelines.md` |
 
@@ -22,6 +22,10 @@ reachable through its `docs/` symlinks.
 
 - Start from the "Last watch" header: it dates the previous run and lists the versions
   verified then.
+- On the Symfony stack, read `symfony-react/watch.md` too: the radar of the next versions,
+  the advisories behind each security floor, the decisions and their last re-validation,
+  the issues being followed. Its items are the first things to check: a radar release that
+  shipped, an issue that closed.
 - Note every version claim and every prescription. Those are what you are about to test.
 
 ## 2. Research, web first
@@ -92,6 +96,14 @@ yet can sit next to it.
 
 After approval: edit, then update the "Last watch" header, date and versions. A watch
 that does not move its own date sends the next run to the wrong starting point.
+
+**Dated material goes to the watch file, not the guideline.** On the Symfony stack,
+`symfony-react/watch.md` takes what carries a date: the radar of the next version, the
+advisories (id, date, score) behind a floor, the date a decision was re-validated, an
+upstream issue being followed. The guideline keeps the floor, the rule and a one-clause
+reason, so it does not go stale between two watches. A radar item whose release shipped
+leaves the radar: it becomes a rule in the guideline when it changes what someone writes,
+configures or pins, and nothing otherwise. Then move the watch file's own date.
 
 Then the dev-playbook project, the cheat sheet derived from these guidelines: every screen
 whose `source` cites a section you changed is re-read against the new text. Nothing else
