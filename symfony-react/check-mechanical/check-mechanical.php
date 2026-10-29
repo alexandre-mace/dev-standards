@@ -870,7 +870,9 @@ function missingDocuments(string $content): array
         return [];
     }
     foreach ($all[1] as [$document, $offset]) {
-        if (!file_exists($document)) {
+        // A guide linked from another repository (`docs/x.md`, a symbolic link) is the
+        // repository's own, even when its target is not checked out next to it.
+        if (!file_exists($document) && !is_link($document)) {
             $line = substr_count($content, "\n", 0, $offset) + 1;
             $out[] = [$line, $lines[$line - 1] ?? ''];
         }
@@ -947,17 +949,31 @@ function rules(): array
             'find' => static fn (string $c): array => matches('/(?<!\p{L})\x{00B7}|\x{00B7}(?!\p{L})|&(?:middot|#0*183|#x0*B7);|\\\\u00b7/ui', $c),
         ],
         'faute' => [
-            'message' => 'faute déjà relevée par un audit : réessayez, configurée, vous allez, raisonnable, répétez, expliquez-nous, Ce champ, Êtes-vous sûr, régional, dérivé, prises en charge, tous projets confondus, œuvre, À très vite, majuscule accentuée (État, Équipe, Écrivez, Êtes)',
+            'message' => 'faute déjà relevée par un audit : réessayez, configurée, vous allez, raisonnable, répétez, expliquez-nous, À très vite, majuscule accentuée (État, Équipe, Écrivez, Êtes)',
             'ext' => $prose,
             'paths' => $everywhere,
             'kind' => 'fichier',
             // Written in pieces: this file holds none of the misspellings it looks for.
             'find' => static fn (string $c, string $p): array => matches(
-                '/(?i:r[ée]é{1}ssay|\bconfigur(?:ee)s?\b|\bvous\s(?:aller)\b|\brai(?:sonable)|\br(?:é)petez\b|\bexpliquez\s(?:nous)\b|\bce\schamp(?:s)\b|\b[Êê]tes-vous\ss(?:ur)\b|\br[ée]gion(?:n)al|\bdrif(?:f)[ée]|\bprises\sen\scharge(?:s)\b|\bprojet\sc(?:onfondus)\b|\bo(?:e)uvre)|\bA\s(?:très\svite)\b'
+                '/(?i:r[ée]é{1}ssay|\bconfigur(?:ee)s?\b|\bvous\s(?:aller)\b|\brai(?:sonable)|\br(?:é)petez\b|\bexpliquez\s(?:nous)\b)|\bA\s(?:très\svite)\b'
                 // A type name (`interface Etape {`, `Etape[]`, and in code `(e: Etape)`,
                 // `type Etape,`, `from './Etapes'`) is not text.
                 .'|\bE(?:tats?|quipes?|crivez|crire|tes|tapes?|chéances?|vénements?|vènements?|crans?|léments?|galement|tablissements?|ligibilité|pargne|tudes?|leveurs?|conomies?|lectricité)\b(?![\w\[\]<>({}=;]|\s+[{=(<]'
                 .(\in_array(extension($p), ['php', 'ts', 'tsx', 'js', 'mjs', 'cjs'], true) ? '|[,)|?:\'"\/]|\s+\}' : '').')/u',
+                $c,
+                'md' === extension($p) ? withoutCode($c) : $c,
+            ),
+        ],
+        'faute-recente' => [
+            'message' => 'faute déjà relevée par un audit : Ce champ, Êtes-vous sûr, régional, dérivé, prises en charge, tous projets confondus, œuvre',
+            'ext' => $prose,
+            'paths' => $everywhere,
+            // Jugée sur les lignes ajoutées tant qu'un projet en garde : elle rejoint `faute`
+            // une fois chaque stock nettoyé.
+            'kind' => 'ajout',
+            // Written in pieces: this file holds none of the misspellings it looks for.
+            'find' => static fn (string $c, string $p): array => matches(
+                '/(?i:\bce\schamp(?:s)\b|\b[Êê]tes-vous\ss(?:ur)\b|\br[ée]gion(?:n)al|\bdrif(?:f)[ée]|\bprises\sen\scharge(?:s)\b|\bprojet\sc(?:onfondus)\b|\bo(?:e)uvre)/u',
                 $c,
                 'md' === extension($p) ? withoutCode($c) : $c,
             ),
@@ -1086,7 +1102,7 @@ function rules(): array
             'message' => 'couleur Tailwind de la palette brute : un jeton du design system',
             'ext' => [...$front, 'php'],
             'paths' => '#^(assets|templates|src/Twig)/#',
-            'kind' => 'fichier',
+            'kind' => 'ajout',
             'find' => static fn (string $c): array => matches('/(?<![-\w])(?:[\w-]+:)*(?:'.$utility.')-(?:'.$palette.')-\d{2,3}\b/', $c),
         ],
         'rgba' => [
@@ -1101,7 +1117,7 @@ function rules(): array
             'message' => '`white`/`black` posé hors jetons, en classe ou dans un style : `bg-card`, `text-foreground`, `text-primary-foreground`, `var(--primary-foreground)`…',
             'ext' => [...$front, 'php'],
             'paths' => '#^(assets|templates|src/Twig)/#',
-            'kind' => 'fichier',
+            'kind' => 'ajout',
             // The Tailwind classes, then a colour property written in an inline style, a CSS
             // string or a React `style` object (`color: white`, `backgroundColor: 'black'`).
             'find' => static fn (string $c): array => matches(
@@ -1475,7 +1491,7 @@ function rules(): array
             'message' => 'balise de style que la console Symfony ne connaît pas : elle s\'imprime telle quelle ; `<info>`, `<comment>`, `<question>`, `<error>`, ou `<fg=green>`',
             'ext' => ['php'],
             'paths' => '#^src/Command/#',
-            'kind' => 'fichier',
+            'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => matches('#<(?!(?:info|comment|question|error)>)([a-z]+)>[^<\n]*</\1>#', $c, withoutComments($c, $p)),
         ],
         'sommeil-test' => [
@@ -1489,7 +1505,7 @@ function rules(): array
             'message' => 'document cité introuvable : corriger le chemin, écrit depuis la racine du dépôt (`docs/…`, `AGENTS.md`)',
             'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml', 'sh', 'neon', 'json', ''],
             'paths' => '#^(src|templates|assets|tests|e2e|config|translations|scripts|bin|\.github|\.husky)/#',
-            'kind' => 'fichier',
+            'kind' => 'ajout',
             'find' => static fn (string $c): array => missingDocuments($c),
         ],
         'gitignore-src' => [

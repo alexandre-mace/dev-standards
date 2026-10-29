@@ -54,8 +54,8 @@ declaration, which only a new file adds, and judge new files only.
 
 | Kind | Rules |
 |---|---|
-| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `couleur-brute`, `blanc-noir`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `balise-console`, `sommeil-test`, `document-introuvable`, `gitignore-src` |
-| ajout | `identifiant-audit`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable` |
+| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `sommeil-test`, `gitignore-src` |
+| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable`, `balise-console`, `document-introuvable` |
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
@@ -64,16 +64,19 @@ or third-party labels with a spaced hyphen; `label-natif` in `assets/components/
 composites used to be skipped with the registry.
 
 `rgba` and `commentaire-anglais` become **fichier** once every project has cleaned them.
-`couleur-brute`, `blanc-noir` and `diacritique-invisible` became **fichier** on 29/10/2026:
-measured on the three projects of the stack, one occurrence was left, a design-system page
-quoting a class, which carries its exception.
+`diacritique-invisible` became **fichier** on 29/10/2026, clean on the three projects.
+`couleur-brute`, `blanc-noir`, `document-introuvable`, `balise-console` and `faute-recente`
+(the typos one project's script refused) stay **ajout** while a project's main branch still
+holds an occurrence, even one its pending cleanup removes: a **fichier** rule that fails on a
+project's main turns every hook, local CI and nightly run of that project red. A rule
+becomes **fichier** once each project's cleanup is in production, checked with
+`check-mechanical.php --all` on each project's `origin/main`.
 
 Twenty-two rules came, the same day, from the convention checks the projects kept each on
 their side: a grep script, Vitest guards, PHPUnit tests reading files with a regex, ESLint
-selectors that only matched a literal against a pattern. Seven were clean on every project
+selectors that only matched a literal against a pattern. Five were clean on every project
 and are **fichier**: `boite-native`, `balise-en-chaine`, `pourcentage-colle`,
-`methode-depot`, `balise-console`, `sommeil-test`, `document-introuvable`. The others, from
-`main-gabarit` to `non-applicable` in the **ajout** row, were refused in full by one project
+`methode-depot`, `sommeil-test`. The others, in the **ajout** row, were refused in full by one project
 and held by another, up to 196 occurrences of `couleur-litterale` on one of them: they judge
 the new lines, and become **fichier** once the stocks are gone. `label-orphelin` reads the
 templates as well. What needs the syntax tree (a call's structure, a scope, a type) stays in

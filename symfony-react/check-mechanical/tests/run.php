@@ -183,6 +183,15 @@ foreach (filesUnder($root) as $path) {
     expect(str_contains($err, "$path:1: [tiret-long]"), "$path n'est pas un composant du registre : il est lu", $err);
 }
 
+// A guide linked from another repository counts as present, even when its target is not
+// checked out next to it: a throwaway worktree would otherwise refuse every reference.
+$root = directory();
+write($root, 'src/Guide.php', "<?php\n\ndeclare(strict_types=1);\n\n// cf. docs/guide.md\n");
+mkdir($root.'/docs');
+symlink('../../nowhere/guide.md', $root.'/docs/guide.md');
+[, , $err] = check(['--root', $root, 'src/Guide.php']);
+expect(!str_contains($err, '[document-introuvable]'), 'un guide lié par un lien symbolique, même cassé, est présent', $err);
+
 // A "fichier" rule may read only the added lines of some paths: target-blank and
 // trait-union in PHP, where the projects still hold old occurrences, while a TSX file is
 // read whole.
