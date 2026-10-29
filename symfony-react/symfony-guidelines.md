@@ -2196,6 +2196,13 @@ script.
 « Commands » section and lists only what the project adds; `docs/tests-et-ci.md` describes
 the hook, `bin/ci-local`, the test helpers and the measurements, whatever the project.
 
+**`.editorconfig` follows Prettier, not the other way round.** Prettier takes `indent_size`
+from `.editorconfig` for every option `.prettierrc` leaves out: in a project whose
+`.prettierrc` sets no `tabWidth`, moving CSS and JSON to 2 in `.editorconfig` turned eight
+files red in `pnpm format:check` without a byte of them changing. The two files align
+together, with `tabWidth` written in `.prettierrc`, in a commit of its own that reformats
+the files it moves.
+
 ### PHPStan: static analysis
 PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
 

@@ -500,11 +500,15 @@ ci_run() {
 #
 # Under the latest Node of the CI's major (setup-node), whatever the machine's Node: a test
 # once broke under 22.23 only. One pass: Vitest is on the critical path. `npx -y` resolves
-# the version on the registry at each run.
+# the version on the registry at each run. The major is CI_NODE_MAJOR, else the project's
+# `.nvmrc`, which every workflow reads too (`node-version-file`), else 22.
 
-CI_NODE_MAJOR=${CI_NODE_MAJOR:-22}
+ci_node_major() {
+    local major=${CI_NODE_MAJOR:-$(tr -d '[:space:]v' < "${ROOT:-.}/.nvmrc" 2> /dev/null)}
+    echo "${major:-22}"
+}
 
-vitest() { npx -y "node@$CI_NODE_MAJOR" node_modules/vitest/vitest.mjs run; }
+vitest() { npx -y "node@$(ci_node_major)" node_modules/vitest/vitest.mjs run; }
 
 # What runs next to Vitest: every two seconds, the %CPU of ps (a moving average) of each
 # process, ranked in three: Vitest (its group), the rest of the run (the script's
@@ -566,7 +570,7 @@ vitest_step() { # step name
     cpu_watch "$$" "$(cat "$LOG_DIR/$GROUP_ID.pid")" > "$LOG_DIR/vitest-cpu.tsv" 2> /dev/null &
     CPU_WATCH_PID=$!
     ON_GROUP_FAIL=cpu_report
-    STEP_EXTRA="Node $(npx -y "node@$CI_NODE_MAJOR" -v 2> /dev/null)"
+    STEP_EXTRA="Node $(npx -y "node@$(ci_node_major)" -v 2> /dev/null)"
     step "$1" vitest
     cpu_report
 }

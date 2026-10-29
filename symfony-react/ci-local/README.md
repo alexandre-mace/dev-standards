@@ -76,7 +76,7 @@ reads `machine-lock` and `performance-cores` from its own folder.
   last write, and `ls -l` rounds it to the minute: a step ended just before Vitest looked
   as if it had run during it.
 - **Vitest sampled**: `vitest_step 'Name'` runs Vitest under the latest Node of the CI's
-  major (`CI_NODE_MAJOR`, 22 by default, its version on the step's line) and samples `ps`
+  major (`CI_NODE_MAJOR`, else the project's `.nvmrc`, else 22, its version on the step's line) and samples `ps`
   every 2 s meanwhile, into `var/ci-local/vitest-cpu.tsv`; one line under the group names
   what used the processor next to it, the rest of the run or the rest of the machine. It is
   the « what ran alongside » that `agent/long-running-checks.md` asks of a flaky report.

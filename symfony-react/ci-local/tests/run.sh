@@ -28,7 +28,7 @@ for tool in dropdb createdb; do
     printf '#!/bin/sh\necho "%s $*" >> "%s/db.calls"\n' "$tool" "$TMP" > "$TMP/stubs/$tool"
 done
 printf '#!/bin/sh\necho 1\n' > "$TMP/stubs/psql"
-printf '#!/bin/sh\necho v22.99.0\n' > "$TMP/stubs/npx"
+printf '#!/bin/sh\necho "$1 $2" >> "%s/npx.calls"\necho v22.99.0\n' "$TMP" > "$TMP/stubs/npx"
 chmod +x "$TMP/stubs"/*
 export PATH="$TMP/stubs:$PATH"
 
@@ -169,6 +169,13 @@ WATCH=1 run --only front
 contains 'Vitest porte la version de Node de la CI' "$out" '(Node v22.99.0)'
 contains 'une ligne dit ce qui tournait à côté de Vitest' "$out" 'À côté de Vitest (%CPU moyen sur'
 [ -s var/ci-local/vitest-cpu.tsv ] && ok 'les relevés sont gardés dans var/ci-local/vitest-cpu.tsv' || ko 'vitest-cpu.tsv vide'
+check 'sans .nvmrc, la majeure de Node est 22' "$(tail -n 1 "$TMP/npx.calls")" '-y node@22'
+echo 24 > .nvmrc
+WATCH=1 run --only front
+check 'la majeure de Node est celle du .nvmrc du projet' "$(tail -n 1 "$TMP/npx.calls")" '-y node@24'
+WATCH=1 CI_NODE_MAJOR=20 run --only front
+check 'CI_NODE_MAJOR l'"'"'emporte sur .nvmrc' "$(tail -n 1 "$TMP/npx.calls")" '-y node@20'
+rm .nvmrc
 
 # --- Failures ---------------------------------------------------------------------------
 
