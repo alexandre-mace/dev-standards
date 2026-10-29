@@ -61,15 +61,12 @@ bin/ci-local --spec e2e/<feature>.spec.ts    # where the project has it, repeata
 pnpm test:e2e e2e/<feature>.spec.ts          # otherwise, one file at a time
 ```
 
-- **Only those specs, never the whole suite from here.** The whole suite belongs to the
-  full `bin/ci-local`, the gate `/deploy` runs once on the commit that ships. A full
-  Playwright run outside `machine-lock` fights any other suite on the machine and makes
-  unrelated tests miss their timeouts (`agent/long-running-checks.md`); when it really has
-  to run whole, it goes through `machine-lock run --`.
+- **Only those specs.** The whole suite is the full `bin/ci-local` that `/deploy` runs on
+  the commit that ships (`agent/long-running-checks.md`).
 - **A spec the plan owed must have been seen to fail before the fix, and pass after.**
   One that passes on its first run may be asserting nothing.
-- A failure here is a finding, whether it belongs to this feature or not. A spec red then
-  green on a rerun with nothing changed is instability: report it, never rerun it away.
+- A failure here is a finding, this feature's or not; red then green with nothing changed
+  is instability to report, never a rerun.
 - Say it when the project has no suite at all. The guidelines mandate one, so its
   absence is a `/gap-code` finding, not a neutral fact.
 
@@ -96,9 +93,8 @@ Network :      clean | <what is wrong>
 Proof :        <screenshot, or the trace that matters>
 ```
 
-Append that block to `.claude/plan.md`, under a `## Live test` heading. `/review-diff` runs
-in a forked context with no access to this conversation: without the written report it
-cannot tell whether this step ever ran.
+Append that block to `.claude/plan.md`, under `## Live test`: `/review-diff` sees nothing
+else, and without it cannot tell this step ran.
 
 ## Rules
 

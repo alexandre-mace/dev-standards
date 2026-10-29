@@ -7,15 +7,11 @@ description: Is the code clean? Runs every mechanical check the stack's guidelin
 
 Everything a machine can settle on its own, fast and headless.
 
-- What needs a browser is `/live-test` for the change at hand, and the whole Playwright
-  suite runs in `bin/ci-local`, the gate before any merge.
-- **The full suites belong to `bin/ci-local`.** Where the repository has one (it replays
-  every CI job, PHPUnit, Vitest and Playwright in full, under `machine-lock`), run here only the tests the
-  change can reach: the test files the branch touches, the tests that mirror the source
-  files it touches, and Vitest's `related` on the changed sources. Running the whole
-  suite here, then again in `bin/ci-local`, is the same fact paid for twice. With no
-  `bin/ci-local` and no hosted CI running the suites in full, run them in full here,
-  through `machine-lock run --` (`agent/long-running-checks.md`).
+- **The full suites belong to `bin/ci-local`**, Playwright included; the browser to
+  `/live-test`. Where the repository has one, run here only the tests the change can
+  reach: the test files the branch touches, those mirroring the source files it touches,
+  and Vitest's `related` on the changed sources. With neither it nor a hosted CI running
+  them, run them in full here, through `machine-lock run --` (`agent/long-running-checks.md`).
 - **Run once per commit.** A check that passed on this exact tree does not run again
   before something moves; say which run you rely on.
 
@@ -43,8 +39,7 @@ bin/phpunit <the test files the change reaches>   # the whole suite only without
 ```
 
 Finding the tests a change reaches: `git fetch origin`, then
-`git diff --name-only origin/main...HEAD` (never local `main`, which deploys pushed from
-worktrees leave behind), then for each
+`git diff --name-only origin/main...HEAD` (never local `main`), then for each
 `src/<path>/<Name>.php` the `tests/**/<Name>Test.php` files and any test that references
 the class by name (`grep -rl`), plus every changed file under `tests/`. When the change
 touches shared plumbing (a base class, a listener, the security config, a migration of

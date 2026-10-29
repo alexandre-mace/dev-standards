@@ -15,19 +15,16 @@ The PR review of a flow with no PR. Runs twice:
   nothing moved, say so and give the verdict in three lines. When there was no pass 1,
   this one does the full review.
 
-> **Arm's length, enforced.** This skill runs in a forked subagent with no access to the
-> conversation, which is the point: reviewing a diff with the context that wrote it is
-> the definition of a blind spot. The consequence is that `.claude/plan.md` is the only
-> record you get, for the intent and for what `/live-test` found.
+> **Arm's length.** It runs in a forked subagent with no access to the conversation, so the
+> context that wrote the diff cannot blind it: `.claude/plan.md` is its only record of the
+> intent and of what `/live-test` found.
 
 ## 1. Gather both terms
 
 - **The diff**: `git fetch origin`, then `git diff origin/main...HEAD`, plus
-  `git log origin/main..HEAD --oneline`. All of it, not a sample. Never local `main`:
-  deploys pushed from worktrees do not move it, and a stale `main` adds to the diff every
-  commit shipped since.
-- **The intent**: `.claude/plan.md`, the only record available in a forked context.
-  Check its `Branch:` line matches the current branch, since one file holds one feature.
+  `git log origin/main..HEAD --oneline`. All of it, not a sample. Never local `main`
+  (`/deploy` §1).
+- **The intent**: `.claude/plan.md`. Check its `Branch:` line matches the current branch, since one file holds one feature.
   A missing or mismatched plan reduces the review to the guidelines, and the verdict
   says so.
 
@@ -53,12 +50,8 @@ return. A review that says « each file was not reread » has not happened.
   name or an OpenAPI description that the change made false counts as introduced by the
   diff. So does a sibling left behind: the same constant or rule in a TS twin, a second
   caller that still does it the old way.
-- **The forbidden anti-patterns of the stack's guidelines, rule by rule**, against those
-  files. Symfony and React: DTO placement, `format: 'json'` and `#[IsGranted]` on API
-  routes, `requirements` on route parameters, a pure Domain/, the SDK rather than a
-  hand-written fetch, RHF + Zod, `@/` imports, a fixed log message with the exception
-  under `exception`. Next and TanStack Start: Base UI, the kit rather than a copy, typed
-  routes, baked data.
+- **The forbidden anti-patterns of the stack's guidelines**, their own list, rule by rule,
+  against those files.
 - **The cross-cutting themes of `/gap-code`** on the touched files: secrets in logs
   and real personal data in fixtures, twins that must stay aligned, the API contract end to end, where each link
   and call to action leads, form accessibility.
@@ -74,7 +67,6 @@ a file the branch never opened is `/gap-code`'s business.
 It is a checklist, so check it rather than trusting it was followed:
 
 - `/quality` green, per step 5.
-- No drift in the generated types, covered by `/quality`.
 - **The tests owed exist and pass**: take the "Tests owed" list from `.claude/plan.md`,
   confirm each one is in the diff, and confirm the `## Live test` block reports them green.
   A test planned and not written, or written and never run, is caught here or nowhere.
@@ -83,8 +75,6 @@ It is a checklist, so check it rather than trusting it was followed:
   the `Full CI` line of that block. Report it as it is: green on this commit, green on an
   older one (name it), or none. Never ask `/live-test` to run the suite; before UAT it
   blocks nothing, and `/deploy` runs a full one on the commit that ships.
-- `#[IsGranted]` and `format: 'json'` on new `/api/` routes.
-- No anti-pattern from the guidelines' forbidden list.
 
 Then the part no checklist of green ticks covers, **completeness**:
 

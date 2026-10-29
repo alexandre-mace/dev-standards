@@ -33,9 +33,8 @@ reason. A check skipped in silence is a check nobody ran.
 
 - The plan before the branch, the branch before the code.
 - Cheapest check first: never drive a browser against code that does not compile.
-- `/live-test`, then `/commit`, then `/review-diff`. The review runs in a forked context
-  that sees only the committed branch and `.claude/plan.md`, where `/live-test` writes its
-  report.
+- `/live-test`, then `/commit`, then `/review-diff`, which sees only the committed branch
+  and `.claude/plan.md`.
 - Keep the three checks apart. `/quality` asks whether it is clean, `/live-test` whether it
   works, `/review-diff` whether it is what was asked. Green checks on a feature nobody ran
   and a working feature with red checks are two different failures.
@@ -93,11 +92,9 @@ Debrief : <feature>
   where things stand and can interrupt.
 - A red check stops the work. Fix it, re-run it, then move on.
 - Three fixes on the same red check, then stop and report: what is ruled out, what
-  remains possible, what is missing to decide. An attempt is a change to the code followed
-  by a rerun, never a rerun alone: a check that goes red then green with nothing changed is
-  instability, a finding to report at once, which a rerun would hide
-  (`agent/long-running-checks.md`). An unbounded loop is how an hour disappears into a
-  flapping test.
+  remains possible, what is missing to decide. An attempt changes the code before the
+  rerun; red then green with nothing changed is instability to report
+  (`agent/long-running-checks.md`).
 - The implementation is where the work is. The checks do not make it easier, they make the
   result checkable. Do not rush it because the checks around it are mechanical.
 - The branch, in a worktree of its own, from the repository's main checkout:
@@ -111,8 +108,8 @@ Debrief : <feature>
 
   `<scope>` in kebab-case, two to four words, French or English following the repo;
   `<lot>` the same words, or the lot's name when a plan splits the work. Then every command
-  and every file of the ticket in that worktree. `origin/main`, not local `main`: deploys
-  pushed from worktrees do not move it. The plan moves with the work, since `/live-test`
-  and `/review-diff` read `.claude/plan.md` where they run. Changes left uncommitted in the
+  and every file of the ticket in that worktree. `origin/main`, never local `main`
+  (`/deploy` §1). The plan moves with the work: `/live-test` and `/review-diff` read it
+  where they run. Changes left uncommitted in the
   main checkout stay there: never stash them, and say so when they look related to the
   ticket.
