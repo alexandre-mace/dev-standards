@@ -13,7 +13,8 @@ user, are not.
 
 - **Understood.** `/investigate` wrote `.claude/plan.md` (`/diagnosing-bugs` for a bug), and its
   assumed decisions and tests owed were announced before any code.
-- **On its own branch**, `feat/<scope>`, cut from an up-to-date `main`.
+- **On its own branch, in its own worktree**: `feat/<scope>`, cut from `origin/main` after a
+  fetch, in `.claude/worktrees/<lot>`.
 - **Tested.** Every test the plan owed exists, and was seen failing before the change and
   passing after. Code you modified whose behaviour no test pinned now has one, in the same
   branch: deferring it to a dedicated pass means never.
@@ -89,11 +90,27 @@ Debrief : <feature>
 - Announce each check in one line as it starts ("Clean: /quality"), so the user knows
   where things stand and can interrupt.
 - A red check stops the work. Fix it, re-run it, then move on.
-- Three attempts on the same red check, then stop and report: what is ruled out, what
-  remains possible, what is missing to decide. An unbounded retry loop is how an hour
-  disappears into a flapping test.
+- Three fixes on the same red check, then stop and report: what is ruled out, what
+  remains possible, what is missing to decide. An attempt is a change to the code followed
+  by a rerun, never a rerun alone: a check that goes red then green with nothing changed is
+  instability, a finding to report at once, which a rerun would hide
+  (`agent/long-running-checks.md`). An unbounded loop is how an hour disappears into a
+  flapping test.
 - The implementation is where the work is. The checks do not make it easier, they make the
   result checkable. Do not rush it because the checks around it are mechanical.
-- The branch: `git checkout main && git pull && git checkout -b feat/<scope>`, `<scope>` in
-  kebab-case, two to four words, French or English following the repo. Stop and ask when
-  changes are uncommitted, rather than stashing them.
+- The branch, in a worktree of its own, from the repository's main checkout:
+
+  ```bash
+  git fetch origin
+  git worktree add .claude/worktrees/<lot> -b feat/<scope> origin/main
+  mkdir -p .claude/worktrees/<lot>/.claude && mv .claude/plan.md .claude/worktrees/<lot>/.claude/
+  cd .claude/worktrees/<lot> && bin/worktree-setup   # where the project has it
+  ```
+
+  `<scope>` in kebab-case, two to four words, French or English following the repo;
+  `<lot>` the same words, or the lot's name when a plan splits the work. Then every command
+  and every file of the ticket in that worktree. `origin/main`, not local `main`: deploys
+  pushed from worktrees do not move it. The plan moves with the work, since `/live-test`
+  and `/review-diff` read `.claude/plan.md` where they run. Changes left uncommitted in the
+  main checkout stay there: never stash them, and say so when they look related to the
+  ticket.

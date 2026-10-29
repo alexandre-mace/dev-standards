@@ -41,7 +41,9 @@ composer audit
 bin/phpunit <the test files the change reaches>   # the whole suite only without a CI that runs it
 ```
 
-Finding the tests a change reaches: `git diff --name-only main...HEAD`, then for each
+Finding the tests a change reaches: `git fetch origin`, then
+`git diff --name-only origin/main...HEAD` (never local `main`, which deploys pushed from
+worktrees leave behind), then for each
 `src/<path>/<Name>.php` the `tests/**/<Name>Test.php` files and any test that references
 the class by name (`grep -rl`), plus every changed file under `tests/`. When the change
 touches shared plumbing (a base class, a listener, the security config, a migration of

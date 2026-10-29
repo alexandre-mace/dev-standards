@@ -22,8 +22,10 @@ The PR review of a flow with no PR. Runs twice:
 
 ## 1. Gather both terms
 
-- **The diff**: `git diff main...HEAD`, plus `git log main..HEAD --oneline`. All of it,
-  not a sample.
+- **The diff**: `git fetch origin`, then `git diff origin/main...HEAD`, plus
+  `git log origin/main..HEAD --oneline`. All of it, not a sample. Never local `main`:
+  deploys pushed from worktrees do not move it, and a stale `main` adds to the diff every
+  commit shipped since.
 - **The intent**: `.claude/plan.md`, the only record available in a forked context.
   Check its `Branch:` line matches the current branch, since one file holds one feature.
   A missing or mismatched plan reduces the review to the guidelines, and the verdict
