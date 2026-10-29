@@ -82,7 +82,10 @@ who_lines() {
         ?*) repo=$(basename "$common" .git) ;;
         *) repo='hors dépôt' ;;
     esac
-    printf '%s\n%s\n%s\n%s\n%s\n' "$$" "$repo" "$PWD" "$*" "$(date +%s)"
+    # The command on one line: a ticket is read line by line, and a command written over
+    # several lines pushed its start time out of place, so every waiter swept the ticket
+    # as dead and its owner drew a new one forever (seen on 29/10/2026, 20 minutes).
+    printf '%s\n%s\n%s\n%s\n%s\n' "$$" "$repo" "$PWD" "$(printf '%s' "$*" | tr '\n\r' '  ')" "$(date +%s)"
 }
 
 write_holder() {

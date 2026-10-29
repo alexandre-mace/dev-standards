@@ -33,9 +33,11 @@ declare(strict_types=1);
  * (prefectoral orders, official texts), not the project's own prose. Of
  * assets/components/ui/, only the shadcn registry files, named in kebab case at its top:
  * composites/, the tests and a project's own components (data-table.tsx, multi-select.tsx,
- * which the registry does not ship) are read.
+ * which the registry does not ship) are read. config/reference.php is written by Symfony
+ * itself (« This file is auto-generated »), rewritten by a bundle update: Foundry 2.15
+ * changed one of its lines and the English-comment rule refused the update.
  */
-const SKIPPED = '#^(docs/gap-analysis\.md$|data/|assets/components/ui/(?!(?:data-table|multi-select)\.tsx$)[a-z0-9-]+\.tsx$|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
+const SKIPPED = '#^(docs/gap-analysis\.md$|config/reference\.php$|data/|assets/components/ui/(?!(?:data-table|multi-select)\.tsx$)[a-z0-9-]+\.tsx$|assets/lib/api/|public/build/|vendor/|node_modules/)|(^|/)(composer\.lock|symfony\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|openapi\.yaml)$#';
 
 /** An exception within these first lines of a file covers the whole file. */
 const FILE_HEADER_LINES = 3;

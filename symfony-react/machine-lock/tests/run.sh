@@ -222,6 +222,16 @@ else
     check "hors de macOS, rien ne garde la machine éveillée" $? 0
 fi
 
+# --- A command written over several lines keeps its ticket ------------------------------
+
+"$ML" run -- sleep 2 &
+holder=$!
+wait_held
+MACHINE_LOCK_TIMEOUT=6 "$ML" run -- sh -c 'echo une
+echo commande sur deux lignes > /dev/null' 2> /dev/null
+check "une commande sur plusieurs lignes obtient le verrou à son tour" $? 0
+wait "$holder"
+
 echo
 if [ "$failures" -gt 0 ]; then
     echo "$failures test(s) en échec."

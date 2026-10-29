@@ -2087,8 +2087,10 @@ to read as the example. `/gap-code` checks this list.
   Grange, `WorkflowJobTimeoutTest`): without it a hung job runs 360 minutes, GitHub's
   default, billed.
 - [ ] **The fast jobs at night too, with the E2E**: `composer audit` and `pnpm audit` turn
-  main red the morning a CVE is published, with no PR open (La Grange, 26 and 27/10/2026).
-  A night when main has not moved in 24 h runs nothing (Le Grenier's `fresh` job). GitHub
+  main red the morning a CVE is published, with no PR open (La Grange, 26 and 27/10/2026;
+  `symfony/mime`, CVE-2026-45070, on 29/10/2026 on all three projects). So the audits run
+  every night, whether main moved or not; only the long E2E may skip a night when main has
+  not moved in 24 h (Le Grenier's `fresh` job), since it tests nothing new. GitHub
   sends the failure of a scheduled run only to whoever last changed its `cron`: the others
   read it on the Actions page.
 - [ ] **Everything pinned**: actions by commit SHA, the tag in a trailing comment (Le
