@@ -970,7 +970,7 @@ function rules(): array
             'paths' => $everywhere,
             // Jugée sur les lignes ajoutées tant qu'un projet en garde : elle rejoint `faute`
             // une fois chaque stock nettoyé.
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             // Written in pieces: this file holds none of the misspellings it looks for.
             'find' => static fn (string $c, string $p): array => matches(
                 '/(?i:\bce\schamp(?:s)\b|\b[Êê]tes-vous\ss(?:ur)\b|\br[ée]gion(?:n)al|\bdrif(?:f)[ée]|\bprises\sen\scharge(?:s)\b|\bprojet\sc(?:onfondus)\b|\bo(?:e)uvre)/u',
@@ -1102,7 +1102,7 @@ function rules(): array
             'message' => 'couleur Tailwind de la palette brute : un jeton du design system',
             'ext' => [...$front, 'php'],
             'paths' => '#^(assets|templates|src/Twig)/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/(?<![-\w])(?:[\w-]+:)*(?:'.$utility.')-(?:'.$palette.')-\d{2,3}\b/', $c),
         ],
         'rgba' => [
@@ -1117,7 +1117,7 @@ function rules(): array
             'message' => '`white`/`black` posé hors jetons, en classe ou dans un style : `bg-card`, `text-foreground`, `text-primary-foreground`, `var(--primary-foreground)`…',
             'ext' => [...$front, 'php'],
             'paths' => '#^(assets|templates|src/Twig)/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             // The Tailwind classes, then a colour property written in an inline style, a CSS
             // string or a React `style` object (`color: white`, `backgroundColor: 'black'`).
             'find' => static fn (string $c): array => matches(
@@ -1491,7 +1491,7 @@ function rules(): array
             'message' => 'balise de style que la console Symfony ne connaît pas : elle s\'imprime telle quelle ; `<info>`, `<comment>`, `<question>`, `<error>`, ou `<fg=green>`',
             'ext' => ['php'],
             'paths' => '#^src/Command/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('#<(?!(?:info|comment|question|error)>)([a-z]+)>[^<\n]*</\1>#', $c, withoutComments($c, $p)),
         ],
         'sommeil-test' => [
@@ -1505,7 +1505,7 @@ function rules(): array
             'message' => 'document cité introuvable : corriger le chemin, écrit depuis la racine du dépôt (`docs/…`, `AGENTS.md`)',
             'ext' => ['php', 'ts', 'tsx', 'js', 'mjs', 'twig', 'yaml', 'yml', 'sh', 'neon', 'json', ''],
             'paths' => '#^(src|templates|assets|tests|e2e|config|translations|scripts|bin|\.github|\.husky)/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => missingDocuments($c),
         ],
         'gitignore-src' => [
