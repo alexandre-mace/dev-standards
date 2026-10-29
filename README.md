@@ -63,7 +63,7 @@ with how the compiler is enabled.
 | `commit` | Conventional Commits message for what is staged |
 | `review-diff` | Is it what was asked? The diff against the plan, the guidelines and the DoD, at arm's length in a forked context |
 | `preprod` | Merge into `preprod` for UAT. Symfony stack only |
-| `deploy` | Merge into `main`. The irreversible act, and the user's call |
+| `deploy` | Puts the branch on `main` through the `deploy` script after one full local CI, follows the deployment, checks Sentry. The irreversible act, and the user's call |
 | `gap-code` | The code against its stack's guidelines. The guidelines are right |
 | `gap-sota` | The guidelines against the ecosystem. The ecosystem is right. The mirror of the above |
 | `gap-repo` | This repo against itself: broken cross-references, siblings that disagree |
