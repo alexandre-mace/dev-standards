@@ -696,7 +696,10 @@ function detachedPunctuation(string $content): array
 function unboundedIds(string $content, string $path): array
 {
     $code = withoutComments($content, $path);
-    $digits = '(?:\[1-9\])?(?:\\\\{1,2}d|\[0-9\])[+*]';
+    // Open (`\d+`), or bounded past nine digits (`\d{1,10}`, `[1-9]\d{0,9}`): the int4 stops
+    // at 2147483647, so ten digits pass the pattern and still fail in PostgreSQL.
+    $digit = '(?:\\\\{1,2}d|\[0-9\])';
+    $digits = '(?:(?:\[1-9\])?'.$digit.'[+*]|'.$digit.'\{\d*,?\d{2,}\}|\[1-9\]'.$digit.'\{\d*,?9\})';
     $patterns = ['/\{\w+<'.$digits.'>/'];
     if ('php' === extension($path)) {
         $patterns[] = '/Requirement::(?:DIGITS|POSITIVE_INT)\b/';
@@ -1217,7 +1220,7 @@ function rules(): array
             'message' => 'identifiant sans borne (`Requirement::DIGITS`, `\d+`, `[0-9]+`, dans une route PHP ou YAML, ou une `Regex` de DTO) : `99999999999` atteint PostgreSQL, qui refuse l\'int4 et répond 500, borner à neuf chiffres (`[1-9]\d{0,8}`, une constante `Int4::ID`)',
             'ext' => ['php', 'yaml', 'yml'],
             'paths' => '#^(src/|config/routes(/|\.ya?ml$|\.php$))#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => unboundedIds($c, $p),
         ],
         'docblock-double' => [
