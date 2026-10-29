@@ -18,6 +18,12 @@ goes stale without telling anyone.
 **The test**: would it survive a fresh clone on another machine? If not, it is in the
 wrong place.
 
+**A project's `docs/` never restates a stack rule.** A rule true of every project on the
+stack goes in the stack's file, and the project links to it. A project file that
+disagrees with a guideline is a defect, not a local exception: fix one or the other,
+never leave both standing. Seen: a project doc prescribing Stimulus controllers that the
+stack guide forbade, which an agent followed.
+
 **What is not worth writing anywhere**: what the code already says, what git history
 already holds, what the tool documents itself, and anything true only of this
 conversation.

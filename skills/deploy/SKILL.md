@@ -15,8 +15,9 @@ that commit to its verdict. This skill holds what a script cannot decide.
 ## Rules
 
 - **Only on the user's explicit go, in this conversation.** A green review, a passed UAT or
-  a finished ticket is not a go. The deploy is irreversible and the decision is theirs. The
-  one exception is a minor change as `/ticket` defines it, which ships without asking.
+  a finished ticket is not a go. The deploy is irreversible and the decision is theirs. Two
+  exceptions: a minor change as `/ticket` defines it, which ships without asking, and a
+  ticket the user sent with `ship`, once the `ship` skill's gate passes.
 - **Nothing reaches `main` without `/review-diff`**, UAT fixes included. If the last
   review predates the last commit, stop and review first.
 - Abort if the current branch is `main` or `preprod` (the script refuses it too).

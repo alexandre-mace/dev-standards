@@ -59,6 +59,7 @@ with how the compiler is enabled.
 | Skill | Purpose |
 |---|---|
 | `ticket` | Takes a ticket and runs the whole chain in order, stopping at the gates that need a human |
+| `ship` | `ticket` all the way to production, on the user's word `ship`, when a confidence gate passes; stops at UAT otherwise |
 | `investigate` | Step 1: investigate, settle what the code can settle, name the tests owed, write `.claude/plan.md` |
 | `diagnosing-bugs` | Step 1 for a bug: reproduce, one hypothesis, instrument, root cause, regression test |
 | `quality` | Is it clean? Every mechanical check the stack mandates, tests and contract drift included |
@@ -115,7 +116,8 @@ What the diagram cannot show:
   prescription that has never been run is a hypothesis.
 - **Two gates belong to a human**: a blocking question from `/investigate`, and the UAT.
   `/deploy` and `/preprod` run only on the user's explicit go, and always through the
-  skill, never through hand-typed git commands.
+  skill, never through hand-typed git commands. The word `ship` is that go given in
+  advance: `/ship` skips the UAT when its confidence gate passes, and stops there otherwise.
 - Commits are save points, the merge is the irreversible act.
 
 Out of band, the hygiene loop: `/check-logs` monthly on prod, `/gap-code`

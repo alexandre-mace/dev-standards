@@ -47,7 +47,9 @@ reason. A check skipped in silence is a check nobody ran.
   hundred line diff built on a wrong premise costs the whole implementation.
 - **The UAT.** Hand over the URL and stop.
 - **Shipping.** `/deploy` runs only on the user's explicit go, and always through the
-  skill, never with hand-typed git commands: the skill is where the checks live.
+  skill, never with hand-typed git commands: the skill is where the checks live. The user
+  saying `ship`, now or up front, is that go given in advance: the `ship` skill takes over
+  and skips the UAT when its gate passes.
 
 After the UAT, the fixes meet the same definition of done, `/review-diff` runs on the
 delta, then `/deploy` on the go.
