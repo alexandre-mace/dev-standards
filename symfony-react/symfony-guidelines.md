@@ -2031,7 +2031,11 @@ above give the details. `/gap-code` checks this list.
   `pool: 'threads'`) and an isolated one for the files that call `vi.mock` or change the
   time zone. One jsdom per worker instead of one per file: 81 s to 17 s on one project.
 - [ ] **State undone after each test**: `restoreMocks`, `unstubGlobals`, real timers back
-  in the setup file, and the query client cleared (`queryClient.clear()`).
+  in the setup file, the query client cleared (`queryClient.clear()`), and
+  `document.body.innerHTML = ''` right after `cleanup()`, in the same hook. `cleanup()`
+  unmounts only what `render()` mounted: a test writing `document.body.innerHTML` left
+  its `<details>` to the next file of its worker in the shared project, whose first Tab
+  landed on that `<summary>`, red or green with the split of files between workers.
 - [ ] **MSW fails on any request no handler serves**: `server.listen({onUnhandledFrame:
   'error'})` in MSW 3 (`onUnhandledRequest` in MSW 2). A request that falls through
   otherwise reaches the network or waits for its timeout, and the test passes on the
@@ -2040,6 +2044,9 @@ above give the details. `/gap-code` checks this list.
   (`npx -y node@22 …`), since a test once broke only under 22.23. Not two full
   passes, one under each Node: Vitest is on the critical path, run alone. `npx -y`
   resolves the version from the registry on every run.
+- [ ] **`--maxWorkers="$(nproc)"` on the hosted CI**: Vitest's default is one worker fewer
+  than the cores, so one on a two-core runner, the other core idle: 5 min 45 there against
+  32 s locally on one project.
 - [ ] **Random order, seed printed**: `sequence: {shuffle: true}`, replayed with
   `pnpm vitest run --sequence.seed=<seed>`. A form test whose request left before an email
   check answered only failed in another order.
