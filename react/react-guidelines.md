@@ -235,7 +235,7 @@ whatever drifted most. Target a near-empty diff outside the documented brand var
 
 ## 4. Security, on the front
 
-Three things are true on the three stacks, and each stack's file carries the rest.
+Four things are true on the three stacks, and each stack's file carries the rest.
 
 **Everything in the bundle is public.** A prefixed environment variable (`NEXT_PUBLIC_`, `VITE_`) is
 readable by anyone who opens the sources, and nothing warns you. Only what would be fine on a
@@ -250,6 +250,13 @@ suspicion: a `javascript:` URL is an execution.
 **What the client sends, the client can forge.** A check done in the component is an ergonomic
 affordance, not a guard. The rule that matters lives on the other side, and the front's job is to
 render the server's verdict rather than re-derive it, which is also what stops the two from drifting.
+
+**A version published today is not installed today.** pnpm 11 waits a day after publication
+(`minimumReleaseAge`, 1440 minutes by default), which gives a hijacked release a day to be spotted
+and withdrawn before it reaches us: never set it to 0, and below pnpm 11 write it by hand.
+`trustPolicy: no-downgrade` in `pnpm-workspace.yaml` refuses a version published with less proof of
+origin than the ones before it, which is what a release pushed with a stolen token looks like. A
+legitimate exception goes in `trustPolicyExclude`, by name and version, with its reason.
 
 ## 5. Front-end tests
 

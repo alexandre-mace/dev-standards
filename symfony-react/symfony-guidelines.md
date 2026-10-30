@@ -35,6 +35,8 @@ Written down so it isn't re-litigated every session (in an AI-first codebase, th
 - **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (the project's types target) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost.
 - **No RSC / React Server Components** (see `reactony.md`): Symfony + Twig **is** the server layer already; the React islands are the intentional client leaves. Bolting RSC on means running a Node rendering server next to PHP, for a role PHP already fills.
 - **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks: FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. The advisory record of worker mode is part of that price (`watch.md`). The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
+- **No Rector.** `phpstan-deprecation-rules` already reports every deprecated symbol still called, and the agent fixes them one by one with the tests behind it; Rector would be a second configuration to maintain for a job done a few times a year. Re-assess at a major that rewrites many call sites (Doctrine ORM 4, Symfony 9).
+- **PHPStan and PHP-CS-Fixer, not Mago.** Mago (linter, formatter and analyzer in one Rust binary) documents no counterpart of `phpstan-symfony` and `phpstan-doctrine`, which read the container and the mappings, and adopting its formatter means reformatting the whole codebase. PHPStan Turbo already answers the speed argument. Re-assess at every watch.
 
 ---
 
@@ -2092,6 +2094,11 @@ above give the details. `/gap-code` checks this list.
   (`sha256sum -c`).
 - [ ] **`permissions: contents: read`** at the top of the workflow, since no job pushes,
   comments or publishes.
+- [ ] **Dependabot on `github-actions` only**, grouped, weekly: it moves each SHA and its
+  tag comment together. Not on `composer` nor `npm`: a PHPStan bump moves the baseline,
+  which no automatic PR fixes (six opened on one project in ten days, all red, none
+  merged), and the night audits already catch a published vulnerability. Version bumps
+  are done by hand, the baseline with them.
 
 #### Entry points
 
@@ -2317,6 +2324,13 @@ vendor/bin/psalm --taint-analysis
 ```bash
 composer audit
 ```
+
+**Composer ≥ 2.10 on the machine that runs `composer update`.** 2.9 refuses a version
+with a published advisory at `update` and `require` (`audit.block-insecure`, on by
+default), and 2.10 removes the versions Packagist flags as malware from resolution. Both
+act when the lock is resolved, not at `composer install` from it, so the version that
+counts is the one on the machine that moves the lock. `composer --version`, then
+`composer self-update`.
 
 ### Removing a bundle: Flex deletes the files its recipe owned
 

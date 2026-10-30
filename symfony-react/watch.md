@@ -35,6 +35,7 @@ with no date to go stale; this file keeps the why and the when.
 - **PHP-FPM, not FrankenPHP**: benchmarks checked in August 2026. October 2026 confirmed
   the price: seventeen FrankenPHP advisories in one month, most of them in worker mode.
   Re-assess at every watch.
+- **No Rector, no Mago**: decided on 30 October 2026, Mago at 1.59.
 
 ## Dates and issues to follow
 

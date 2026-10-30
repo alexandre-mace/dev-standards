@@ -83,6 +83,10 @@ yet can sit next to it.
   base, the React Compiler, the linter, the test stack) they must say the same thing.
   Three files quietly disagreeing is worse than one being out of date, because the reader
   cannot tell which to trust.
+- **A tool the guidelines do not name** comes in only to close a gap they have (a defect
+  that reached production, a check done by hand every time), never for being new. Either
+  verdict goes into the stack's deliberate decisions, so the next watch does not propose
+  it again.
 
 ## 4. Present
 
