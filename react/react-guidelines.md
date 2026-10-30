@@ -253,10 +253,9 @@ render the server's verdict rather than re-derive it, which is also what stops t
 
 **A version published today is not installed today.** pnpm 11 waits a day after publication
 (`minimumReleaseAge`, 1440 minutes by default), which gives a hijacked release a day to be spotted
-and withdrawn before it reaches us: never set it to 0, and below pnpm 11 write it by hand.
-`trustPolicy: no-downgrade` in `pnpm-workspace.yaml` refuses a version published with less proof of
-origin than the ones before it, which is what a release pushed with a stolen token looks like. A
-legitimate exception goes in `trustPolicyExclude`, by name and version, with its reason.
+and withdrawn before it reaches us: never set it to 0, and below pnpm 11 write it by hand. Not
+`trustPolicy: no-downgrade` on top: off by default, its maintainer holds the release age enough, and
+it fails routine updates on transitive packages that changed how they publish.
 
 ## 5. Front-end tests
 
