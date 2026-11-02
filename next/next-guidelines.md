@@ -14,6 +14,7 @@
 | shadcn | Base UI base, Vega style | The ecosystem default since July 2026. `cn` from the `cn` package (see `react/react-guidelines.md` §3) |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
 | Biome | 2.6 | Lint and format. `create-next-app --biome` still installs 2.4: bump it after scaffolding. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
+| oxlint | 1.90 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
 | lucide-react | 1.x | No more brand icons |
 | Geist | npm package | |

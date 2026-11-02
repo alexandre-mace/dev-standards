@@ -110,7 +110,8 @@ config silently lags. Real case: PHPStan stuck at `level: 8` against a guideline
   (`.github/workflows/*.yml`) each run every mandated check? Name any missing from
   either. A mandated test suite that does not exist is a gap, not a skip.
 - TS and lint config: `tsconfig.json` strict flags, and the linter the stack prescribes
-  (Biome on Next and TanStack, ESLint plus `eslint-plugin-react-hooks` >= 7 on Symfony).
+  (Biome plus oxlint for the React Compiler rules on Next and TanStack, ESLint plus
+  `eslint-plugin-react-hooks` >= 7 on Symfony: `react/react-guidelines.md` §2).
 - Dependency versions against the guideline's reference list, in its "Last watch"
   header. **A security floor that is not met is Haute priority** whatever else is going on.
 - Mandated config present: rate limiter, `http_client` retry, Sentry level, the asset

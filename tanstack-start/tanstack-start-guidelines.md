@@ -16,6 +16,7 @@
 | Vite | 8.3 | **Floor 8.3.3** (dev-server advisories of 06/10/2026, see `symfony-react/reactony.md` §6). With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
 | Biome | 2.6 | Lint and format |
+| oxlint | 1.90 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
 | Vitest / Playwright | 5.0 / 1.64 | Vitest floor 5.0.5, and the migration notes, in `symfony-react/reactony.md` §9 |
 | Hosting | Vercel | Build output is portable, it can move elsewhere unchanged |
 
@@ -74,7 +75,7 @@ Call them directly in a `loader`, or through `useServerFn()` in a component.
 plugins: [react({ compiler: true })]
 ```
 
-The plugin still marks it experimental, so the Babel path (`reactCompilerPreset()` through `@rolldown/plugin-babel`) remains the stable fallback. Compiler lint rules ship with `eslint-plugin-react-hooks` >= 7; the standalone `eslint-plugin-react-compiler` package is frozen, do not install it.
+The plugin still marks it experimental, so the Babel path (`reactCompilerPreset()` through `@rolldown/plugin-babel`) remains the stable fallback. Its lint rules run through oxlint, next to Biome: `react/react-guidelines.md` §2.
 
 **Loaders feed the Query cache** rather than fetching in a component. A route then renders from cache and revalidates, instead of blocking on a waterfall.
 

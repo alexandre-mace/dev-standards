@@ -83,8 +83,8 @@ pnpm format:check      # skip: no format:check script
 pnpm test              # skip: no test script
 ```
 
-Name the tool the project actually runs behind those scripts, Biome on Next and TanStack,
-ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
+Name the tool the project actually runs behind those scripts, Biome plus oxlint (the React
+Compiler rules) on Next and TanStack, ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
 report nobody can act on.
 
 `pnpm test` is Vitest, mandated on all three stacks. Use whatever flag the project needs

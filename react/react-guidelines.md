@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, oxlint 1.90 (its React Compiler rules), Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
@@ -51,8 +51,34 @@ What follows is the part that does not.
   reports a bail on that component.
 - Existing ones from before the compiler are no-ops, not bugs. Clean them up when you
   touch the file, not as a campaign.
-- **Lint rules ship with `eslint-plugin-react-hooks` ≥ 7** (`configs.flat.recommended`).
+- **The compiler's lint rules run on every stack**, since they are what reports a bail.
   The standalone `eslint-plugin-react-compiler` package is frozen: do not install it.
+  - **On ESLint (Symfony)**: `eslint-plugin-react-hooks` ≥ 7, `configs.flat.recommended`.
+  - **On Biome (Next, TanStack)**: Biome only ports `rules-of-hooks` and `exhaustive-deps`
+    (`useHookAtTopLevel`, `useExhaustiveDependencies`), none of the compiler rules. oxlint
+    runs them next to it, natively, with no TypeScript dependency. Not ESLint: typescript-eslint
+    8.72 refuses TypeScript 7 at load, and the shim `symfony-react/reactony.md` §8 describes
+    is a lot to carry for one plugin. List the rules: the `correctness` category would also
+    switch on oxlint's own ESLint ports, which duplicate Biome.
+
+```json
+// .oxlintrc.json, the React Compiler rules only; Biome lints and formats the rest
+{
+  "plugins": ["react"],
+  "categories": { "correctness": "off" },
+  "rules": {
+    "react/error-boundaries": "error", "react/globals": "error", "react/immutability": "error",
+    "react/incompatible-library": "error", "react/preserve-manual-memoization": "error",
+    "react/purity": "error", "react/refs": "error", "react/set-state-in-effect": "error",
+    "react/set-state-in-render": "error", "react/static-components": "error",
+    "react/use-memo": "error", "react/void-use-memo": "error"
+  }
+}
+```
+
+  The `lint` script runs both: `biome check . && oxlint`. oxlint does not port `config` and
+  `gating`, two rules on the compiler's own options, which these projects leave at their
+  defaults. Moving lint and format whole to oxc waits for oxfmt to leave beta.
 
 **A bailed component** breaks the Rules of React somewhere: a side effect in render, a
 write to `window.*`, a ref mutated from an outside callback, an `exhaustive-deps`
