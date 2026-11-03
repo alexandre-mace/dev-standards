@@ -38,6 +38,10 @@ apply the rules below, then the **Chat register** section on top of them.
 - One idea per sentence.
 - Bullets whenever the content is a list. Prose only when it carries an argument.
 - Explain a term the first time it appears, or do not use it.
+- Explaining a technical term keeps it: its exact name (a status code, a field, a class),
+  glossed in a few words beside it. A paraphrase in its place drops the word a technical
+  reader searches for, and runs longer: "redirige en 301" beats three sentences on a page
+  that "a déménagé définitivement".
 - Give the number or the cause, not the impression. "Considerably faster" says nothing,
   "ten times faster" says something.
 - A fact the reader has to act on gets its own clause, with a verb. Tacked onto the

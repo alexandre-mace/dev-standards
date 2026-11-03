@@ -49,7 +49,8 @@ already does.
   and used everywhere in the code.
 - Give the number or the cause, not the impression. "Considerably faster" says nothing,
   "ten times faster" says something.
-- Explain a term the first time it appears, or do not use it.
+- Explain a term the first time it appears, or do not use it. The explanation keeps the
+  exact name beside it (a status code, a field, a class), never a paraphrase in its place.
 - A report for a reader outside the code (a manager, a partner) gives the current state:
   no PR number, no date of the work. It keeps the technical reason behind each choice,
   which is what that reader weighs.
