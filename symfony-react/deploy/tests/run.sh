@@ -260,6 +260,31 @@ check '  sa branche locale aussi' "$(git branch --list lot)" ''
 
 fresh
 echo OK > "$FAKE/state-app_prod"
+git checkout -q main
+git worktree add -q "$FAKE/project/.claude/worktrees/lot" -b lot 2> /dev/null
+cd "$FAKE/project/.claude/worktrees/lot" || exit 2
+echo lot > lot.txt && git add lot.txt && git commit -qm lot && git push -q origin lot 2> /dev/null
+out=$("$DEPLOY" --remove-worktree --timeout 10 2>&1); code=$?
+cd "$FAKE/project" || exit 2
+check 'branche poussée, retirée sur origin une fois déployée, code 0' $code 0
+check '  origin ne la porte plus' "$(git -C "$FAKE/origin.git" branch --list lot)" ''
+
+fresh
+echo OK > "$FAKE/state-app_prod"
+git checkout -q main
+git worktree add -q "$FAKE/project/.claude/worktrees/lot" -b lot 2> /dev/null
+cd "$FAKE/project/.claude/worktrees/lot" || exit 2
+echo lot > lot.txt && git add lot.txt && git commit -qm lot
+echo plus > plus.txt && git add plus.txt && git commit -qm plus && git push -q origin lot 2> /dev/null
+git reset -q --hard HEAD~1
+out=$("$DEPLOY" --remove-worktree --timeout 10 2>&1); code=$?
+cd "$FAKE/project" || exit 2
+check 'origin porte sur la branche un commit absent de main : gardée, code 4' $code 4
+contains '  la sortie le dit' "$out" 'absents de main'
+check '  origin la porte encore' "$(git -C "$FAKE/origin.git" branch --list lot | tr -d ' ')" lot
+
+fresh
+echo OK > "$FAKE/state-app_prod"
 out=$("$DEPLOY" --remove-worktree --timeout 10 2>&1); code=$?
 check 'depuis le checkout principal, rien à retirer, code 0' $code 0
 check '  la branche reste' "$(git branch --show-current)" feature

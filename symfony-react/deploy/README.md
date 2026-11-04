@@ -10,7 +10,7 @@ the build's verdict instead of announcing a deploy that failed. Bash 3.2 or late
 ```sh
 deploy                       # push HEAD to main, follow the production deployment
 deploy --preprod             # then bring preprod back in line with main
-deploy --remove-worktree     # then remove this worktree and its local branch
+deploy --remove-worktree     # then remove this worktree and its branch, local and remote
 deploy --app <alias|id>      # follow another application than the prod alias
 deploy --timeout <s>         # bound on the wait for the verdict, 1800 by default
 deploy --start-timeout <s>   # wait before relaunching a deployment that never started, 180 by default
@@ -82,9 +82,10 @@ Once deployed, the worktree the script runs from goes, with its local branch, wh
 still clean and HEAD is in `origin/main`. `git worktree remove` without `--force`: ignored
 files (`vendor/`, `var/`, `node_modules/`) go with it, anything else stops it. The branch is
 deleted with `-D` because `-d` compares with the main checkout's HEAD, which deploys pushed
-from worktrees leave behind; the script has just checked it against `origin/main`. A remote
-branch of the same name is not deleted, the script gives the command. From the main
-checkout, there is no worktree to remove and nothing happens.
+from worktrees leave behind; the script has just checked it against `origin/main`. The
+branch of the same name on `origin` goes too, read on `origin` itself, when `origin/main`
+holds all of it; a commit pushed to it after the one deployed keeps it, and the script
+exits 4. From the main checkout, there is no worktree to remove and nothing happens.
 
 The session's working directory disappears with the worktree: continue from the main
 checkout.
@@ -97,7 +98,7 @@ checkout.
 | 1 | the deployment failed, production stays on the previous version |
 | 2 | refused before pushing, or wrong usage |
 | 3 | pushed, no verdict within the bound, or `clever` unreachable |
-| 4 | deployed, but preprod or the worktree were left as they were |
+| 4 | deployed, but preprod, the worktree or its branch were left as they were |
 
 ## Install
 

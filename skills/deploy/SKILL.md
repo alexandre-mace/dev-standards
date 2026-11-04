@@ -58,15 +58,16 @@ Delete `.claude/plan.md` first: a stale plan would be read as the current one by
 ```bash
 deploy                                   # push HEAD to main, follow the production deployment
 deploy --preprod                         # then realign preprod on main, if it holds nothing else
-deploy --preprod --remove-worktree       # and remove this worktree and its branch
+deploy --preprod --remove-worktree       # and remove this worktree and its branch, local and remote
 ```
 
 - **`--preprod`** whenever the project has a `preprod` branch: the next UAT then starts from
   production. The script leaves preprod alone when it holds commits `main` lacks, lists them
   and exits 4: report them, someone may be testing them. Never align by force.
 - **`--remove-worktree`** when the session works in the worktree of this feature. It goes only
-  if clean and in `origin/main`; the session continues from the main checkout. A remote
-  branch of the same name: `git push origin --delete <branch>`, as the script says.
+  if clean and in `origin/main`, with its branch, local and on `origin`; the session continues
+  from the main checkout. A remote branch that carries a commit `main` lacks is kept and the
+  script exits 4: report it, never delete it by hand.
 - **Exit codes**: 0 deployed, 1 the deployment failed (production stays on the previous
   version: read the end of the log the script prints, report, never announce a deploy; a
   download failure has already been relaunched once, so a second `clever restart` by hand

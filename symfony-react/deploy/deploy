@@ -5,13 +5,13 @@
 #
 #   deploy                     push HEAD to main, follow the production deployment
 #   deploy --preprod           then bring preprod back in line with main, if it holds nothing else
-#   deploy --remove-worktree   then remove this worktree and its local branch, if clean and merged
+#   deploy --remove-worktree   then remove this worktree and its branch, local and remote, if clean and merged
 #   deploy --app <alias|id>    the CleverCloud application to follow, instead of the prod alias
 #   deploy --timeout <s>       how long to wait for the verdict (default 1800)
 #   deploy --start-timeout <s> how long before relaunching a deployment that never started (default 180)
 #
 # Exit codes: 0 deployed, 1 deployment failed, 2 refused before pushing (or usage),
-# 3 no verdict within the timeout, 4 deployed but preprod or the worktree left as they were.
+# 3 no verdict within the timeout, 4 deployed but preprod, the worktree or its branch left as they were.
 # One relaunch at most per run: a deployment that never started, or one that failed on a
 # download (HTTP 429 or 5xx, connection reset or timed out).
 
@@ -332,9 +332,24 @@ remove_worktree() {
     # leave behind; the branch was checked against origin/main just above.
     git branch -D "$BRANCH" > /dev/null || return 4
     say "Worktree $ROOT et branche $BRANCH retirés."
-    if git rev-parse --verify --quiet "origin/$BRANCH" > /dev/null; then
-        say "La branche distante origin/$BRANCH existe encore : git push origin --delete $BRANCH"
+    remove_remote_branch
+}
+
+# The branch of the same name on origin goes too, read on origin itself rather than on a
+# tracking ref that may be stale, and only when main holds all of it: a commit pushed to it
+# after the one deployed keeps it.
+remove_remote_branch() {
+    local remote
+    remote=$(git ls-remote --heads origin "refs/heads/$BRANCH" | cut -f1)
+    [ -n "$remote" ] || return 0
+    if ! git fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
+        || ! git merge-base --is-ancestor "$remote" origin/main; then
+        say "La branche distante origin/$BRANCH porte des commits absents de main, gardée." >&2
+        return 4
     fi
+    git push --quiet origin --delete "$BRANCH" \
+        || { say "git push origin --delete $BRANCH a échoué, branche distante gardée." >&2; return 4; }
+    say "Branche distante origin/$BRANCH supprimée."
 }
 
 if [ "$REMOVE_WORKTREE" -eq 1 ]; then
