@@ -337,13 +337,14 @@ remove_worktree() {
 
 # The branch of the same name on origin goes too, read on origin itself rather than on a
 # tracking ref that may be stale, and only when main holds all of it: a commit pushed to it
-# after the one deployed keeps it.
+# after the one deployed keeps it. Held by its patch, not its hash (git cherry): a branch
+# pushed, then rebased onto origin/main before the deploy, is on main under other hashes.
 remove_remote_branch() {
     local remote
     remote=$(git ls-remote --heads origin "refs/heads/$BRANCH" | cut -f1)
     [ -n "$remote" ] || return 0
     if ! git fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
-        || ! git merge-base --is-ancestor "$remote" origin/main; then
+        || git cherry origin/main "$remote" | grep -q '^+'; then
         say "La branche distante origin/$BRANCH porte des commits absents de main, gardée." >&2
         return 4
     fi

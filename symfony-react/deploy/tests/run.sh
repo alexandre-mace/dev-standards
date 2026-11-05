@@ -285,6 +285,20 @@ check '  origin la porte encore' "$(git -C "$FAKE/origin.git" branch --list lot 
 
 fresh
 echo OK > "$FAKE/state-app_prod"
+git checkout -q main
+git worktree add -q "$FAKE/project/.claude/worktrees/lot" -b lot 2> /dev/null
+cd "$FAKE/project/.claude/worktrees/lot" || exit 2
+echo lot > lot.txt && git add lot.txt && git commit -qm lot && git push -q origin lot 2> /dev/null
+git clone -q "$FAKE/origin.git" "$FAKE/other" 2> /dev/null
+(cd "$FAKE/other" && echo other > other.txt && git add other.txt && git commit -qm ailleurs && git push -q origin main 2> /dev/null)
+git fetch -q origin && git rebase -q origin/main
+out=$("$DEPLOY" --remove-worktree --timeout 10 2>&1); code=$?
+cd "$FAKE/project" || exit 2
+check 'branche poussée puis rebasée avant le déploiement : main en porte le contenu, retirée sur origin, code 0' $code 0
+check '  origin ne la porte plus' "$(git -C "$FAKE/origin.git" branch --list lot)" ''
+
+fresh
+echo OK > "$FAKE/state-app_prod"
 out=$("$DEPLOY" --remove-worktree --timeout 10 2>&1); code=$?
 check 'depuis le checkout principal, rien à retirer, code 0' $code 0
 check '  la branche reste' "$(git branch --show-current)" feature
