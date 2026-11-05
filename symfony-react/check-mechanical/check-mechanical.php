@@ -1445,11 +1445,11 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*(?:validationFailedStatusCode|FILTER_NULL_ON_FAILURE))/', $c, withoutComments($c, $p)),
         ],
         'ancre-sans-d' => [
-            'message' => 'motif `/^…$/` sans le modificateur `D` : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
+            'message' => 'motif `/^…$/` (ou `#^…$#`, `~^…$~`) sans le modificateur `D` (ni `m`, où `D` ne joue pas) : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
             'ext' => ['php'],
             'paths' => '#^src/#',
             'kind' => 'ajout',
-            'find' => static fn (string $c): array => matches('/\'\/\^[^\']*\$\/(?![a-zA-Z]*D)[a-zA-Z]*\'/', $c),
+            'find' => static fn (string $c): array => matches('/\'([\/#~])\^[^\']*\$\1(?![a-zA-Z]*[Dm])[a-zA-Z]*\'/', $c),
         ],
         'find-all' => [
             'message' => '`->findAll()` dans un contrôleur ou un service : sans `ORDER BY`, l\'ordre des lignes change après une simple mise à jour ; `findBy([], [...])` avec un ordre, ou une méthode de dépôt qui porte le sien (symfony-guidelines, « A query without ORDER BY has no order »)',
