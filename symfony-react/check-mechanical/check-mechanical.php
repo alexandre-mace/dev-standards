@@ -1438,11 +1438,11 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => openClasses($c, str_starts_with($p, 'tests/')),
         ],
         'map-query-statut' => [
-            'message' => '`#[MapQueryString]` ou `#[MapQueryParameter]` sans `validationFailedStatusCode` : un paramètre invalide répondrait le 404 de Symfony, sans `violations` ; `Response::HTTP_UNPROCESSABLE_ENTITY` pour une route d\'API, `HTTP_BAD_REQUEST` pour une page',
+            'message' => '`#[MapQueryString]` ou `#[MapQueryParameter]` sans `validationFailedStatusCode` : un paramètre invalide répondrait le 404 de Symfony, sans `violations` ; `Response::HTTP_UNPROCESSABLE_ENTITY`, ou, pour une page qui lit une valeur absurde comme absente, `flags: \\FILTER_NULL_ON_FAILURE` sur un argument nullable',
             'ext' => ['php'],
             'paths' => '#^src/#',
             'kind' => 'ajout',
-            'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*validationFailedStatusCode)/', $c, withoutComments($c, $p)),
+            'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*(?:validationFailedStatusCode|FILTER_NULL_ON_FAILURE))/', $c, withoutComments($c, $p)),
         ],
         'ancre-sans-d' => [
             'message' => 'motif `/^…$/` sans le modificateur `D` : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
