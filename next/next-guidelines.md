@@ -10,7 +10,7 @@
 | React | 19.3 | `<ViewTransition>` stable: `transitionTypes` on `<Link>` needs no flag any more. The server packages need 19.3.1 (remote code execution, GHSA-xqc2-xf4c-x3h3), which Next 16.4.1 brings |
 | `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
 | TypeScript | 7.0 | The native Go port, published as `typescript`; `next build` type-checks with it since 16.3. A project still on 5.9 migrates through 6.0 first (see `symfony-react/reactony.md` §8) |
-| Tailwind | 4 | PostCSS, no `tailwind.config` |
+| Tailwind | 4.3 | PostCSS, no `tailwind.config`. **Pin `tailwindcss` and `@tailwindcss/postcss` to exactly 4.3.3**: 4.3.4 (02/11/2026) injects Preflight into the CSS modules `next/font` generates for Geist, and the Turbopack build fails with « Selector "ul" is not pure ». A `^4` range takes it on the next `pnpm update`. Before moving off 4.3.3, `rm -rf .next` then `pnpm build`: with the cache in place the build can fail or pass for another reason |
 | shadcn | Base UI base, Vega style | The ecosystem default since July 2026. `cn` from the `cn` package (see `react/react-guidelines.md` §3) |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
 | Biome | 2.6 | Lint and format. `create-next-app --biome` still installs 2.4: bump it after scaffolding. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
