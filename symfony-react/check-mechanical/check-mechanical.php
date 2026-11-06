@@ -927,18 +927,13 @@ function rules(): array
     return [
         // Writing, everywhere text is written.
         'tiret-long' => [
-            'message' => 'tiret long : une incise prend des virgules, une explication les deux-points (seul, entre guillemets ou dans une cellule, il dit une case vide et passe)',
+            'message' => 'tiret long : une incise prend des virgules, une explication les deux-points, une case vide le tiret demi-cadratin « – »',
             'ext' => $prose,
             'paths' => $everywhere,
             'kind' => 'fichier',
             // The entities and the escape are written here without their whole name,
-            // otherwise this file would refuse itself. The dash alone (`'\x{2014}'`,
-            // `>\x{2014}<`, a JSX line holding only it) is the fallback of an empty cell.
-            'find' => static fn (string $c): array => matches(
-                '/\x{2014}|&(?:mdash|#0*8212|#x0*2014);|\\\\u2014/ui',
-                $c,
-                blank($c, '/([\'"`])(?:\x{2014}|\\\\u2014)\1|>\s*\x{2014}\s*<|^[ \t]*\x{2014}[ \t]*$/um'),
-            ),
+            // otherwise this file would refuse itself. An empty cell takes the en dash.
+            'find' => static fn (string $c): array => matches('/\x{2014}|&(?:mdash|#0*8212|#x0*2014);|\\\\u2014/ui', $c),
         ],
         'point-median' => [
             'message' => 'point médian employé comme séparateur : une virgule, deux lignes ou une liste (l\'écriture inclusive, « porteur·se », passe)',
