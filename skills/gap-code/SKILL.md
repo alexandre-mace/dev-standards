@@ -168,10 +168,6 @@ except the accepted deviations.
 - [ ] `chemin/vers/Fichier.php` : description de l'écart (sûr | probable | à vérifier)
   - Détail, ce qu'il faut extraire, déplacer ou renommer
 
-## À remonter
-
-- `chemin/vers/gabarit.html.twig:12` : « le texte », et ce qui le contredit. Hors compte, aucun lot n'y touche.
-
 ## Écarts assumés
 
 - `chemin/vers/Fichier.php` : l'écart, et la raison de ne pas le corriger
@@ -307,14 +303,16 @@ Re-read these figures when a new model ships.
   uses it yet" is not a reason to remove it. Read the commit that added it, and when the
   doubt remains, ask. Seen: the address of each price search, collected on purpose for a
   dashboard to come, removed as "personal data nobody reads".
-- **A visible text's substance is not the audit's to judge**, it may have been asked from
-  above: fix its form only (typo, tutoiement, typography), list a doubt on its substance under « À remonter ».
+- **A visible text's substance is presumed wanted**, it may have been asked from above: the
+  audit fixes its form only (typo, tutoiement, typography) and records nothing on its substance.
 - **A product question reaches the user only when nothing answers it.** Before listing a
   behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
   cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
   choice, recorded under the accepted deviations, not a question. Seen: a member already
   installed flagged for not seeing the installation path in the menu, a choice obvious to
   anyone who knows the product.
+- **A question left open comes with the default answer the fix lot applies**, asked once in
+  the summary: without a reply the default holds, so nothing waits in the file.
 - **Read the code before calling it a deviation.** Code that does not follow the canonical
   pattern is sometimes right for its situation, and forcing the pattern makes it worse.
   Seen: mutation hooks flagged for not using `useMutation`, in islands mounted without a
