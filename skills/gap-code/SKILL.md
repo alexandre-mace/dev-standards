@@ -168,6 +168,11 @@ except the accepted deviations.
 - [ ] `chemin/vers/Fichier.php` : description de l'écart (sûr | probable | à vérifier)
   - Détail, ce qu'il faut extraire, déplacer ou renommer
 
+## À remonter
+
+- `chemin/vers/gabarit.html.twig:12` : « le texte affiché », et ce qui le contredit (le code,
+  une autre page). Hors compte, rien n'y touche avant la décision de qui porte le contenu.
+
 ## Écarts assumés
 
 - `chemin/vers/Fichier.php` : l'écart, et la raison de ne pas le corriger
@@ -303,6 +308,16 @@ Re-read these figures when a new model ships.
   uses it yet" is not a reason to remove it. Read the commit that added it, and when the
   doubt remains, ask. Seen: the address of each price search, collected on purpose for a
   dashboard to come, removed as "personal data nobody reads".
+- **What a text says is not the audit's to judge.** The wording a visitor or a client
+  reads (a claim about the offer, the tax, the fees, a promise, a call to action) may have
+  been asked for by someone above the developer, and a rewrite shipped by a fix lot falls
+  back on them. The audit corrects the form only: a typo, a tutoiement among vouvoiements,
+  a broken sentence, the typography of `writing.md`. When the substance looks wrong, because
+  the code does something else, another page says the opposite, or it cannot be true, it is
+  no finding and no fix lot touches it: it goes under « À remonter » in
+  `docs/gap-analysis.md`, the text quoted beside what contradicts it, for whoever owns the
+  content to decide. Seen: « Cela ne change presque rien » between two foncières, written
+  from product feedback, filed as a false text to correct.
 - **A product question reaches the user only when nothing answers it.** Before listing a
   behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
   cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
