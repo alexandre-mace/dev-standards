@@ -24,6 +24,9 @@ disagrees with a guideline is a defect, not a local exception: fix one or the ot
 never leave both standing. Seen: a project doc prescribing Stimulus controllers that the
 stack guide forbade, which an agent followed.
 
+**An edit to a skill, a guideline or an `AGENTS.md` adds the fewest lines that carry the
+rule**: one sentence by default, an example only when the rule reads wrong without it.
+
 **What is not worth writing anywhere**: what the code already says, what git history
 already holds, what the tool documents itself, and anything true only of this
 conversation.
