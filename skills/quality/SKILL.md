@@ -117,6 +117,10 @@ Not run here:         Playwright (/live-test), Psalm (CI), full suites (CI) when
 ```
 
 - Only the rows that apply.
+- Append it to `.claude/plan.md` under `## Quality`, with the tree it checked, uncommitted
+  changes included (`GIT_INDEX_FILE=$(mktemp -u) sh -c 'git read-tree HEAD && git add -A &&
+  git write-tree'`): `/review-diff` runs in a fork and reuses a green run whose tree is
+  `HEAD^{tree}`.
 - Every FAIL shows the real error output and the fix, never a paraphrase.
 - **A vulnerability never blocks the run.** Report it at the end, apply the update, and
   commit that on its own: it does not belong in the feature's changeset.

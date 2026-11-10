@@ -243,6 +243,45 @@ contains '  le commit est nommé' "$out" 'recette en cours'
 check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "$old_preprod"
 check '  main est bien déployée' "$(origin_main)" "$(git rev-parse HEAD)"
 
+# --- --uat: the branch merged into preprod, main untouched -------------------------------
+
+fresh
+echo OK > "$FAKE/state-app_preprod"
+git clone -q -b preprod "$FAKE/origin.git" "$FAKE/pp" 2> /dev/null
+(cd "$FAKE/pp" && echo test > recette.txt && git add recette.txt && git commit -qm "recette d'un autre" && git push -q origin preprod 2> /dev/null)
+old_preprod=$(git -C "$FAKE/origin.git" rev-parse preprod)
+before=$(origin_main)
+out=$("$DEPLOY" --uat --timeout 10 2>&1); code=$?
+check '--uat : fusionnée dans preprod et déployée, code 0' $code 0
+git -C "$FAKE/origin.git" merge-base --is-ancestor "$(git rev-parse HEAD)" preprod
+check '  preprod porte la branche' $? 0
+git -C "$FAKE/origin.git" merge-base --is-ancestor "$old_preprod" preprod
+check '  sans forcer : ce que preprod portait reste' $? 0
+check '  main est intacte' "$(origin_main)" "$before"
+check '  la branche est poussée' "$(git -C "$FAKE/origin.git" rev-parse feature)" "$(git rev-parse HEAD)"
+check "  l'application suivie est preprod" "$(sort -u "$FAKE/calls")" app_preprod
+contains '  ce que preprod porte d’autre est nommé' "$out" "recette d'un autre"
+check '  on reste sur la branche' "$(git branch --show-current)" feature
+
+fresh
+echo OK > "$FAKE/on-restart-app_preprod"
+out=$("$DEPLOY" --uat --start-timeout 2 --timeout 15 2>&1); code=$?
+check '--uat : aucun déploiement ne démarre, relancé une fois puis OK, code 0' $code 0
+check '  clever restart porte le commit de preprod' "$(cat "$FAKE/restarts")" "app_preprod $(git -C "$FAKE/origin.git" rev-parse preprod)"
+
+fresh
+git clone -q -b preprod "$FAKE/origin.git" "$FAKE/pp" 2> /dev/null
+(cd "$FAKE/pp" && echo autre > change.txt && git add change.txt && git commit -qm conflit && git push -q origin preprod 2> /dev/null)
+old_preprod=$(git -C "$FAKE/origin.git" rev-parse preprod)
+out=$("$DEPLOY" --uat --timeout 10 2>&1); code=$?
+check '--uat : conflit avec preprod, refusé, code 2' $code 2
+contains '  le fichier en conflit est nommé' "$out" 'change.txt'
+check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "$old_preprod"
+
+fresh
+"$DEPLOY" --uat --preprod --timeout 10 > /dev/null 2>&1
+check '--uat avec --preprod, refusé, code 2' $? 2
+
 # --- The worktree removed once deployed -------------------------------------------------
 
 fresh

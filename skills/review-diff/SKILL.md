@@ -87,8 +87,8 @@ Then the part no checklist of green ticks covers, **completeness**:
 
 ## 5. Delegate the mechanical checks
 
-- Run **`/quality`**, unless it already passed green on this exact commit with nothing
-  moved since, in which case name the run you are relying on. Pass 2 always re-runs it,
+- Run **`/quality`**, unless the `## Quality` of `.claude/plan.md` is green on a tree equal
+  to `git rev-parse HEAD^{tree}`, in which case name the run you are relying on. Pass 2 always re-runs it,
   after the UAT fixes. A FAIL blocks the verdict either way.
 - Backstop on unfamiliar APIs: `/investigate` should have read the docs for anything the
   guidelines do not cover. If the diff uses such an API and the plan shows no sign of it,

@@ -14,6 +14,7 @@ deploy --remove-worktree     # then remove this worktree and its branch, local a
 deploy --app <alias|id>      # follow another application than the prod alias
 deploy --timeout <s>         # bound on the wait for the verdict, 1800 by default
 deploy --start-timeout <s>   # wait before relaunching a deployment that never started, 180 by default
+deploy --uat                 # instead: merge the branch into preprod for UAT, follow preprod, main untouched
 ```
 
 `/deploy` runs it once the user has given the go; the rules around it (the go, the review
@@ -47,8 +48,9 @@ before, Sentry after) are in that skill. The script only does what a script can 
   hands back once the deployment has started (`--exit-on deploy-start`), the script then
   following it like any other. Two causes, seen in production:
   - no deployment of the pushed commit after `--start-timeout` (180 s): GitHub's webhook
-    never reached CleverCloud, and nothing would have happened until someone ran the same
-    command by hand. A deployment already listed, in any state, is never relaunched;
+    was lost, or CleverCloud answered it « queued for redeploy » and never started one
+    (seen on preprod), and nothing would have happened until someone ran the same command
+    by hand. A deployment already listed, in any state, is never relaunched;
   - a `FAIL` whose last log lines show a download that failed on the way (`HTTP/2 429`,
     502, 503 or 504, `could not be downloaded`, a connection reset or timed out): Composer
     fetching a dist archive from GitHub, which the same commit passes a few minutes later.
@@ -56,6 +58,11 @@ before, Sentry after) are in that skill. The script only does what a script can 
 
   The two share the single relaunch, production and preprod together: a deployment
   relaunched for not starting that then fails on a 429 exits 1.
+- **`--uat`**, what `/preprod` runs: the branch pushed, then merged into `origin/preprod` by
+  `git merge-tree`, without a checkout, and pushed as a fast-forward; the application
+  followed is the one whose alias starts with `preprod`, with the same verdict and relaunch.
+  A branch behind `main` is not refused, a conflict is (exit 2, the files named), and the
+  commits preprod holds besides `main` are listed: someone else's test may be in progress.
 - **Sentry is not read here**: a script would need a token, and the skill has the Sentry
   tools. The last line gives the time of the deploy, to look from.
 

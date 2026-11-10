@@ -9,6 +9,7 @@
 #   deploy --app <alias|id>    the CleverCloud application to follow, instead of the prod alias
 #   deploy --timeout <s>       how long to wait for the verdict (default 1800)
 #   deploy --start-timeout <s> how long before relaunching a deployment that never started (default 180)
+#   deploy --uat               instead: merge the branch into preprod, follow the preprod deployment, main untouched
 #
 # Exit codes: 0 deployed, 1 deployment failed, 2 refused before pushing (or usage),
 # 3 no verdict within the timeout, 4 deployed but preprod, the worktree or its branch left as they were.
@@ -18,12 +19,13 @@
 set -o pipefail
 
 usage() {
-    sed -n '6,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '6,12p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
 PREPROD=0
 REMOVE_WORKTREE=0
+UAT=0
 APP=
 TIMEOUT=1800
 START_TIMEOUT=180
@@ -32,6 +34,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --preprod) PREPROD=1 ;;
         --remove-worktree) REMOVE_WORKTREE=1 ;;
+        --uat) UAT=1 ;;
         --app) APP=${2:-}; [ -n "$APP" ] || usage 2 >&2; shift ;;
         --timeout)
             TIMEOUT=${2:-}
@@ -48,6 +51,10 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+if [ "$UAT" -eq 1 ] && [ $((PREPROD + REMOVE_WORKTREE)) -gt 0 ]; then
+    echo "--uat ne va pas en production : ni --preprod ni --remove-worktree." >&2
+    usage 2 >&2
+fi
 
 say() { printf '%s\n' "$*"; }
 refuse() { printf 'Refusé : %s\n' "$*" >&2; exit 2; }
@@ -96,8 +103,9 @@ if [ -n "$APP" ]; then
     [ -n "$APP_ID" ] || refuse "aucune application « $APP » dans $CLEVER_JSON."
 else
     [ -f "$CLEVER_JSON" ] || refuse "pas de .clever.json dans $ROOT : passer --app <id>."
-    APP_ID=$(app_for prod prefix)
-    [ -n "$APP_ID" ] || refuse "pas exactement une application dont l'alias commence par « prod » dans $CLEVER_JSON : passer --app <alias|id>."
+    TARGET=prod; [ "$UAT" -eq 1 ] && TARGET=preprod
+    APP_ID=$(app_for "$TARGET" prefix)
+    [ -n "$APP_ID" ] || refuse "pas exactement une application dont l'alias commence par « $TARGET » dans $CLEVER_JSON : passer --app <alias|id>."
 fi
 command -v clever > /dev/null || refuse "clever (clever-tools) manque : il suit le déploiement."
 
@@ -107,13 +115,6 @@ say "git fetch origin"
 git fetch --quiet origin || refuse "git fetch a échoué."
 git rev-parse --verify --quiet origin/main > /dev/null || refuse "origin/main n'existe pas."
 
-BEHIND=$(git rev-list --oneline HEAD..origin/main)
-if [ -n "$BEHIND" ]; then
-    say "origin/main porte des commits absents de $BRANCH :" >&2
-    say "$BEHIND" | sed 's/^/  /' >&2
-    refuse "rebaser $BRANCH sur origin/main (git rebase origin/main), repasser les vérifications, puis relancer."
-fi
-
 SHA=$(git rev-parse HEAD)
 SHORT=$(git rev-parse --short HEAD)
 
@@ -121,7 +122,18 @@ SHORT=$(git rev-parse --short HEAD)
 # CleverCloud's.
 SINCE_MS=$((($(date +%s) - 120) * 1000))
 
-if [ "$SHA" = "$(git rev-parse origin/main)" ]; then
+# A branch in UAT may be behind main: preprod receives it as it is.
+BEHIND=
+[ "$UAT" -eq 1 ] || BEHIND=$(git rev-list --oneline HEAD..origin/main)
+if [ -n "$BEHIND" ]; then
+    say "origin/main porte des commits absents de $BRANCH :" >&2
+    say "$BEHIND" | sed 's/^/  /' >&2
+    refuse "rebaser $BRANCH sur origin/main (git rebase origin/main), repasser les vérifications, puis relancer."
+fi
+
+if [ "$UAT" -eq 1 ]; then
+    : # pushed below, once the functions that follow the deployment exist
+elif [ "$SHA" = "$(git rev-parse origin/main)" ]; then
     say "origin/main est déjà en $SHORT : rien à pousser, suivi de son déploiement."
     SINCE_MS=0
 else
@@ -250,7 +262,7 @@ follow() {
         # CANCELLED: CleverCloud dropped it for a newer push, which carries the commit
         # once it appears; anything else is still running.
         if [ -z "$verdict" ] && [ "$errors" -eq 0 ] && [ "$RELAUNCHED" -eq 0 ] && [ "$now" -ge "$START_TIMEOUT" ]; then
-            say "Aucun déploiement de ${sha:0:8} en $(duration "$START_TIMEOUT") : CleverCloud n'a pas reçu le push (webhook de GitHub perdu ?), relancé une fois : clever restart --app $app --commit $sha"
+            say "Aucun déploiement de ${sha:0:8} en $(duration "$START_TIMEOUT") : CleverCloud n'a pas reçu le push ou ne l'a pas lancé, relancé une fois : clever restart --app $app --commit $sha"
             relaunch "$app" "$sha"
         fi
         if [ "$now" -ge "$TIMEOUT" ]; then
@@ -260,6 +272,38 @@ follow() {
         sleep "$POLL"
     done
 }
+
+# --- --uat: the branch merged into preprod, its deployment followed ----------------------
+# The merge is computed without a checkout (git merge-tree), so neither the worktree nor a
+# local preprod branch moves; preprod is pushed as a fast-forward, never forced.
+
+uat() {
+    local others tree merge
+    git rev-parse --verify --quiet origin/preprod > /dev/null || refuse "origin/preprod n'existe pas."
+    git push --quiet origin "HEAD:refs/heads/$BRANCH" || refuse "git push origin $BRANCH a échoué (jamais forcé)."
+    if git merge-base --is-ancestor "$SHA" origin/preprod; then
+        say "preprod porte déjà $SHORT : rien à fusionner, suivi de son déploiement."
+        follow "$APP_ID" "$SHA" 0 preprod
+        return
+    fi
+    # What preprod holds besides main: another test may be in progress there.
+    others=$(git log --no-merges --format='  %h %an, %ar : %s' origin/main..origin/preprod --not HEAD)
+    [ -z "$others" ] || { say "preprod porte aussi, absent de main :"; say "$others"; }
+    if ! tree=$(git merge-tree --write-tree --name-only origin/preprod HEAD); then
+        say "$tree" | sed -n '2,/^$/p' | sed '/^$/d; s/^/  /' >&2
+        refuse "conflit entre $BRANCH et preprod : à résoudre par une décision, jamais deviné."
+    fi
+    merge=$(git commit-tree "${tree%%$'\n'*}" -p origin/preprod -p "$SHA" -m "Merge branch '$BRANCH' into preprod") \
+        || refuse "git commit-tree a échoué."
+    git push --quiet origin "$merge:refs/heads/preprod" || refuse "git push origin …:preprod a échoué (jamais forcé)."
+    say "$BRANCH fusionnée dans preprod ($(git rev-parse --short "$merge"))."
+    follow "$APP_ID" "$merge" "$SINCE_MS" preprod
+}
+
+if [ "$UAT" -eq 1 ]; then
+    uat
+    exit $?
+fi
 
 DEPLOYED_AT=$(date '+%Y-%m-%d %H:%M')
 follow "$APP_ID" "$SHA" "$SINCE_MS" production
