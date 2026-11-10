@@ -29,7 +29,8 @@ follows is what `/run` does not know.
 - **`scrollIntoView({behavior: 'smooth'})` does not scroll a headless browser.** Use
   `'instant'` when a check depends on the element being in view.
 - **Behind a login, log in; do not fall back on tests.** On Symfony, `php bin/console
-  app:dev:login <ROLE>` prints a one-click link (`--env=e2e` against an e2e server), and Turnstile runs on its test keys in dev
+  app:dev:login <ROLE>` prints a one-click link (dev only: an `APP_ENV=e2e` server takes the
+  login form and a seeded account), and Turnstile runs on its test keys in dev
   (symfony-guidelines §13). A project without them: say the walk stopped at the login, as
   a limit of this check and a `/gap-code` finding, never as an equivalent verification.
 - Next and TanStack Start: one `pnpm dev`.
