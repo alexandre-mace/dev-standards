@@ -27,8 +27,9 @@ sync-main-checkout --hook      # for the SessionStart hook: silent when up to da
   merge commit.
 - **After moving**, one line each when a lockfile changed (reinstall before running code from
   there) and when an `AGENTS.md` or `CLAUDE.md` changed: printed by the hook, the line enters
-  the session's context, so a session that loaded the old instructions knows to reread them,
-  whichever of the two ran first.
+  the session's context, so a session that loaded the old instructions knows to reread them.
+  It always has: Claude Code reads `CLAUDE.md` before the SessionStart hooks run, even an
+  instant one (measured with Claude Code 2.1.318), so the move only reaches the next session.
 - **Never hangs a session's start**: no credential prompt (`GIT_TERMINAL_PROMPT=0`), ssh in
   batch mode with a five-second connect timeout unless an ssh command is configured, and a
   failed fetch is one line, exit 0.
