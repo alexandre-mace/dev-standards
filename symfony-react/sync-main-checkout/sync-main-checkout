@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Keeps a project's main checkout on origin's default branch (README.md, next to it), from
+# the checkout itself or any of its worktrees. Nobody works there: sessions start there and
+# read its AGENTS.md, and worktrees cut "from HEAD" start from it, so a checkout left behind
+# hands both an old state.
+#
+#   sync-main-checkout             fetch origin, then fast-forward the main checkout
+#   sync-main-checkout --no-fetch  the same without fetching (deploy has just pushed)
+#   sync-main-checkout --hook      for a SessionStart hook: silent unless something moved
+#                                  or was left behind, exit 0 outside a repository
+#
+# Fast-forward only, and only when the checkout is on the default branch, holds no
+# uncommitted change to a tracked file and no commit origin lacks. Otherwise nothing moves
+# and one line says why. Git itself refuses a fast-forward that would overwrite an
+# untracked file. Exit 0 whether it moved or not; 2 on a wrong usage, or outside a
+# repository without --hook.
+
+set -u
+
+FETCH=1
+HOOK=0
+for arg in "$@"; do
+    case "$arg" in
+        --no-fetch) FETCH=0 ;;
+        --hook) HOOK=1 ;;
+        -h | --help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "Option inconnue : $arg" >&2; exit 2 ;;
+    esac
+done
+
+say() { printf '%s\n' "$*"; }
+skip() { say "Dossier principal $CHECKOUT pas avancé : $*"; exit 0; }
+
+common=$(git rev-parse --path-format=absolute --git-common-dir 2> /dev/null) || {
+    [ "$HOOK" -eq 1 ] && exit 0
+    echo "Pas dans un dépôt git." >&2
+    exit 2
+}
+# A bare repository has no checkout to keep up to date.
+[ "$(git --git-dir="$common" rev-parse --is-bare-repository)" = false ] || exit 0
+CHECKOUT=$(dirname "$common")
+g() { git -C "$CHECKOUT" "$@"; }
+
+g remote get-url origin > /dev/null 2>&1 || exit 0
+DEFAULT=$(g symbolic-ref --quiet --short refs/remotes/origin/HEAD 2> /dev/null)
+DEFAULT=${DEFAULT#origin/}
+DEFAULT=${DEFAULT:-main}
+
+if [ "$FETCH" -eq 1 ]; then
+    # Never a prompt, and a bounded wait on an unreachable host: a session must not hang
+    # on its start. An ssh command the user configured is left as it is.
+    if [ -z "${GIT_SSH_COMMAND:-}" ] && [ -z "$(g config core.sshCommand)" ]; then
+        export GIT_SSH_COMMAND='ssh -o BatchMode=yes -o ConnectTimeout=5'
+    fi
+    GIT_TERMINAL_PROMPT=0 g fetch --quiet origin 2> /dev/null || skip "git fetch origin a échoué (réseau ?)."
+fi
+
+g rev-parse --verify --quiet "origin/$DEFAULT" > /dev/null || exit 0
+branch=$(g symbolic-ref --quiet --short HEAD) || skip "HEAD détachée, pas sur $DEFAULT."
+[ "$branch" = "$DEFAULT" ] || skip "il est sur $branch, pas sur $DEFAULT."
+
+behind=$(g rev-list --count "$DEFAULT..origin/$DEFAULT")
+ahead=$(g rev-list --count "origin/$DEFAULT..$DEFAULT")
+[ "$ahead" -eq 0 ] || skip "$DEFAULT local porte $ahead commit(s) absent(s) d'origin/$DEFAULT."
+if [ "$behind" -eq 0 ]; then
+    [ "$HOOK" -eq 1 ] || say "Dossier principal $CHECKOUT à jour sur origin/$DEFAULT."
+    exit 0
+fi
+dirty=$(g status --porcelain --untracked-files=no)
+[ -z "$dirty" ] || skip "modifications non commitées ($(say "$dirty" | wc -l | tr -d ' ') fichier(s)), à finir ou à déplacer dans un worktree."
+
+old=$(g rev-parse --short HEAD)
+g merge --quiet --ff-only "origin/$DEFAULT" > /dev/null 2>&1 \
+    || skip "l'avance écraserait des fichiers non suivis (git merge --ff-only refusé)."
+new=$(g rev-parse --short HEAD)
+say "Dossier principal $CHECKOUT avancé de $behind commit(s) sur origin/$DEFAULT ($old..$new)."
+
+changed=$(g diff --name-only "$old" "$new")
+locks=$(say "$changed" | grep -xE '(composer\.lock|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb?)' | tr '\n' ' ')
+[ -z "$locks" ] || say "  Dépendances changées ($locks) : les réinstaller avant d'exécuter du code depuis ce dossier."
+instructions=$(say "$changed" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$' | tr '\n' ' ')
+[ -z "$instructions" ] || say "  Instructions changées ($instructions) : une session qui les a déjà chargées les relit avant de s'y fier."
+exit 0

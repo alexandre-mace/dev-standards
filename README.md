@@ -19,6 +19,7 @@ PostgreSQL, deployed on CleverCloud. UI from shadcn, on the Base UI base.
 - **`worktree-database/`**, the suffix a linked worktree appends to its test database, so two worktrees never run their tests on the same one, and the list of the databases left by removed worktrees
 - **`worktree-setup/`**, the script a project's `bin/worktree-setup` calls, so a new worktree's first commit passes the hook
 - **`deploy/`**, the script `/deploy` runs: pushes the branch to `main` once `main` has nothing it lacks, follows the CleverCloud deployment to its verdict, relaunching it once when it never starts or fails on a download, and can realign `preprod` and remove the worktree
+- **`sync-main-checkout/`**, keeps a project's main checkout on `origin/main`, fast-forward only and only when nothing is in progress there: `deploy` runs it after the production verdict and a SessionStart hook at each session's start, since sessions read their `AGENTS.md` there and subagent worktrees start from its HEAD
 
 ### `next/`: static-first Next.js sites
 
@@ -133,7 +134,7 @@ git clone git@github.com:alexandre-mace/dev-standards.git ~/dev/dev-standards
 `install.sh` links both halves of what Claude Code reads: `skills/` into
 `~/.claude/skills/`, and `agent/` into `~/.claude/rules/`. Re-run it whenever a skill or
 a rule is added or renamed. It also links the shared scripts run by name from any project,
-`deploy`, `machine-lock` and `performance-cores`, into `~/.local/bin`, which it creates
+`deploy`, `machine-lock`, `performance-cores` and `sync-main-checkout`, into `~/.local/bin`, which it creates
 when missing and which has to be on the `PATH`.
 
 It also links `local/skills/`, which is gitignored. This repository is public, so a

@@ -63,6 +63,10 @@ before, Sentry after) are in that skill. The script only does what a script can 
   followed is the one whose alias starts with `preprod`, with the same verdict and relaunch.
   A branch behind `main` is not refused, a conflict is (exit 2, the files named), and the
   commits preprod holds besides `main` are listed: someone else's test may be in progress.
+- **The main checkout follows**: once production is OK, `sync-main-checkout --no-fetch`
+  fast-forwards the `main` of the checkout the worktrees hang from, which the push never
+  moves (`../sync-main-checkout/README.md`). It only informs: whatever it finds, the exit
+  code stays the deploy's.
 - **Sentry is not read here**: a script would need a token, and the skill has the Sentry
   tools. The last line gives the time of the deploy, to look from.
 

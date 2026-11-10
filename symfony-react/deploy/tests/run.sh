@@ -308,6 +308,20 @@ fresh
 "$DEPLOY" --uat --preprod --timeout 10 > /dev/null 2>&1
 check '--uat avec --preprod, refusé, code 2' $? 2
 
+# --- The main checkout brought up to the deployed main ---------------------------------
+
+fresh
+echo OK > "$FAKE/state-app_prod"
+git checkout -q main
+git worktree add -q "$FAKE/project/.claude/worktrees/lot" -b lot 2> /dev/null
+cd "$FAKE/project/.claude/worktrees/lot" || exit 2
+echo lot > lot.txt && git add lot.txt && git commit -qm lot
+out=$("$DEPLOY" --timeout 10 2>&1); code=$?
+cd "$FAKE/project" || exit 2
+check 'déployé depuis un worktree, code 0' $code 0
+check '  le main du dossier principal suit le main déployé' "$(git rev-parse main)" "$(origin_main)"
+contains '  et le dit' "$out" 'avancé de 1 commit'
+
 # --- The worktree removed once deployed -------------------------------------------------
 
 fresh

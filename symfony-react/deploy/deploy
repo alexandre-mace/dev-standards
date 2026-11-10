@@ -341,6 +341,11 @@ code=$?
 say "Sentry : regarder les issues nouvelles ou en hausse depuis $DEPLOYED_AT, environnement de production, avant d'annoncer le déploiement."
 FINAL=0
 
+# The push moved origin/main, never the main checkout's main: sessions start there and
+# worktrees cut "from HEAD" start from it (sync-main-checkout/README.md). Informative only.
+SYNC=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../sync-main-checkout/sync-main-checkout
+[ -x "$SYNC" ] && "$SYNC" --no-fetch
+
 # --- preprod brought back in line with main -----------------------------------------------
 
 align_preprod() {

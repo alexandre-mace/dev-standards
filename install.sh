@@ -97,7 +97,7 @@ fi
 # Shared scripts run from any project: symfony-react/<name>/<name> -> ~/.local/bin/<name>
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
-for name in deploy machine-lock performance-cores; do
+for name in deploy machine-lock performance-cores sync-main-checkout; do
   script="$ROOT_DIR/symfony-react/$name/$name"
   [ -x "$script" ] || continue
   link_path="$BIN_DIR/$name"
@@ -118,7 +118,7 @@ for name in deploy machine-lock performance-cores; do
 done
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
-  *) echo "NOTE     $BIN_DIR is not on the PATH: add it to your shell profile to run deploy, machine-lock and performance-cores by name." ;;
+  *) echo "NOTE     $BIN_DIR is not on the PATH: add it to your shell profile to run deploy, machine-lock, performance-cores and sync-main-checkout by name." ;;
 esac
 
 # Prune: a skill renamed or deleted here leaves a dangling link behind.
