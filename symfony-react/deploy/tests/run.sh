@@ -243,6 +243,32 @@ contains '  le commit est nommé' "$out" 'recette en cours'
 check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "$old_preprod"
 check '  main est bien déployée' "$(origin_main)" "$(git rev-parse HEAD)"
 
+# A branch in UAT, then rebased before its deploy: preprod holds the same patch under two
+# hashes, the one of the UAT and main's, which preprod also holds once aligned.
+fresh
+echo OK > "$FAKE/state-app_prod"
+echo OK > "$FAKE/state-app_preprod"
+git clone -q -b preprod "$FAKE/origin.git" "$FAKE/pp" 2> /dev/null
+git push -q origin feature 2> /dev/null
+(cd "$FAKE/pp" && git fetch -q origin feature && git merge -q --no-ff -m "Merge feature into preprod" FETCH_HEAD && git push -q origin preprod 2> /dev/null)
+git clone -q "$FAKE/origin.git" "$FAKE/other" 2> /dev/null
+(cd "$FAKE/other" && echo autre > autre.txt && git add autre.txt && git commit -qm autre && git push -q origin main 2> /dev/null)
+git fetch -q origin && git rebase -q origin/main
+"$DEPLOY" --preprod --timeout 10 > /dev/null 2>&1
+check 'branche rebasée après sa recette, déployée, preprod alignée, code 0' $? 0
+rm -f "$FAKE"/date-*
+# The next change edits the same lines: the UAT commit no longer replays cleanly on main.
+git checkout -qb suite && echo suite > change.txt && git add change.txt && git commit -qm suite
+out=$("$DEPLOY" --uat --timeout 10 2>&1)
+case "$out" in
+    *'porte aussi'*) ko "  --uat ensuite : le patch déjà en main n'est pas listé"; echo "$out" | sed 's/^/     /' ;;
+    *) ok "  --uat ensuite : le patch déjà en main n'est pas listé" ;;
+esac
+rm -f "$FAKE"/date-*
+out=$("$DEPLOY" --preprod --timeout 10 2>&1); code=$?
+check '  le déploiement suivant aligne preprod, code 0' $code 0
+check '  son contenu est celui de main' "$(git -C "$FAKE/origin.git" rev-parse preprod^{tree})" "$(git -C "$FAKE/origin.git" rev-parse main^{tree})"
+
 # --- --uat: the branch merged into preprod, main untouched -------------------------------
 
 fresh

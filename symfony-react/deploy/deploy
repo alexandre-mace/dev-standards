@@ -277,8 +277,33 @@ follow() {
 # The merge is computed without a checkout (git merge-tree), so neither the worktree nor a
 # local preprod branch moves; preprod is pushed as a fast-forward, never forced.
 
+# The commits of a range, merges left out, whose change <base> does not hold. Held when a
+# commit of <base> has the same patch id, or when replaying it on <base> (git merge-tree)
+# leaves its tree as it is. Not git cherry, which only compares with the commits of <base>
+# missing from the range: a branch in UAT, then rebased before its deploy, leaves preprod
+# with the same patch under its UAT hash and under main's, and git cherry called the first
+# one absent from main. The patch ids of <base> are read back to a day before the oldest
+# commit's author date, which a rebase or a cherry-pick keeps. A replay that conflicts (main
+# has edited the same lines since) does not hold it by itself.
+absent_from() {
+    local base=$1 commits since held c id tree
+    shift
+    commits=$(git rev-list --no-merges "$@")
+    [ -n "$commits" ] || return 0
+    # shellcheck disable=SC2086 # one hash per word
+    since=$(git log --no-walk --format=%at $commits | sort -n | head -1)
+    held=$(git log --no-merges --since="@$((since - 86400))" -p "$base" | git patch-id --stable | cut -d' ' -f1)
+    for c in $commits; do
+        id=$(git show "$c" | git patch-id --stable | cut -d' ' -f1)
+        [ -n "$id" ] && printf '%s\n' "$held" | grep -qx "$id" && continue
+        tree=$(git merge-tree --write-tree --merge-base="$c^" "$base" "$c" 2> /dev/null) \
+            && [ "$tree" = "$(git rev-parse "$base^{tree}")" ] \
+            || echo "$c"
+    done
+}
+
 uat() {
-    local others tree merge
+    local others tree merge c
     git rev-parse --verify --quiet origin/preprod > /dev/null || refuse "origin/preprod n'existe pas."
     git push --quiet origin "HEAD:refs/heads/$BRANCH" || refuse "git push origin $BRANCH a échoué (jamais forcé)."
     if git merge-base --is-ancestor "$SHA" origin/preprod; then
@@ -287,8 +312,11 @@ uat() {
         return
     fi
     # What preprod holds besides main: another test may be in progress there.
-    others=$(git log --no-merges --format='  %h %an, %ar : %s' origin/main..origin/preprod --not HEAD)
-    [ -z "$others" ] || { say "preprod porte aussi, absent de main :"; say "$others"; }
+    others=$(absent_from origin/main origin/main..origin/preprod --not HEAD)
+    if [ -n "$others" ]; then
+        say "preprod porte aussi, absent de main :"
+        for c in $others; do git log -1 --format='  %h %an, %ar : %s' "$c"; done
+    fi
     if ! tree=$(git merge-tree --write-tree --name-only origin/preprod HEAD); then
         say "$tree" | sed -n '2,/^$/p' | sed '/^$/d; s/^/  /' >&2
         refuse "conflit entre $BRANCH et preprod : à résoudre par une décision, jamais deviné."
@@ -316,15 +344,15 @@ FINAL=0
 # --- preprod brought back in line with main -----------------------------------------------
 
 align_preprod() {
-    local unique merge preprod_id
+    local unique merge preprod_id c
     git rev-parse --verify --quiet origin/preprod > /dev/null || { say "Pas de branche preprod sur origin : rien à aligner."; return 0; }
     if [ "$(git rev-parse origin/preprod)" = "$SHA" ]; then
         say "preprod est déjà en $SHORT."
         return 0
     fi
-    # What preprod holds that main has no patch-equivalent of; merges are left out, their
-    # content being the commits they bring.
-    unique=$(git cherry origin/main origin/preprod | sed -n 's/^+ //p')
+    # What preprod holds whose change main lacks; merges are left out, their content being
+    # the commits they bring.
+    unique=$(absent_from "$SHA" "$SHA..origin/preprod")
     if [ -n "$unique" ]; then
         say "preprod porte des commits que main n'a pas, laissée telle quelle :" >&2
         for c in $unique; do git log -1 --format='  %h %an, %ar : %s' "$c" >&2; done

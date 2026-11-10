@@ -71,11 +71,14 @@ before, Sentry after) are in that skill. The script only does what a script can 
 Once production is OK, the `preprod` branch is brought back to `main`'s content, so the
 next UAT starts from what is in production rather than from older tests.
 
-- **Only when preprod holds nothing main lacks.** `git cherry origin/main origin/preprod`
-  lists each preprod commit with no patch-equivalent on main; merges are left out, their
-  content being the commits they bring. If it lists one, preprod stays as it is, the
+- **Only when preprod holds nothing main lacks.** A preprod commit is held by main when a
+  commit of main has the same patch id, or when replaying it on main leaves main's tree as
+  it is; merges are left out, their content being the commits they bring. Not
+  `git cherry`, which compares only with the commits of main missing from preprod: a branch
+  rebased after its UAT leaves preprod with both hashes of the same patch, and the UAT one
+  read as absent. If one is absent, preprod stays as it is, the
   commits are printed with their author, and the exit code is 4: deploying them or dropping
-  them is a decision, and someone may be testing them.
+  them is a decision, and someone may be testing them. `--uat` lists the same commits.
 - **Never forced.** When preprod is an ancestor of main, a fast-forward. Otherwise (the
   merges `/preprod` leaves behind), a merge commit whose tree is main's, made with
   `git commit-tree` on top of preprod, so the push is still a fast-forward and preprod's
@@ -118,7 +121,7 @@ checkout.
 symfony-react/deploy/tests/run.sh
 ```
 
-About thirty seconds, on throwaway repositories (a bare origin, a clone, a worktree) and a
+About forty seconds, on throwaway repositories (a bare origin, a clone, a worktree) and a
 fake `clever` that answers from files: the refusals (on `main`, uncommitted changes,
 `origin/main` ahead) push nothing; `OK`, `FAIL`, no verdict and `clever` in error give 0, 1,
 3 and 3; an older deployment of the same commit does not count, a running one is never
@@ -129,5 +132,6 @@ other `FAIL` gives 1 without relaunch; a relaunch for not starting leaves none f
 429 that follows; the prod alias is found
 whatever its case, `--app` picks another one, from a subfolder; preprod holding only a merge
 is aligned to main's tree without losing its history, preprod holding its own commit is left
-alone with exit 4; the worktree and its branch go once deployed, ignored files included,
+alone with exit 4, a branch rebased after its UAT and then edited on the same lines is not
+listed by `--uat` and lets the next deploy align preprod; the worktree and its branch go once deployed, ignored files included,
 and nothing happens from the main checkout.
