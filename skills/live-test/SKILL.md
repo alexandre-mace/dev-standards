@@ -21,16 +21,16 @@ follows is what `/run` does not know.
 - **Check the port before assuming it.** A stale process from an earlier session can hold
   8000 and answer 404 on every route while the live server sits elsewhere. A 404 on a
   route that `debug:router` lists is a dead server, not a routing bug.
-- **In a worktree, start the server from the worktree** (`symfony server:start --no-tls
-  --daemon` there): the Browser pane's `preview_start` runs in the session's folder, often
-  the main checkout, and serves its code, not the branch's.
+- **In a worktree, start the server from the worktree** (`pnpm build`, then `APP_ENV=e2e
+  symfony server:start --no-tls --daemon` there): the Browser pane's `preview_start` runs in
+  the session's folder, often the main checkout, and serves its code, not the branch's.
 - **The Browser pane refuses the local self-signed certificate.** Drive through Playwright
   instead, which trusts it.
 - **`scrollIntoView({behavior: 'smooth'})` does not scroll a headless browser.** Use
   `'instant'` when a check depends on the element being in view.
 - **Behind a login, log in; do not fall back on tests.** On Symfony, `php bin/console
-  app:dev:login <ROLE>` prints a one-click link (dev only: an `APP_ENV=e2e` server takes the
-  login form and a seeded account), and Turnstile runs on its test keys in dev
+  app:dev:login <ROLE>` prints a one-click link (`DEFAULT_URI=<server url> … --env=e2e`
+  against an e2e server), and Turnstile runs on its test keys in dev
   (symfony-guidelines §13). A project without them: say the walk stopped at the login, as
   a limit of this check and a `/gap-code` finding, never as an equivalent verification.
 - Next and TanStack Start: one `pnpm dev`.

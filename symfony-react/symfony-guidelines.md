@@ -1688,18 +1688,21 @@ under the same load.
 
 **Never call an external integration from an E2E**, same constraints as in `tests/`. Three ways: empty key environment variables so the services fall into their no-op branch, a service override in the `e2e` environment config, or an injected `MockHttpClient`.
 
-### Logging in from a browser agent, in dev only
+### Logging in from a browser agent, in dev and e2e only
 
 `/live-test` walks the feature in a real browser, and a page behind a login, a role or a
 captcha is where that walk stops: the agent falls back on functional tests and the
 screen never gets looked at. Give it a way in.
 
 - **A login link per role.** Symfony's `login_link` authenticator, declared under
-  `when@dev:` in `security.yaml` (`check_route`, `signature_properties: ['id']`), plus a
-  command that exists only in dev and prints a link for a seeded user of the requested role:
+  `when@dev:` and `when@e2e:` in `security.yaml` (`check_route`, `signature_properties:
+  ['id']`), plus a command that exists only there and prints a link for a seeded user of the
+  requested role. `e2e` is where a worktree's live test runs, on its own seeded database;
+  production and preprod never load it:
 
     ```php
     #[When(env: 'dev')]
+    #[When(env: 'e2e')]
     #[AsCommand(name: 'app:dev:login', description: 'Prints a one-click login link for a seeded user')]
     final class DevLoginCommand
     {
@@ -1722,7 +1725,9 @@ screen never gets looked at. Give it a way in.
     ```
 
   With no request to take the host from, the link is built on `framework.router.default_uri`:
-  set it to the local server's URL in dev.
+  set it to the local server's URL in dev, and pass `DEFAULT_URI=<url>` in front of the
+  command for an e2e server on another port. A second authenticator on the firewall breaks
+  every `Security::login()` that does not name its own: a guard test keeps them named.
 - **Turnstile's test keys in dev**: site key `1x00000000000000000000AA`, secret
   `1x0000000000000000000000000000000AA`. They always pass and work on `localhost`.
 - A third-party step with no test mode (a Typeform token, a real payment) stays out of the
