@@ -134,7 +134,9 @@ Then read them for what a script cannot see:
 - Contradictions between the two, when both hold content.
 - Stale claims: a framework version, an architecture, a file layout that no longer
   matches.
-- Length: past roughly 200 lines the file stops being read carefully. Say so.
+- Weight: every session loads the whole file, so each line must serve most of them. A
+  subject only some tasks need (a runbook, one integration's pitfalls) moves to `docs/`,
+  with a one-line pointer left behind. Name the sections to move.
 
 ## 5. Verify before writing
 
@@ -165,7 +167,7 @@ except the accepted deviations.
 
 ### Sous-catégorie
 
-- [ ] `chemin/vers/Fichier.php` : description de l'écart (sûr | probable | à vérifier)
+- [ ] `chemin/vers/Fichier.php` : description de l'écart (sûr | probable | à vérifier ; ancien | lot | feature | règle)
   - Détail, ce qu'il faut extraire, déplacer ou renommer
 
 ## Écarts assumés
@@ -180,9 +182,23 @@ Priorities:
 - **Moyenne**: convention violations, naming, missing patterns.
 - **Basse**: style, dead code, cosmetics.
 
+Origin, settled by `git blame` on the cited lines against the commit the previous pass
+audited:
+
+- **règle**: the rule it breaks entered or changed in the guidelines since that pass,
+  whatever the age of the lines;
+- **lot**: the lines were written since, by a fix lot of that pass (its branch, or the
+  integration branch it merged through);
+- **feature**: the lines were written since, by any other work;
+- **ancien**: the lines were already there, and that pass missed them.
+
 ## 7. Present the summary
 
-Findings per priority, then the most critical items, then one line on what to do first.
+Findings per priority, then per origin beside the previous pass's counts, then the most
+critical items, then one line on what to do first. The origin says where the count comes
+from. `ancien` falling is the reading converging. `lot` and `feature` are defects written
+since the last pass that the gate and `/review-diff` let through: a change of method answers
+them, not another pass.
 
 ## 8. What the fixing has to honour
 
@@ -212,6 +228,11 @@ the fix lots these rules with the findings:
   holds offending rows fails the deploy; clean production first, then ship the constraint.
 - **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the
   commits then skip every check without a word.
+- **A lot's report names only what someone could have decided otherwise.** A fix that
+  adds or removes a step of a user's path, changes how long a user's data is kept or who
+  receives it, opens or closes an access, or sets a product rule ships with its default
+  and gets one line in the report, so the user can veto it. A bug fix, an alignment on a
+  choice the project already made and a fix of form ship without a word.
 - **A fix never cites the finding's identifier in the code.** The next audit rewrites
   `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
   to one points to nothing. It says the cause in plain words, or names the commit.
@@ -304,7 +325,11 @@ Re-read these figures when a new model ships.
   doubt remains, ask. Seen: the address of each price search, collected on purpose for a
   dashboard to come, removed as "personal data nobody reads".
 - **A visible text's substance is presumed wanted**, it may have been asked from above: the
-  audit fixes its form only (typo, tutoiement, typography) and records nothing on its substance.
+  audit fixes its form only (typo, tutoiement, typography). On substance it records one
+  thing, a text that can mislead its reader on a fact (a figure, a price, a date, a
+  commitment, a partner's offer, a promise the product does not keep), asked of the text's
+  owner in the summary and never fixed by a lot. A word, a tone or a length it would have
+  chosen otherwise is neither recorded nor fixed.
 - **A product question reaches the user only when nothing answers it.** Before listing a
   behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
   cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
