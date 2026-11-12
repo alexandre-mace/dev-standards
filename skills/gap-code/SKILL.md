@@ -232,7 +232,10 @@ the fix lots these rules with the findings:
   adds or removes a step of a user's path, changes how long a user's data is kept or who
   receives it, opens or closes an access, or sets a product rule ships with its default
   and gets one line in the report, so the user can veto it. A bug fix, an alignment on a
-  choice the project already made and a fix of form ship without a word.
+  choice the project or a guideline already made and a fix of form ship without a word.
+- **A visible text keeps the words its team wrote.** A lot fixes its form only, never a
+  label, a sentence or a column header. Seen: a call to action, a help text and a CSV
+  header reworded by the lots, then put back.
 - **A fix never cites the finding's identifier in the code.** The next audit rewrites
   `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
   to one points to nothing. It says the cause in plain words, or names the commit.
@@ -324,12 +327,11 @@ Re-read these figures when a new model ships.
   uses it yet" is not a reason to remove it. Read the commit that added it, and when the
   doubt remains, ask. Seen: the address of each price search, collected on purpose for a
   dashboard to come, removed as "personal data nobody reads".
-- **A visible text's substance is presumed wanted**, it may have been asked from above: the
-  audit fixes its form only (typo, tutoiement, typography). On substance it records one
-  thing, a text that can mislead its reader on a fact (a figure, a price, a date, a
-  commitment, a partner's offer, a promise the product does not keep), asked of the text's
-  owner in the summary and never fixed by a lot. A word, a tone or a length it would have
-  chosen otherwise is neither recorded nor fixed.
+- **A visible text is the communication team's, not the code's**: the audit fixes its form
+  only (typo, tutoiement, typography), and its substance is never a finding, so it never
+  counts against zero. Only a fact that matters and misleads (a figure, a price, a date, a
+  legal or contractual commitment, a promise the product does not keep) reaches the summary,
+  as a question for that team, outside the findings and never fixed by a lot.
 - **A product question reaches the user only when nothing answers it.** Before listing a
   behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
   cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
