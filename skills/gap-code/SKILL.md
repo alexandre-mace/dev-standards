@@ -324,6 +324,7 @@ Re-read these figures when a new model ships.
   (a doubt nothing in the repository could settle). A doubt the code, the tests or the
   commit that introduced the line can settle is settled by the scan, not passed on. A
   confidence is not a severity, which the priority already carries.
+- **A feature behind a switch that is off in production is work in progress**: what it does not do yet is not a finding, the code it has still is. The project's `AGENTS.md` names the switch.
 - **Never remove what may serve.** Data the product collects, a feature, a text: "nothing
   uses it yet" is not a reason to remove it. Read the commit that added it, and when the
   doubt remains, ask. Seen: the address of each price search, collected on purpose for a
