@@ -1069,7 +1069,7 @@ to the monitor's own purge (§16).
 `ignore_exceptions` in `sentry.yaml` filters out exceptions that aren't application bugs:
 
 - `Symfony\Component\HttpKernel\Exception\NotFoundHttpException`: a 404 is "resource not found", not a bug. It stays in the Clever access logs if an audit is needed.
-- `Symfony\Component\ErrorHandler\Error\FatalError` + `FatalErrorException`: raised by PHP, already captured by the other handlers.
+- Never `Symfony\Component\ErrorHandler\Error\FatalError`: with `register_error_handler: false`, a fatal error reaches Sentry only through the Monolog handler's critical log, and `ignore_exceptions` also filters the events that come from Monolog. `FatalErrorException` no longer exists.
 
 To add a class to the ignore list, avoid broad categories (ignoring every `HttpException` would mask real bugs). Prefer the precise class.
 
