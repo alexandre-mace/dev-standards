@@ -339,6 +339,10 @@ Re-read these figures when a new model ships.
   choice, recorded under the accepted deviations, not a question. Seen: a member already
   installed flagged for not seeing the installation path in the menu, a choice obvious to
   anyone who knows the product.
+- **What the product shows or promotes is not a finding**, even when it looks out of step
+  with today's data: the audit judges the code, not a product or marketing choice. Seen: a
+  simulator's tax-reduction line hidden because no open fund offered it, when the business
+  keeps advertising it between two fundraisings.
 - **A question left open comes with the default answer the fix lot applies**, asked once in
   the summary: without a reply the default holds, so nothing waits in the file.
 - **Read the code before calling it a deviation.** Code that does not follow the canonical
