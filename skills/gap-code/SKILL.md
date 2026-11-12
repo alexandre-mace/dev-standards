@@ -234,8 +234,9 @@ the fix lots these rules with the findings:
   and gets one line in the report, so the user can veto it. A bug fix, an alignment on a
   choice the project or a guideline already made and a fix of form ship without a word.
 - **A visible text keeps the words its team wrote.** A lot fixes its form only, never a
-  label, a sentence or a column header. Seen: a call to action, a help text and a CSV
-  header reworded by the lots, then put back.
+  label or a sentence. Seen: a call to action and a help text reworded by the lots, then
+  put back. A name that misstates its data (an export's column header, a field label) is
+  not that team's text: it is a finding, like a docblock the code contradicts.
 - **A fix never cites the finding's identifier in the code.** The next audit rewrites
   `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
   to one points to nothing. It says the cause in plain words, or names the commit.
