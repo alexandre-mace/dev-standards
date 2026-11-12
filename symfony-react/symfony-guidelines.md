@@ -900,9 +900,83 @@ External APIs with authentication. URLs and credentials in `.env`, injected thro
 
 ### Retry configured at the DI level, not in the service
 
-`config/packages/http_client.yaml` already configures scoped clients (`webflow.client`, `discord.client`…) with `retry_failed`: 3 attempts, exponential backoff from 1s to 10s.
+`retry_failed` lives once in `default_options`, and each scoped client inherits it. A
+client that sets its own `retry_failed` replaces the whole block: the keys it leaves out
+take Symfony's defaults, not those of `default_options`.
 
-Leave `http_codes` out. Symfony's default (`GenericRetryStrategy::DEFAULT_RETRY_STATUS_CODES`) retries 423, 425, 429, 502 and 503 for every method, but a transport failure (0), 500, 504, 507 and 510 for idempotent methods only: after a timeout or a 500 the server may well have done the work, and replaying a POST submits the HubSpot form or creates the Airtable record twice. A flat list such as `[0, 429, 500, 502, 503, 504]` loses that distinction and replays every method. When the list has to be written out, keep the restriction with the map form: `http_codes: { 0: [GET, HEAD, PUT, DELETE], 429: ~, 500: [GET, HEAD, PUT, DELETE], … }`.
+```yaml
+default_options:
+    max_duration: 30          # per attempt: each retry is a new attempt
+    retry_failed:
+        max_retries: 3
+        delay: 1000
+        multiplier: 2
+        max_delay: 10000      # mandatory, see Retry-After below
+        http_codes:
+            0: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+            423: ~
+            425: ~
+            429: ~
+            500: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+            502: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+            503: ~
+            504: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+            507: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+            510: !php/const Symfony\Component\HttpClient\Retry\GenericRetryStrategy::IDEMPOTENT_METHODS
+```
+
+- **The codes are Symfony's default (`GenericRetryStrategy::DEFAULT_RETRY_STATUS_CODES`),
+  except 502.** The default replays on every method the refusals that processed nothing
+  (423, 425, 429, 503), and a transport failure (0) or a 5xx that may follow the work (500,
+  504, 507, 510) on idempotent methods only: replaying a POST after a timeout submits the
+  HubSpot form or creates the Zoho request twice. The default also replays 502 on every
+  method, but a gateway may have relayed the request before losing the response: it joins
+  the idempotent ones. Writing a code replaces the whole default list, hence the full map.
+- A client whose upstream may have worked before a 503 restricts it too, with the reason
+  in a comment beside it.
+- **Never `retry_failed: false` to protect a lock or a duplicate.** It also drops the
+  replay of a GET after a network cut. Bound the worst case instead (below).
+
+**`Retry-After` has no ceiling in Symfony.** `RetryableHttpClient` waits whatever delay the
+response's `Retry-After` asks before replaying, and `max_delay` bounds only the delay the
+strategy computes (`getDelayFromHeader()`, in 8.1 as in 8.2; the documentation says nothing
+of it). A 429 asking for an hour holds the worker an hour and outlives any lock around the
+call. The official extension point is the strategy (`RetryStrategyInterface`), and its
+`shouldRetry()` reads the response headers: decorate every `<client>.retry_strategy` that
+FrameworkBundle builds with one that refuses the replay when `Retry-After` exceeds the
+client's `max_delay`, so the response reaches the caller as a refusal. A compiler pass
+does it for every client, and fails the build on a client without `max_delay`:
+
+```php
+// RetryAfterBoundedStrategy implements RetryStrategyInterface ($inner, $maxDelayMs, $clock)
+public function shouldRetry(AsyncContext $context, ?string $content, ?TransportExceptionInterface $e): ?bool
+{
+    $retry = $this->inner->shouldRetry($context, $content, $e);
+    if (true !== $retry || null !== $e) {
+        return $retry;
+    }
+    $asked = $this->askedDelayMs($context->getHeaders()['retry-after'][0] ?? null); // seconds or an HTTP date
+
+    return null === $asked || $asked <= $this->maxDelayMs;
+}
+
+// BoundRetryAfterPass, added in Kernel::build()
+foreach ($container->getDefinitions() as $id => $definition) {
+    if (!str_ends_with($id, '.retry_strategy') || !$definition instanceof ChildDefinition
+        || 'http_client.abstract_retry_strategy' !== $definition->getParent()) {
+        continue;
+    }
+    $maxDelayMs = $definition->getArgument(3); // retry_failed.max_delay; 0 fails the build
+    $container->register($id.'.retry_after_bounded', RetryAfterBoundedStrategy::class)
+        ->setDecoratedService($id)
+        ->setArguments([new Reference('.inner'), $maxDelayMs, new Reference('clock')]);
+}
+```
+
+**A lock around a call lasts its worst case**, computed from the client's options and held
+by a test that reads the config: per request, `(max_retries + 1) × max_duration +
+max_retries × max_delay`. A client whose worst case makes the lock too long lowers its own
+`max_duration` or `max_retries`, never the retry itself.
 
 **Do not re-implement** a retry loop on top: not with `RetryableHttpClient` inside the service, not with a hand-rolled `while`. Services inject the scoped client directly and let the DI layer own the retries:
 
