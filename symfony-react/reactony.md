@@ -474,13 +474,17 @@ export function FarmAlertForm() {
           </Field>
         )}
       />
-      <Button type="submit" disabled={mutation.isPending}>Enregistrer</Button>
+      <Button type="submit" disabled={mutation.isPending} focusableWhenDisabled>
+        Enregistrer
+      </Button>
     </form>
   );
 }
 ```
 
 The two keys: `data-invalid` on `<Field>` (flips the whole block into its error state) and `aria-invalid` on the control. The older `<Form>/<FormField>/<FormMessage>` pattern is tolerated in existing code but not for new code; migrate opportunistically when you touch the file.
+
+A button disabled by its own pending state takes `focusableWhenDisabled`: the `disabled` attribute drops the focus onto the page the moment the button is clicked, while Base UI's `aria-disabled` keeps it there and still refuses a second click or submit.
 
 **Flow**: Zod validates on the client → SDK → Symfony validates on the server → the 422 is rendered per field through `form.setError` + `<FieldError>`.
 
