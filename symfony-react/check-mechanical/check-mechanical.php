@@ -1228,7 +1228,7 @@ function rules(): array
             'ext' => ['tsx', 'twig'],
             'paths' => $ui,
             'except' => $tests,
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/[\x{201C}\x{201D}]/u', $c),
         ],
         'guillemets-droits' => [
@@ -1236,7 +1236,7 @@ function rules(): array
             'ext' => ['tsx'],
             'paths' => $ui,
             'except' => $tests,
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             // A quoted text sits inside a sentence: the pair of double quotes follows a word and
             // one space (« le bouton "Valider" »), around a word or an interpolation, and is
             // followed by a space or a punctuation mark. Code never puts a word right before a
@@ -1255,14 +1255,14 @@ function rules(): array
             'ext' => ['tsx', 'twig', 'json'],
             'paths' => $ui,
             'except' => $tests,
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/\bA\s(?:qui|noter|toi|titre|cette|quel|quelle|partir\sde)\b|\bE(?:labor\w*|talons?)\b/u', $c),
         ],
         'ponctuation-detachee' => [
             'message' => 'balise fermante seule sur sa ligne et suivie de la ponctuation : le retour à la ligne se rend en espace soulignée (« lien . ») ; `{#- … -#}` en fin de ligne au-dessus, ou `-}}`',
             'ext' => ['twig'],
             'paths' => '#^templates/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => detachedPunctuation($c),
         ],
         'identifiant-constat' => [
@@ -1327,7 +1327,7 @@ function rules(): array
             'message' => 'remplissage ou trait posé sur la racine d\'une icône `ux_icon` : l\'icône verrouillée porte `fill="none"` et son trait sur son `<g>`, qui l\'emportent ; viser les enfants (`[&>*]:fill-success`), le trait suit `currentColor`',
             'ext' => ['twig'],
             'paths' => '#^templates/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             // Read inside a `ux_icon(…)` call only: a `<svg>` written by hand takes its fill.
             'find' => static fn (string $c): array => matches('/(?<![-\w\]:&>*_\/])(?:[\w-]+:)*(?:fill|stroke)-(?!none\b)[a-z][\w\/-]*+(?!\s*=)|(?<![-\w])fill\s*:\s*[\'"]/', $c, iconCalls($c)),
         ],
@@ -1402,7 +1402,7 @@ function rules(): array
             'ext' => ['twig'],
             'paths' => '#^templates/#',
             'except' => '#^templates/base\.html\.twig$#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/<main\b/', $c, withoutComments($c, $p)),
         ],
         'boite-native' => [
@@ -1445,16 +1445,17 @@ function rules(): array
             'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^templates/(?:.*/)?(?:emails?|pdf)/#',
             'kind' => 'ajout',
             // A variant before it (`disabled:opacity-50`) is a state; `opacity-0` hides,
-            // `opacity-100` shows.
-            'find' => static fn (string $c, string $p): array => matches('/(?<![\w:\/-])opacity-(?:[1-9]\d?(?![\w-])|\[)/', $c, withoutComments($c, $p)),
+            // `opacity-100` shows. So is a disabled state written by a condition, which the
+            // line says by `cursor-not-allowed` (`disabled && 'cursor-not-allowed opacity-50'`).
+            'find' => static fn (string $c, string $p): array => matchesUnless('/(?<![\w:\/-])opacity-(?:[1-9]\d?(?![\w-])|\[)/', '/cursor-not-allowed/', $c, withoutComments($c, $p)),
         ],
 
         // Twig templates.
         'script-en-ligne' => [
-            'message' => 'script en ligne, attribut `on…=` ou lien `javascript:` dans un gabarit : le comportement vit dans un îlot React ou un contrôleur Stimulus testé (reactony §6) ; un `<script src>` et un bloc de données JSON passent',
+            'message' => 'script en ligne, attribut `on…=` ou lien `javascript:` dans un gabarit : le comportement vit dans un îlot React testé, Stimulus ne servant qu\'à le monter (reactony §6) ; un `<script src>` et un bloc de données JSON passent',
             'ext' => ['twig'],
             'paths' => '#^templates/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches(
                 '/(?i:<script\b(?![^>]*\bsrc=)(?![^>]*\btype=["\'](?:application\/(?:ld\+)?json|text\/template)["\']))|\son[a-z]+=\s*["\']|(?i:\b(?:href|src|action|formaction)\s*=\s*["\']\s*javascript:)/',
                 $c,
@@ -1506,7 +1507,7 @@ function rules(): array
             'message' => 'classe composée en morceaux dans un attribut `class` : Tailwind ne génère que les classes écrites entières, `{{ cond ? \'md:grid-cols-3\' : \'md:grid-cols-2\' }}`',
             'ext' => ['twig'],
             'paths' => '#^templates/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/\bclass="[^"]*[a-z0-9:]-(?:\{%|\{\{)/', $c, withoutComments($c, $p)),
         ],
         'balise-en-chaine' => [
@@ -1663,7 +1664,7 @@ function rules(): array
             'message' => '`#[MapQueryString]` ou `#[MapQueryParameter]` sans `validationFailedStatusCode` : un paramètre invalide répondrait le 404 de Symfony, sans `violations` ; `Response::HTTP_UNPROCESSABLE_ENTITY`, ou, pour une page qui lit une valeur absurde comme absente, `flags: \\FILTER_NULL_ON_FAILURE` sur un argument nullable',
             'ext' => ['php'],
             'paths' => '#^src/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*(?:validationFailedStatusCode|FILTER_NULL_ON_FAILURE))/', $c, withoutComments($c, $p)),
         ],
         'relance-a-la-main' => [
@@ -1712,21 +1713,21 @@ function rules(): array
             'message' => 'motif `/^…$/` (ou `#^…$#`, `~^…$~`) sans le modificateur `D` (ni `m`, où `D` ne joue pas) : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
             'ext' => ['php'],
             'paths' => '#^src/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/\'([\/#~])\^[^\']*\$\1(?![a-zA-Z]*[Dm])[a-zA-Z]*\'/', $c),
         ],
         'find-all' => [
             'message' => '`->findAll()` dans un contrôleur ou un service : sans `ORDER BY`, l\'ordre des lignes change après une simple mise à jour ; `findBy([], [...])` avec un ordre, ou une méthode de dépôt qui porte le sien (symfony-guidelines, « A query without ORDER BY has no order »)',
             'ext' => ['php'],
             'paths' => '#^src/(?:Controller|Service)/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/->findAll\(\)/', $c, withoutComments($c, $p)),
         ],
         'accord-parenthese' => [
             'message' => '« (s) » ou « (x) » collé à un mot : accorder selon le nombre, singulier à 0 et 1, pluriel au-delà (« 1 justificatif supprimé », « 3 justificatifs supprimés »)',
             'ext' => ['php'],
             'paths' => '#^src/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/\p{L}\([sx]\)/u', $c, withoutComments($c, $p)),
         ],
         'guillemets-message' => [
@@ -1734,7 +1735,7 @@ function rules(): array
             'ext' => ['php'],
             'paths' => '#^src/#',
             'except' => '#^src/Command/#',
-            'kind' => 'ajout',
+            'kind' => 'fichier',
             'find' => static fn (string $c, string $p): array => matches('/(?<![=\w])"%[sd]"/', $c, withoutComments($c, $p)),
         ],
         'guillemets-espace' => [
