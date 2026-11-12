@@ -10,7 +10,8 @@ zones; you receive a subset of them, below.
 **Your only job: try to refute each finding.** Read the cited code, its callers, its tests,
 the commit that wrote the lines (`git log -L`), and the guideline it cites (`<guidelines>`,
 the project's `AGENTS.md`). You edit no file, commit nothing, run neither CI nor a server; a
-targeted test or a read-only script to prove a point is allowed.
+targeted test or a read-only script to prove a point is allowed. Write your verdicts to
+`<return file>` and answer with their counts only.
 
 What refutes a finding:
 
