@@ -49,6 +49,14 @@ const DIRECTIVE = 'check-mechanical-ignore';
 const HYPHEN_AS_DASH = '[\p{L}\d][\p{L}\d.,)»%€]* - [\p{L}\d«(]';
 
 /*
+ * Une espace ordinaire avant « % » : après un nombre écrit, une expression qui se ferme
+ * (`{{ taux }} %`, `${taux} %`) ou en tête d'une chaîne (`~ ' %'`). Le nombre ne termine pas
+ * un identifiant (`x1 % 2`), et un `%}` ferme une balise Twig (`{% if a > 5 %}`) : le modulo
+ * d'un littéral (`1000 % 60`), absent des projets, porterait son exception.
+ */
+const PERCENT_AFTER_SPACE = '/(?:(?<![\w$.])\d+(?:[.,]\d+)?|\}\}?|[\'"`]) %(?![}\w])/u';
+
+/*
  * An emoji, as the rules about emojis read it. Not the marks of a legal text (©, ®, ™),
  * nor the ballot boxes ☐ ☑ ☒ that a PDF form draws as its checkboxes: those are symbols.
  * The ballot boxes are excluded by name because the PCRE versions disagree on them: the
@@ -862,6 +870,28 @@ function hyphenAsDashInPhpStrings(string $content): array
 }
 
 /**
+ * Des guillemets français avec une espace ordinaire à l'intérieur (pas `\s`, que `/u`
+ * étend à l'insécable), dans le texte qu'un lecteur voit : ni un commentaire, ni la feuille
+ * ou le script d'un gabarit, ni le commentaire d'une requête SQL écrite dans une chaîne
+ * (`-- Étape « identifié »`). Un retour à la ligne après « ou avant » se rend lui aussi en
+ * espace dans un gabarit.
+ *
+ * @return list<array{int, string}>
+ */
+function frenchQuotesWithSpace(string $content, string $path): array
+{
+    $searched = withoutComments($content, $path);
+    if ('twig' === extension($path)) {
+        $searched = blank($searched, '/<(script|style)\b.*?<\/\1>/s', $path);
+    }
+
+    return array_values(array_filter(
+        matches('/\x{00AB}[ \t\r\n]|[ \t\r\n]\x{00BB}/u', $content, $searched),
+        static fn (array $hit): bool => !preg_match('/\blogger->\w+\(|^\s*--\s/i', $hit[1]),
+    ));
+}
+
+/**
  * The matches of the pattern in the text a reader sees: comments left out, and neither a
  * test (its text follows the screen's) nor a line written to a logger.
  *
@@ -1377,6 +1407,14 @@ function rules(): array
             'kind' => 'fichier',
             'find' => static fn (string $c): array => matchesUnless('/\}\}%(?![0-9A-Fa-f]{2})/', '/[a-z-]+:\s*\{\{[^}]*\}\}%/', $c),
         ],
+        'pourcentage-espace' => [
+            'message' => 'pourcentage séparé de sa valeur par une espace ordinaire : la ligne peut se couper avant « % » ; l\'espace insécable (`12\u{a0}%`, `{{ taux }}&nbsp;%`, `${taux}\\u00a0%`)',
+            'ext' => ['twig', 'ts', 'tsx', 'js', 'mjs'],
+            'paths' => '#^(assets|templates)/#',
+            'except' => $tests,
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => inVisibleText(PERCENT_AFTER_SPACE, $c, $p),
+        ],
 
         // What the page loads and opens.
         'target-blank' => [
@@ -1540,6 +1578,27 @@ function rules(): array
             'except' => '#^src/Command/#',
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => matches('/(?<![=\w])"%[sd]"/', $c, withoutComments($c, $p)),
+        ],
+        'guillemets-espace' => [
+            'message' => 'guillemets français avec une espace ordinaire à l\'intérieur : la ligne peut se couper entre « et le mot ; l\'espace insécable (`«\\u{a0}%s\\u{a0}»` en PHP, `«&nbsp;` ou le caractère dans un gabarit)',
+            'ext' => ['php', 'twig'],
+            'paths' => '#^(src|templates)/#',
+            'except' => '#^src/Command/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => frenchQuotesWithSpace($c, $p),
+        ],
+        'milliers-espace' => [
+            'message' => '`number_format()` dont le séparateur de milliers est une espace ordinaire : le nombre se coupe en fin de ligne (« 10 » puis « 000 € ») ; l\'espace fine insécable `"\\u{202f}"` ou l\'insécable `"\\u{a0}"` ; la sortie d\'une commande, lue en console, passe',
+            'ext' => ['php', 'twig'],
+            'paths' => '#^(src|templates)/#',
+            'except' => '#^src/Command/#',
+            'kind' => 'ajout',
+            // Le dernier argument, en PHP comme dans le filtre Twig : `number_format(2, \',\', \' \')`.
+            'find' => static fn (string $c, string $p): array => matches(
+                '/\bnumber_format\s*\((?:[^()\n]|\((?:[^()\n]|\([^()\n]*\))*\))*?,\s*([\'"]) \1\s*\)/',
+                $c,
+                withoutComments($c, $p),
+            ),
         ],
         'non-applicable' => [
             'message' => '« N/A » écrit en dur : de l\'anglais, et un texte de repli servi comme une valeur se trie et se filtre avec les vraies ; `null` côté serveur, « – » à l\'affichage',

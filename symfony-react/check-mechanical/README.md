@@ -59,7 +59,7 @@ keeps an old occurrence passes. In a merge, a file the other branch renamed is n
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `sommeil-test`, `gitignore-src` |
-| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable`, `balise-console`, `document-introuvable` |
+| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable`, `balise-console`, `document-introuvable`, `guillemets-espace`, `milliers-espace`, `pourcentage-espace` |
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
@@ -85,6 +85,14 @@ and held by another, up to 196 occurrences of `couleur-litterale` on one of them
 the new lines, and become **fichier** once the stocks are gone. `label-orphelin` reads the
 templates as well. What needs the syntax tree (a call's structure, a scope, a type) stays in
 the project's ESLint or PHPStan rules.
+
+`guillemets-espace`, `milliers-espace` and `pourcentage-espace` refuse an ordinary space
+where a line must not break: inside « », as the thousands separator of `number_format()`,
+before « % ». They are **ajout**, one project holding 109, 30 and 8 of them. The first two
+leave `src/Command/` out like `guillemets-message`: a console cuts at its width, whatever
+the space.
+`pourcentage-espace` stays apart from `pourcentage-colle`, which is **fichier** and clean
+everywhere.
 
 `couleur-litterale`, `contenu-attenue` and `style-en-ligne` leave the `emails/` and `pdf/`
 folders of `templates/` out, at any depth: a mail client and a PDF renderer read neither the application's
