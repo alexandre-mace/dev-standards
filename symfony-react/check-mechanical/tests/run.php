@@ -284,6 +284,13 @@ $started = microtime(true);
 [$code, , $err] = check(['--root', $root], $root);
 expect(0 === $code && microtime(true) - $started < 30, 'un index plein se lit sans interblocage', $err);
 
+// A regex that fails (the JIT stack, the backtrack limit on a long comment) used to
+// return null, read as an empty file: every rule then passed on it without a word.
+$root = directory();
+write($root, 'templates/long.html.twig', '{# '.str_repeat('a', 5000)." #}\n");
+[$code, , $err] = run(['php', '-d', 'pcre.jit=0', '-d', 'pcre.backtrack_limit=10', SCRIPT, '--root', $root, 'templates/long.html.twig'], $root);
+expect(2 === $code && str_contains($err, 'Regex en échec sur templates/long.html.twig'), "une regex en échec arrête le contrôle au lieu de taire le fichier", $err);
+
 if ([] !== $failures) {
     fwrite(\STDERR, implode("\n\n", $failures)."\n\n".\count($failures)." échec(s) sur $count.\n");
     exit(1);

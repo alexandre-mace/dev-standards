@@ -247,7 +247,7 @@ function directives(string $content, string $path, array $rules): array
     if (!str_contains($content, DIRECTIVE)) {
         return [[], [], []];
     }
-    $searched = 'md' === extension($path) ? withoutCode($content) : $content;
+    $searched = 'md' === extension($path) ? withoutCode($content, $path) : $content;
     $lines = explode("\n", $searched);
     $directives = [];
     $malformed = [];
@@ -383,9 +383,23 @@ function matches(string $pattern, string $content, ?string $searched = null): ar
 }
 
 /** The content, each byte of the given zones replaced by a space (line breaks kept). */
-function blank(string $content, string $pattern): string
+function blank(string $content, string $pattern, string $path = 'un contenu sans chemin'): string
 {
-    return (string) preg_replace_callback($pattern, static fn (array $m): string => (string) preg_replace('/[^\n]/', ' ', $m[0]), $content);
+    return regexResult(preg_replace_callback($pattern, static fn (array $m): string => (string) preg_replace('/[^\n]/', ' ', $m[0]), $content), $path);
+}
+
+/**
+ * Le résultat d'une regex, ou l'arrêt du script : un `null` (pile du JIT, limite de
+ * retour arrière) rendrait sinon le fichier vide, donc invisible à toutes les règles.
+ */
+function regexResult(?string $result, string $path): string
+{
+    if (null === $result) {
+        fwrite(\STDERR, sprintf("Regex en échec sur %s : %s.\n", $path, preg_last_error_msg()));
+        exit(2);
+    }
+
+    return $result;
 }
 
 /**
@@ -398,14 +412,15 @@ function withoutComments(string $content, string $path): string
 {
     return match (extension($path)) {
         'php' => withoutPhpComments($content),
-        'ts', 'tsx', 'js', 'mjs' => (string) preg_replace_callback(
-            '#(?<s>\'(?:[^\'\\\\\n]|\\\\.)*\'|"(?:[^"\\\\\n]|\\\\.)*"|`(?:[^`\\\\]|\\\\.)*`)|(?<c>/\*.*?\*/|(?<=^|\s)//[^\n]*)#ms',
+        // Quantificateurs possessifs : une chaîne longue ne remplit plus la pile du JIT.
+        'ts', 'tsx', 'js', 'mjs' => regexResult(preg_replace_callback(
+            '#(?<s>\'(?:[^\'\\\\\n]++|\\\\.)*+\'|"(?:[^"\\\\\n]++|\\\\.)*+"|`(?:[^`\\\\]++|\\\\.)*+`)|(?<c>/\*.*?\*/|(?<=^|\s)//[^\n]*)#ms',
             static fn (array $m): string => '' !== ($m['c'] ?? '') ? (string) preg_replace('/[^\n]/', ' ', $m[0]) : $m[0],
             $content,
-        ),
-        'twig' => blank($content, '/\{#.*?#\}|<!--.*?-->/s'),
-        'yaml', 'yml', 'neon', 'sh', '' => blank($content, '/(?<=^|\s)#.*$/m'),
-        'md' => withoutCode($content),
+        ), $path),
+        'twig' => blank($content, '/\{#.*?#\}|<!--.*?-->/s', $path),
+        'yaml', 'yml', 'neon', 'sh', '' => blank($content, '/(?<=^|\s)#.*$/m', $path),
+        'md' => withoutCode($content, $path),
         default => $content,
     };
 }
@@ -427,9 +442,9 @@ function withoutPhpComments(string $content): string
 }
 
 /** A Markdown file without its code blocks and spans, where a name from the code is written as is. */
-function withoutCode(string $content): string
+function withoutCode(string $content, string $path = 'un contenu sans chemin'): string
 {
-    return blank($content, '/^[ \t]*(```|~~~).*?^[ \t]*\1|`[^`\n]+`/ms');
+    return blank($content, '/^[ \t]*(```|~~~).*?^[ \t]*\1|`[^`\n]+`/ms', $path);
 }
 
 /**
@@ -530,7 +545,7 @@ function hyphenAsDash(string $content, string $path): array
     }
     if (str_ends_with($path, '.twig')) {
         // The text of a `<code>` is a name, quoted as it is written elsewhere.
-        $text = blank($content, '/\{#.*?#\}|\{\{.*?\}\}|\{%.*?%\}|<script\b.*?<\/script>|<style\b.*?<\/style>|<code\b.*?<\/code>|<[a-zA-Z!\/][^>]*>/s');
+        $text = blank($content, '/\{#.*?#\}|\{\{.*?\}\}|\{%.*?%\}|<script\b.*?<\/script>|<style\b.*?<\/style>|<code\b.*?<\/code>|<[a-zA-Z!\/][^>]*>/s', $path);
 
         return matches('/'.$dash.'/u', $content, $text);
     }
@@ -978,7 +993,7 @@ function rules(): array
                 .'|\bE(?:tats?|quipes?|crivez|crire|tes|tapes?|chéances?|vénements?|vènements?|crans?|léments?|galement|tablissements?|ligibilité|pargne|tudes?|leveurs?|conomies?|lectricité)\b(?![\w\[\]<>({}=;]|\s+[{=(<]'
                 .(\in_array(extension($p), ['php', 'ts', 'tsx', 'js', 'mjs', 'cjs'], true) ? '|[,)|?:\'"\/]|\s+\}' : '').')/u',
                 $c,
-                'md' === extension($p) ? withoutCode($c) : $c,
+                'md' === extension($p) ? withoutCode($c, $p) : $c,
             ),
         ],
         'faute-recente' => [
@@ -992,7 +1007,7 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => matches(
                 '/(?i:\bce\schamp(?:s)\b|\b[Êê]tes-vous\ss(?:ur)\b|\br[ée]gion(?:n)al|\bdrif(?:f)[ée]|\bprises\sen\scharge(?:s)\b|\bprojet\sc(?:onfondus)\b|\bo(?:e)uvre)/u',
                 $c,
-                'md' === extension($p) ? withoutCode($c) : $c,
+                'md' === extension($p) ? withoutCode($c, $p) : $c,
             ),
         ],
         'anglicisme' => [
