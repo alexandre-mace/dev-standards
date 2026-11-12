@@ -389,19 +389,41 @@ function blank(string $content, string $pattern): string
 }
 
 /**
- * The content without its comments, by language. `//` counts only at the start of a line
- * or after a space: the one of a URL (`https://`) follows a colon.
+ * The content without its comments, by language. PHP is read by its tokenizer; a script
+ * in one pass from left to right, so a `//` that contains `/*` and a string that contains
+ * `/*` (a glob, an XPath) open no block. `//` counts only at the start of a line or after
+ * a space: the one of a URL (`https://`) follows a colon.
  */
 function withoutComments(string $content, string $path): string
 {
     return match (extension($path)) {
-        'php' => blank(blank($content, '#/\*.*?\*/#s'), '#(?<=^|\s)(?://|\#(?!\[)).*$#m'),
-        'ts', 'tsx', 'js', 'mjs' => blank(blank($content, '#/\*.*?\*/#s'), '#(?<=^|\s)//.*$#m'),
+        'php' => withoutPhpComments($content),
+        'ts', 'tsx', 'js', 'mjs' => (string) preg_replace_callback(
+            '#(?<s>\'(?:[^\'\\\\\n]|\\\\.)*\'|"(?:[^"\\\\\n]|\\\\.)*"|`(?:[^`\\\\]|\\\\.)*`)|(?<c>/\*.*?\*/|(?<=^|\s)//[^\n]*)#ms',
+            static fn (array $m): string => '' !== ($m['c'] ?? '') ? (string) preg_replace('/[^\n]/', ' ', $m[0]) : $m[0],
+            $content,
+        ),
         'twig' => blank($content, '/\{#.*?#\}|<!--.*?-->/s'),
         'yaml', 'yml', 'neon', 'sh', '' => blank($content, '/(?<=^|\s)#.*$/m'),
         'md' => withoutCode($content),
         default => $content,
     };
+}
+
+/** PHP without its comments, read by the tokenizer: a string never opens one. */
+function withoutPhpComments(string $content): string
+{
+    $out = '';
+    foreach (token_get_all($content) as $token) {
+        if (\is_array($token) && \in_array($token[0], [\T_COMMENT, \T_DOC_COMMENT], true)) {
+            // A `//` or `#` comment holds its newline: kept, so the lines stay in place.
+            $out .= (string) preg_replace('/[^\n]/', ' ', $token[1]);
+        } else {
+            $out .= \is_array($token) ? $token[1] : $token;
+        }
+    }
+
+    return $out;
 }
 
 /** A Markdown file without its code blocks and spans, where a name from the code is written as is. */
@@ -1267,7 +1289,7 @@ function rules(): array
             'paths' => $ui,
             'except' => $tests,
             'kind' => 'ajout',
-            'find' => static fn (string $c, string $p): array => matches('/(?<![\w-])(?:[a-z0-9-]+:)*h-\[(?:calc\()?\d+vh\b/', $c, withoutComments($c, $p)),
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w-])(?:[a-z0-9-]+:)*(?:min-|max-)?h-\[(?:calc\()?\d+vh\b/', $c, withoutComments($c, $p)),
         ],
         'chart-gabarit' => [
             'message' => 'jeton `chart-*` dans un gabarit : il colore les séries des graphiques et changera le jour où un graphique en demandera d\'autres ; le jeton d\'interface qui porte le sens',
