@@ -7,7 +7,8 @@ nothing but the `<…>` values: a rule missing here is added to this file, not t
 
 Repository: `<repo>`, on `<branch>` at `<commit>`. The previous pass audited `<previous commit>`.
 
-**You edit no file of the repository, commit nothing, run neither CI nor a server.** You
+**You edit no file of the repository, commit nothing, run neither CI nor a server, and launch
+no sub-agent**: the orchestrator already runs as many as the machine allows. You
 write your result to `<return file>` and answer with its counts only (files covered, findings
 per priority): the orchestrator keeps every return out of its own context. A targeted test or
 a read-only script to prove a point is allowed.
