@@ -999,7 +999,7 @@ The standard stack, the same on every Symfony + React project, with no "light" o
 
 ```bash
 pnpm test                # Vitest, full run
-pnpm test --watch        # watch mode
+pnpm test:watch          # watch mode
 pnpm test:e2e            # Playwright
 pnpm test:e2e:ui         # Playwright in interactive UI mode
 ```
@@ -1031,9 +1031,9 @@ import viteConfig from './vite.config';
 export default mergeConfig(viteConfig, defineConfig({
     test: {
         environment: 'jsdom',
-        globals: true,                    // describe / it / expect available without imports
         setupFiles: ['./assets/test-setup.ts'],
         css: false,                       // no need to parse the CSS
+        sequence: {shuffle: true},        // random order, the seed printed to replay a failure
     },
 }));
 ```
@@ -1043,24 +1043,31 @@ export default mergeConfig(viteConfig, defineConfig({
 ```ts
 import '@testing-library/jest-dom/vitest';
 import {cleanup} from '@testing-library/react';
-import {afterEach, beforeAll, afterAll} from 'vitest';
+import {afterAll, afterEach, beforeAll, beforeEach, vi} from 'vitest';
+import {queryClient} from './lib/queryClient';
 import {server} from './test-mocks/server';
-
-afterEach(() => cleanup());
 
 // MSW: intercepts every SDK request during the tests
 beforeAll(() => server.listen({onUnhandledFrame: 'error'}));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-// Clean override of navigator.language without breaking userAgent
-Object.defineProperty(window.navigator, 'language', {value: 'fr-FR', configurable: true});
+// Each test starts from what jsdom gives: the DOM, its stubs and the shared cache emptied
+afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    queryClient.clear();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+});
 
-// window.location.reload / assign are non-writable in jsdom: patch through the prototype
-beforeAll(() => {
-    const proto = Object.getPrototypeOf(window.location);
-    proto.reload = vi.fn();
-    proto.assign = vi.fn();
+// Set before each test, since restoreAllMocks and unstubAllGlobals undo them after the first.
+// navigator.language through a getter spy, so userAgent stays intact; window.location
+// through a stub, since jsdom's reload and assign are not writable.
+beforeEach(() => {
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('fr-FR');
+    vi.stubGlobal('location', {...window.location, reload: vi.fn(), assign: vi.fn()});
 });
 ```
 
