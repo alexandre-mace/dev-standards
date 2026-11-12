@@ -10,9 +10,15 @@ where the ecosystem is right and the guidelines get corrected.
 
 **The target is zero findings, every priority included.** Between two passes each finding
 is fixed or recorded as an accepted deviation with its reason; nothing stays open. A
-Basse finding therefore has to be worth a commit: a docblock that now says the wrong
-thing, dead code, a visible text error, a twin that will drift. A matter of taste nobody
-would fix is not a finding, and listing it only keeps the count from reaching zero.
+Basse finding is objective, however small: a rule broken, a docblock that now says the
+wrong thing, dead code, a misplaced comment, a twin that will drift. A matter of taste is
+not one, and listing it only keeps the count from reaching zero. What never counts is in
+`not-a-finding.md`, the one list every agent reads.
+
+**Every agent gets its brief from a file of this skill, verbatim**: `zone-brief.md`,
+`refute-brief.md`, `lot-brief.md`, placeholders filled in. A rule the orchestrator would
+add by hand goes into the file instead. Seen: a lot brief written from memory that dropped
+the rule on visible texts, and lots that reworded them.
 
 **Every file, every pass.** A pass reads the whole repository, unchanged files included:
 the code has not moved, but the reader has. A newer model, or a guideline sharpened since,
@@ -88,7 +94,9 @@ repository for it alone:
   data copied into fixtures;
 - twins that must stay aligned (PHP and TS rules, copied lists, constants);
 - the API contract end to end (DTO, controller, OpenAPI, generated client, form);
-- calls to action and links (where each one leads a visitor and a member);
+- calls to action and links that break: a route written by hand instead of generated, a
+  page that refuses the profile it is shown to, a dead anchor. Where a working link leads
+  is a product choice;
 - form accessibility (names, errors, required state on the control).
 
 **Judgement where no search reaches.** A rule that cannot be turned into a search still
@@ -96,7 +104,7 @@ gets read for: architecture boundaries, business logic in the wrong layer, a pat
 diverges between two files that should match. Beyond the guidelines, flag only what
 breaks something even when no rule covers it: a wrong result, a security smell, dead code,
 a hardcoded URL that belongs in the environment, a comment or docblock the code has since
-contradicted. A behaviour that works and could merely be otherwise is not a finding.
+contradicted.
 
 **What only the data can tell is checked in the data.** A finding that depends on what
 production holds (a duplicate, a value outside an enum, a dead branch) is confirmed by a
@@ -144,8 +152,9 @@ Then read them for what a script cannot see:
 
 ## 5. Verify before writing
 
-Every Haute and Moyenne finding goes to a second agent whose only job is to refute it: read
-the code, the callers, the tests, the data, and say whether the defect is real. A refuted
+Every Haute and Moyenne finding goes to a second agent, briefed by `refute-brief.md`, whose
+only job is to refute it: read the code, the callers, the tests, the data, and say whether
+the defect is real. A refuted
 finding is dropped, a confirmed one keeps its confidence or gains one. A false positive
 costs a fix lot an hour of work and sometimes breaks code that was right.
 
@@ -200,51 +209,26 @@ audited:
 
 The stack's own gaps first (runtime and dependency versions, config, the gate), then the
 findings per priority, then per origin beside the previous pass's counts, then the most
-critical items, then one line on what to do first. The origin says where the count comes
+critical items, then the questions for the communication team, then one line on what to
+do first. The origin says where the count comes
 from. `ancien` falling is the reading converging. `lot` and `feature` are defects written
 since the last pass that the gate and `/review-diff` let through: a change of method answers
 them, not another pass.
 
 ## 8. What the fixing has to honour
 
-This skill fixes nothing, but the fixes decide whether the next pass finds anything. Hand
-the fix lots these rules with the findings:
+This skill fixes nothing, but the fixes decide whether the next pass finds anything. Each
+lot gets `lot-brief.md`, which carries the rules: re-check on the current main, refute
+before fixing, fix the family and close it in the gate, data before constraint, prove the
+hook ran, `/review-diff` before merging, a report that names only what someone could have
+decided otherwise. One rule stays with the orchestrator:
 
-- **Fix the family, not the line.** Before closing a finding, search for every place with
-  the same defect and fix them all. Half of what a pass finds is the sibling of something
-  the previous fix lot repaired in one place only.
-- **Close the family in the gate.** When the defect reduces to a pattern, the same pull
-  request adds the rule that refuses it (`bin/check-mechanical`, ESLint, PHPStan), run by
-  the hook and `bin/ci-local`, with a test of the rule. A fix without the rule is undone
-  by the next feature: seen, the hand-read island props and the stale oasdiff exceptions,
-  fixed in one pass and back in new files at the next.
-- **Re-check on the current main.** Other lots merge while one works; a finding may
-  already be fixed, or moved.
-- **Run `/review-diff` before opening the pull request**: it reads every touched file in
-  full against the audit grid, as the next delta pass will, so the fix does not hand that
-  pass new findings.
 - **Close the fix session with a delta.** Once every lot is merged, run `/gap-code delta`
   from the commit the pass audited, fix what it finds, and only then start the next full
   pass. Ambitious lots touch hundreds of files, and one reviewer per lot cannot read them
   all; the delta splits them into zones like a pass does. Seen: between the ninth and the
   tenth pass, the fix lots changed 1 992 files, and 72 % of the tenth pass's findings sat in
   those files; the other 28 % were in files nobody had touched.
-- **Data first, constraint second.** A unique index or a stricter enum on a table that
-  holds offending rows fails the deploy; clean production first, then ship the constraint.
-- **Prove the hook ran.** In a fresh worktree the hook directory may be missing, and the
-  commits then skip every check without a word.
-- **A lot's report names only what someone could have decided otherwise.** A fix that
-  adds or removes a step of a user's path, changes how long a user's data is kept or who
-  receives it, opens or closes an access, or sets a product rule ships with its default
-  and gets one line in the report, so the user can veto it. A bug fix, an alignment on a
-  choice the project or a guideline already made and a fix of form ship without a word.
-- **A visible text keeps the words its team wrote.** A lot fixes its form only, never a
-  label or a sentence. Seen: a call to action and a help text reworded by the lots, then
-  put back. A name that misstates its data (an export's column header, a field label) is
-  not that team's text: it is a finding, like a docblock the code contradicts.
-- **A fix never cites the finding's identifier in the code.** The next audit rewrites
-  `docs/gap-analysis.md` and the identifiers with it, so a comment or a docblock pointing
-  to one points to nothing. It says the cause in plain words, or names the commit.
 
 ## 9. Which model, at which effort
 
@@ -257,65 +241,12 @@ token, since a cheaper model that reasons longer can cost more per task.
 | Zone and theme agents, config scan | Opus | `high` | The findings worth a pass are judgement (a twin that drifted, a test that cannot fail, a docblock the code contradicts); a weaker reader misses them and they come back at the next pass |
 | Refutation of Haute and Moyenne | Opus | `high` | It reads one finding against the code, the callers and the tests |
 | Fix lots on logic, data, contracts, security | Opus | `high` | It must refute before fixing and break nothing next door |
-| Fix lots that are mechanical (renames, typography, texts, test names) | Opus | `low` | Measured below: fewest defects introduced, fewest tokens |
+| Fix lots that are mechanical (renames, typography, texts, test names) | Opus | `low` | Fewest defects introduced, fewest tokens |
 
-`high` everywhere Opus runs: `xhigh` adds 2.4 points of index (56.0 against 53.6) for 1.9
-times the cost per task, and `max` 1.6 more for 1.7 times again.
-
-Measured by Artificial Analysis on 2026-10-17. The figures sit in the page source of
-`artificialanalysis.ai/models/<slug>` (`claude-opus-5-5-high`…): `intelligenceIndex`, and
-`intelligenceIndexCostPerTask.cost.total` in dollars. Read them there, never off a chart:
-a reading by eye was wrong by five points on Opus `low`.
-
-| Model | Effort | Index | Cost per task | Output tokens per task |
-|---|---|---|---|---|
-| Opus 5.5 | max | 57.6 | $5.98 | 84 K |
-| Opus 5.5 | xhigh | 56.0 | $3.46 | 40 K |
-| Opus 5.5 | high | 53.6 | $1.82 | 18 K |
-| Opus 5.5 | medium | 51.2 | $1.34 | 12 K |
-| Opus 5.5 | low | 42.3 | $0.55 | 3 K |
-| Sonnet 5.5 | max | 56.0 | $5.46 | 147 K |
-| Sonnet 5.5 | xhigh | 51.9 | $2.01 | 48 K |
-| Sonnet 5.5 | high | 46.8 | $0.88 | 19 K |
-| Sonnet 5.5 | medium | 40.8 | $0.48 | 8 K |
-| Sonnet 5.5 | low | 35.9 | $0.35 | 5 K |
-| Haiku 5.5 | max | 43.4 | $0.21 | 129 K |
-| Haiku 5.5 | xhigh | 41.2 | $0.12 | 66 K |
-| Fable 5.1 | max | 53.4 | $7.63 | 47 K |
-| Fable 5.1 | high | 51.2 | $3.91 | 19 K |
-
-- Fable 5.1 sits under Opus 5.5 at every cost (Opus `high` scores more for half the
-  price of Fable `high`): no role.
-- At equal effort Sonnet spends about as many tokens as Opus for half the token price,
-  but scores less: Sonnet `xhigh` (51.9, $2.01) is under Opus `high` (53.6, $1.82).
-- For the mechanical lots, four candidates stand close on the index: Opus `low` (42.3,
-  $0.55), Sonnet `medium` (40.8, $0.48), Haiku `max` (43.4, $0.21) and Sonnet `high`
-  (46.8, $0.88). The index is not an agentic coding measure: the fix session after this
-  measure runs mechanical lots on Opus `low`, Sonnet `medium` and Haiku `max`, compares
-  tokens, duration and what the review finds behind each, and writes the outcome in the
-  role table.
-
-- Opus `medium` loses 2.4 more points (51.2) for 26 % less than `high`, a worse trade than
-  `xhigh` to `high` (2.4 points for 47 %). Measure it before moving a role there: the next
-  delta reads one zone twice, at `high` and at `medium`, and compares findings and false
-  positives; the next logic fix lots alternate `high` and `medium`, and the delta after
-  them counts what it finds behind each. Write the outcome in the role table.
-
-Measured on one project, 2026-10-17, three mechanical lots of comparable work, then a delta
-reading their files at equal depth (Opus `high`):
-
-| Lot | Fixed | Tokens | Duration | Introduced, per 100 files touched |
-|---|---|---|---|---|
-| Opus `low` | 31 of 35 | 187 K | 20 min | 5, all Basse |
-| Sonnet `medium` | 53 of 60 | 280 K | 44 min | about 10, one a wrong total |
-| Haiku `max` | 27 of 34 | 663 K, plus four review agents | 85 min | 6 after four review rounds that caught a broken test and a display regression; it also printed `.env.local` against its brief |
-
-Haiku gets no role. And one reading of a zone misses a third to a half of what is there: the
-same 33 files read at Opus `high` and `medium` gave 10 and 7 findings, only 3 in common, 14
-in all. The delicate zones are worth two readings at different efforts rather than one at a
-higher effort.
-
-Re-read these figures when a new model ships.
+One reading of a zone misses a third to a half of what is there: the delicate zones are
+worth two readings at different efforts rather than one at a higher effort. The figures
+behind these choices, and the measures still open, are in `benchmarks.md`: re-read them
+when a new model ships.
 
 ## Rules
 
@@ -329,35 +260,9 @@ Re-read these figures when a new model ships.
   (a doubt nothing in the repository could settle). A doubt the code, the tests or the
   commit that introduced the line can settle is settled by the scan, not passed on. A
   confidence is not a severity, which the priority already carries.
-- **A feature behind a switch that is off in production is work in progress**: what it does not do yet is not a finding, the code it has still is. The project's `AGENTS.md` names the switch.
-- **Never remove what may serve.** Data the product collects, a feature, a text: "nothing
-  uses it yet" is not a reason to remove it. Read the commit that added it, and when the
-  doubt remains, ask. Seen: the address of each price search, collected on purpose for a
-  dashboard to come, removed as "personal data nobody reads".
-- **A visible text is the communication team's, not the code's**: the audit fixes its form
-  only (typo, tutoiement, typography), and its substance is never a finding, so it never
-  counts against zero. Only a fact that matters and misleads (a figure, a price, a date, a
-  legal or contractual commitment, a promise the product does not keep) reaches the summary,
-  as a question for that team, outside the findings and never fixed by a lot.
-- **A product question reaches the user only when nothing answers it.** Before listing a
-  behaviour as a decision to take, read the commit that introduced it (`git log -L` on the
-  cited lines, once): a behaviour that a commit or a docblock explains is a deliberate
-  choice, recorded under the accepted deviations, not a question. Seen: a member already
-  installed flagged for not seeing the installation path in the menu, a choice obvious to
-  anyone who knows the product.
-- **What the product shows or promotes is not a finding**, even when it looks out of step
-  with today's data: the audit judges the code, not a product or marketing choice. Seen: a
-  simulator's tax-reduction line hidden because no open fund offered it, when the business
-  keeps advertising it between two fundraisings.
+- **A product question reaches the user only when nothing answers it**: not the code, not
+  the commit that introduced it, not `not-a-finding.md`.
 - **A question left open comes with the default answer the fix lot applies**, asked once in
   the summary: without a reply the default holds, so nothing waits in the file.
-- **Read the code before calling it a deviation.** Code that does not follow the canonical
-  pattern is sometimes right for its situation, and forcing the pattern makes it worse.
-  Seen: mutation hooks flagged for not using `useMutation`, in islands mounted without a
-  `QueryClientProvider`, where the hook crashes on render. A form flagged for not using
-  react-hook-form, whose fields are derived asynchronously from two selects, which RHF
-  does not simplify. Hand-written Zod schemas flagged as not generated, validating the
-  state of the form rather than the payload. Say honestly that the pattern does not fit,
-  rather than opening a gap that a later session will close by breaking working code.
 - Group by theme, not by file, so the result is a work plan.
 - French for the prose of `gap-analysis.md`, matching the existing file.
