@@ -44,6 +44,11 @@ test doctrine apply to all three.
 - Read the existing `docs/gap-analysis.md` for two things only: the deviations that were
   deliberately accepted, and, for a delta, the commit the previous pass audited. A fresh
   scan finds everything else on its own, and git holds the history.
+- **An accepted deviation is judged again at every pass**, against today's guideline. One
+  below a version floor or a mandated configuration stands only on a named blocker (a
+  missing extension, an incompatible dependency) and the date to re-check it; otherwise it
+  is a finding, Haute for a security floor. Seen: PHP 8.4 kept for a month as « patched »,
+  under a guideline that sets 8.5.
 - Stop on an archived repository, rather than auditing a corpse: a last commit saying
   "archive", a redirect to a successor, an archived flag on the remote.
 
@@ -88,11 +93,10 @@ repository for it alone:
 
 **Judgement where no search reaches.** A rule that cannot be turned into a search still
 gets read for: architecture boundaries, business logic in the wrong layer, a pattern that
-diverges between two files that should match. Beyond the guidelines, flag what is
-incoherent, fragile, surprising or plainly broken even when no rule covers it: suspicious
-logic, security smells, dead code, hardcoded URLs that belong in the environment, a
-comment or docblock the code has since contradicted. The bar is the one of section 0: a
-defect someone would fix.
+diverges between two files that should match. Beyond the guidelines, flag only what
+breaks something even when no rule covers it: a wrong result, a security smell, dead code,
+a hardcoded URL that belongs in the environment, a comment or docblock the code has since
+contradicted. A behaviour that works and could merely be otherwise is not a finding.
 
 **What only the data can tell is checked in the data.** A finding that depends on what
 production holds (a duplicate, a value outside an enum, a dead branch) is confirmed by a
@@ -194,7 +198,8 @@ audited:
 
 ## 7. Present the summary
 
-Findings per priority, then per origin beside the previous pass's counts, then the most
+The stack's own gaps first (runtime and dependency versions, config, the gate), then the
+findings per priority, then per origin beside the previous pass's counts, then the most
 critical items, then one line on what to do first. The origin says where the count comes
 from. `ancien` falling is the reading converging. `lot` and `feature` are defects written
 since the last pass that the gate and `/review-diff` let through: a change of method answers
