@@ -50,7 +50,11 @@ lines added since the merge base (the staged lines, in the hook), so it refuses 
 occurrences while a project still holds old ones. A new rule starts as **ajout**, and
 becomes **fichier** once every project has cleaned its stock. `strict-types` and
 `classe-finale` stay **ajout** on purpose: they report on the first line and on the class
-declaration, which only a new file adds, and judge new files only.
+declaration, which only a new file adds, and judge new files only. A renamed or copied file
+(status `R` or `C`, in the hook as in `--all`) counts as new for these two: a pure `git mv`
+adds no line, and an old open class would otherwise come out under its new name unjudged.
+The other **ajout** rules still read only its added lines, so a `git mv` of a file that
+keeps an old occurrence passes. In a merge, a file the other branch renamed is not ours.
 
 | Kind | Rules |
 |---|---|

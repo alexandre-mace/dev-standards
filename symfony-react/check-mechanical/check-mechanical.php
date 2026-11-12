@@ -16,7 +16,8 @@
  *
  * A "file" rule reads every line of the files it sees; an "added" rule reads only the
  * lines added since the merge base, so it refuses new occurrences while a project still
- * holds old ones. An exception lives in the code, on the line above the occurrence or
+ * holds old ones, except strict-types and classe-finale, which judge a renamed or copied
+ * file whole. An exception lives in the code, on the line above the occurrence or
  * in the first three lines of a file for the whole file (several stacked from there):
  *
  *   check-mechanical-ignore <rule>: <reason>
@@ -91,6 +92,8 @@ $scanned = static fn (string $path): bool => !preg_match(SKIPPED, $path) && \in_
 $contents = [];
 /** @var array<string, array<int, true>>|null $added path => added lines; null: all of them */
 $added = null;
+/** @var array<string, true> $moved les fichiers renommés ou copiés, sous leur nouveau nom */
+$moved = [];
 $notice = null;
 
 if ('files' === $mode) {
@@ -102,15 +105,19 @@ if ('files' === $mode) {
 } elseif ('staged' === $mode) {
     $paths = array_values(array_filter(explode("\0", git('diff --cached --name-only --diff-filter=ACMR -z')), $scanned));
     $contents = staged($paths);
-    $added = addedLines(git('diff --cached -U0 --no-color --no-ext-diff --diff-filter=ACMR'));
+    $added = addedLines(git('diff --cached -M -U0 --no-color --no-ext-diff --diff-filter=ACMR'));
+    $moved = pathsOf(git('diff --cached -M --name-status -z --diff-filter=RC'));
     // A merge: a line is ours only if it is new to both parents, otherwise the lines
     // brought by the other branch would count as added here.
     $mergeHead = trim(git('rev-parse -q --verify MERGE_HEAD', quiet: true));
     if ('' !== $mergeHead) {
-        $fromOther = addedLines(git('diff --cached -U0 --no-color --no-ext-diff --diff-filter=ACMR '.escapeshellarg($mergeHead)));
+        $fromOther = addedLines(git('diff --cached -M -U0 --no-color --no-ext-diff --diff-filter=ACMR '.escapeshellarg($mergeHead)));
         foreach ($added as $path => $lines) {
             $added[$path] = array_intersect_key($lines, $fromOther[$path] ?? []);
         }
+        // De même, un fichier n'est renommé par nous que s'il est neuf pour l'autre parent
+        // aussi : celui que l'autre branche a renommé y porte déjà ce nom.
+        $moved = array_intersect_key($moved, pathsOf(git('diff --cached -M --name-status -z --diff-filter=ACR '.escapeshellarg($mergeHead))));
     }
 } else {
     foreach (array_filter(explode("\0", git('ls-files -z')), $scanned) as $path) {
@@ -124,7 +131,8 @@ if ('files' === $mode) {
         $added = [];
         $notice = "Base $base introuvable : les règles « ajout » ne sont pas jouées.";
     } else {
-        $added = addedLines(git('diff -U0 --no-color --no-ext-diff '.escapeshellarg($mergeBase)));
+        $added = addedLines(git('diff -M -U0 --no-color --no-ext-diff '.escapeshellarg($mergeBase)));
+        $moved = pathsOf(git('diff -M --name-status -z --diff-filter=RC '.escapeshellarg($mergeBase)));
     }
 }
 
@@ -150,7 +158,10 @@ foreach ($contents as $path => $content) {
                     $directives[$i]['used'] = $covered = true;
                 }
             }
-            if ($covered || ('ajout' === kind($rule, $path) && null !== $added && !isset($added[$path][$line]))) {
+            // Un renommage pur n'ajoute aucune ligne : une règle de naissance juge alors le
+            // fichier entier, que le nouveau nom fait naître.
+            $born = isset($rule['wholeWhenMoved'], $moved[$path]);
+            if ($covered || ('ajout' === kind($rule, $path) && null !== $added && !isset($added[$path][$line]) && !$born)) {
                 continue;
             }
             $found[] = \sprintf("%s:%d: [%s] %s\n    %s", $path, $line, $id, $rule['message'], mb_strimwidth(trim($excerpt), 0, 160, '…'));
@@ -197,6 +208,7 @@ function listRules(): never
 {
     foreach (rules() as $id => $rule) {
         $partly = isset($rule['addedOnly']) ? ' (lignes ajoutées seules : '.$rule['addedOnlyLabel'].')' : '';
+        $partly .= isset($rule['wholeWhenMoved']) ? ' (fichier renommé ou copié : jugé en entier)' : '';
         echo \sprintf("%-20s %-8s %s%s\n", $id, $rule['kind'], $rule['message'], $partly);
     }
     exit(0);
@@ -335,6 +347,28 @@ function staged(array $paths): array
     proc_close($process);
 
     return $out;
+}
+
+/**
+ * Les chemins d'un `git diff --name-status -z`, sous leur nouveau nom : un renommage ou une
+ * copie donne l'ancien puis le nouveau.
+ *
+ * @return array<string, true>
+ */
+function pathsOf(string $nameStatus): array
+{
+    $fields = explode("\0", rtrim($nameStatus, "\0"));
+    $paths = [];
+    for ($i = 0, $n = \count($fields); $i < $n && '' !== $fields[$i]; ++$i) {
+        if (\in_array($fields[$i][0], ['R', 'C'], true)) {
+            ++$i;
+        }
+        if (isset($fields[$i + 1])) {
+            $paths[$fields[++$i]] = true;
+        }
+    }
+
+    return $paths;
 }
 
 /** @return array<string, array<int, true>> */
@@ -1452,21 +1486,23 @@ function rules(): array
             'find' => static fn (string $c, string $p): array => englishComments($c, $p),
         ],
         'strict-types' => [
-            'message' => 'fichier PHP ajouté sans `declare(strict_types=1);`',
+            'message' => 'fichier PHP ajouté ou renommé sans `declare(strict_types=1);`',
             'ext' => ['php'],
             'paths' => '#^(src|tests)/#',
             // Reported on the first line, which only a new file adds.
             'kind' => 'ajout',
+            'wholeWhenMoved' => true,
             'find' => static fn (string $c): array => preg_match('/^declare\(strict_types=1\);/m', $c) ? [] : [[1, '<?php']],
         ],
         'classe-finale' => [
-            'message' => 'classe ajoutée ni `final` ni `abstract` : une classe se ferme, l\'héritage se décide (une base de tests s\'appelle `…TestCase`, ou se déclare `abstract`)',
+            'message' => 'classe ajoutée ou renommée ni `final` ni `abstract` : une classe se ferme, l\'héritage se décide (une base de tests s\'appelle `…TestCase`, ou se déclare `abstract`)',
             'ext' => ['php'],
             'paths' => '#^(src|tests)/#',
             // Doctrine extends the entities for its lazy proxies; Foundry's factories follow
             // their maker.
             'except' => '#^src/Entity/|^tests/Factory/#',
             'kind' => 'ajout',
+            'wholeWhenMoved' => true,
             'find' => static fn (string $c, string $p): array => openClasses($c, str_starts_with($p, 'tests/')),
         ],
         'map-query-statut' => [

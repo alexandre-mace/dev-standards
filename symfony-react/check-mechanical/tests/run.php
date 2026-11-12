@@ -235,6 +235,69 @@ expect(
     $err,
 );
 
+// Un renommage n'ajoute aucune ligne : strict-types et classe-finale jugent alors le
+// fichier entier, au hook comme en CI, tandis qu'une règle « ajout » laisse passer le
+// `git mv` d'un fichier qui garde une occurrence ancienne.
+function repositoryWithOldClasses(): string
+{
+    $root = directory();
+    $methods = '';
+    for ($i = 1; $i <= 20; ++$i) {
+        $methods .= "    public function m$i(): int { return $i; }\n";
+    }
+    write($root, 'src/Pure.php', "<?php\n\nnamespace App;\n\n// Corrigé en 11e\x20passe.\nclass Pure\n{\n$methods}\n");
+    write($root, 'src/Edited.php', "<?php\n\nnamespace App;\n\nclass Edited\n{\n$methods}\n");
+    write($root, 'src/Kept.php', "<?php\n\ndeclare(strict_types=1);\n\nnamespace App;\n\nfinal class Kept\n{\n$methods}\n");
+    write($root, 'src/Touched.php', "<?php\n\nnamespace App;\n\nclass Touched\n{\n$methods}\n");
+    git($root, 'init', '-q');
+    git($root, 'add', '.');
+    git($root, 'commit', '-qm', 'ancien');
+    git($root, 'branch', 'base');
+    mkdir($root.'/src/Moved');
+    git($root, 'mv', 'src/Pure.php', 'src/Moved/Pure.php');
+    git($root, 'mv', 'src/Edited.php', 'src/Moved/Edited.php');
+    git($root, 'mv', 'src/Kept.php', 'src/Moved/Kept.php');
+    // Le renommage modifie une méthode, la ligne de la classe reste celle d'avant.
+    $edited = (string) file_get_contents($root.'/src/Moved/Edited.php');
+    write($root, 'src/Moved/Edited.php', str_replace('return 3;', 'return 33;', $edited));
+    // Le témoin, modifié sans être renommé, garde sa forme ancienne.
+    write($root, 'src/Touched.php', "// Ajout.\n", append: true);
+    git($root, 'add', '.');
+
+    return $root;
+}
+
+$renameCases = static function (string $err, string $where): void {
+    expect(str_contains($err, 'src/Moved/Pure.php:1: [strict-types]') && str_contains($err, 'src/Moved/Pure.php:6: [classe-finale]'), "$where : un renommage pur juge le fichier entier", $err);
+    expect(str_contains($err, 'src/Moved/Edited.php:1: [strict-types]') && str_contains($err, 'src/Moved/Edited.php:5: [classe-finale]'), "$where : un renommage qui garde la ligne de la classe juge le fichier entier", $err);
+    expect(!str_contains($err, '[identifiant-audit]'), "$where : une règle « ajout » laisse passer le renommage d'une occurrence ancienne", $err);
+    expect(!str_contains($err, 'src/Moved/Kept.php') && !str_contains($err, 'src/Touched.php'), "$where : un fichier renommé conforme et un fichier modifié sans être renommé passent", $err);
+};
+$root = repositoryWithOldClasses();
+[$code, , $err] = check([], $root);
+expect(1 === $code, 'le hook refuse un renommage qui échappait à strict-types et classe-finale', $err);
+$renameCases($err, 'le hook');
+git($root, 'commit', '-qm', 'renommage');
+[$code, , $err] = check(['--all', '--base', 'base'], $root);
+expect(1 === $code, 'la CI refuse un renommage qui échappait à strict-types et classe-finale', $err);
+$renameCases($err, 'la CI');
+
+// Une fusion : le fichier que l'autre branche a renommé n'est pas un renommage nôtre.
+$root = repositoryWithOldClasses();
+git($root, 'commit', '-qm', 'renommage');
+git($root, 'checkout', '-qb', 'mine', 'base');
+write($root, 'src/Mine.php', "<?php\n\ndeclare(strict_types=1);\n");
+git($root, 'add', '.');
+git($root, 'commit', '-qm', 'mien');
+git($root, 'merge', '-q', '--no-commit', '--no-ff', 'main');
+[, , $err] = check([], $root);
+expect(!str_contains($err, 'src/Moved/'), "une fusion ne compte pas comme siens les renommages de l'autre branche", $err);
+// Le même fichier, renommé de nouveau pendant la fusion, est bien le nôtre.
+mkdir($root.'/src/Again');
+git($root, 'mv', 'src/Moved/Pure.php', 'src/Again/Pure.php');
+[, , $err] = check([], $root);
+expect(str_contains($err, 'src/Again/Pure.php:1: [strict-types]') && !str_contains($err, 'src/Moved/Edited.php'), 'une fusion juge en entier le fichier qu\'elle renomme elle-même', $err);
+
 // The CI counts the additions from the merge base with the given branch.
 $root = repositoryWithAnOldPassNumber();
 git($root, 'branch', 'base');
