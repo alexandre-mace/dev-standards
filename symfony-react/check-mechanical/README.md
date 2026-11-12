@@ -58,8 +58,8 @@ keeps an old occurrence passes. In a merge, a file the other branch renamed is n
 
 | Kind | Rules |
 |---|---|
-| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `sommeil-test`, `gitignore-src` |
-| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable`, `balise-console`, `document-introuvable`, `guillemets-espace`, `milliers-espace`, `pourcentage-espace` |
+| fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `sommeil-test`, `gitignore-src`, `relance-a-la-main`, `image-sans-mime`, `mot-de-passe-en-caracteres`, `succes-sans-contenu` |
+| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `icone-racine`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `anglicisme`, `points-suspension`, `label-orphelin`, `main-gabarit`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `chart-gabarit`, `script-en-ligne`, `style-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message`, `non-applicable`, `balise-console`, `document-introuvable`, `guillemets-espace`, `milliers-espace`, `pourcentage-espace`, `requete-a-la-main` |
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
@@ -93,6 +93,13 @@ leave `src/Command/` out like `guillemets-message`: a console cuts at its width,
 the space.
 `pourcentage-espace` stays apart from `pourcentage-colle`, which is **fichier** and clean
 everywhere.
+
+Four rules of the PHP anti-patterns were clean on every project when they came, and are
+**fichier**: `relance-a-la-main`, `image-sans-mime`, `mot-de-passe-en-caracteres` and
+`succes-sans-contenu`, a third party that demands a 200 taking its exception.
+`requete-a-la-main` is **ajout**, one project still reading its query by hand; it leaves
+the EasyAdmin CRUD controllers out. `couleur-litterale` reads the PHP of `src/Domain/` and
+`src/Twig/` too, where an enum or an extension hands a colour to a template.
 
 `couleur-litterale`, `contenu-attenue` and `style-en-ligne` leave the `emails/` and `pdf/`
 folders of `templates/` out, at any depth: a mail client and a PDF renderer read neither the application's

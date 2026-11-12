@@ -983,6 +983,104 @@ function missingDocuments(string $content): array
 }
 
 /**
+ * The arguments of the call that opens at the offset (on its `(`), strings skipped so a
+ * parenthesis inside a message does not close it, or null when it does not close.
+ */
+function callArguments(string $content, int $open): ?string
+{
+    $depth = 0;
+    $n = \strlen($content);
+    for ($i = $open; $i < $n; ++$i) {
+        $char = $content[$i];
+        if ('\'' === $char || '"' === $char) {
+            for (++$i; $i < $n && $content[$i] !== $char; ++$i) {
+                if ('\\' === $content[$i]) {
+                    ++$i;
+                }
+            }
+        } elseif ('(' === $char) {
+            ++$depth;
+        } elseif (')' === $char && 0 === --$depth) {
+            return substr($content, $open, $i - $open + 1);
+        }
+    }
+
+    return null;
+}
+
+/**
+ * The calls opened by the pattern (which ends on their `(`) that the judge refuses, given
+ * their arguments and the offset where they end.
+ *
+ * @param callable(string, int): bool $refused
+ *
+ * @return list<array{int, string}>
+ */
+function refusedCalls(string $pattern, string $content, string $searched, callable $refused): array
+{
+    if (!preg_match_all($pattern, $searched, $all, \PREG_OFFSET_CAPTURE)) {
+        return [];
+    }
+    $lines = explode("\n", $content);
+    $out = [];
+    foreach ($all[0] as [$text, $offset]) {
+        $open = $offset + \strlen($text) - 1;
+        $arguments = callArguments($searched, $open);
+        if (null !== $arguments && $refused($arguments, $open + \strlen($arguments))) {
+            $line = substr_count($searched, "\n", 0, $offset) + 1;
+            $out[] = [$line, $lines[$line - 1] ?? ''];
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * A `Length` with a `max` counted in characters, on a password: the hashers of Symfony
+ * bound it in bytes, so a password of accented letters passed the validation and threw
+ * in the hasher. A password is named by the constraint itself (`MAX_PASSWORD_LENGTH`), by
+ * the property it is set on or by the form field that holds it. A `min` alone is the
+ * user's measure, in characters.
+ *
+ * @return list<array{int, string}>
+ */
+function passwordLengthInCharacters(string $content): array
+{
+    $searched = withoutPhpComments($content);
+
+    return refusedCalls(
+        '/(?:\bnew\s+|#\[\s*|[\[,]\s*)(?:Assert\\\\)?Length\(/',
+        $content,
+        $searched,
+        static function (string $arguments, int $end) use ($searched): bool {
+            if (!preg_match('/\bmax\s*:|[\'"]max[\'"]\s*=>/', $arguments) || str_contains($arguments, 'COUNT_BYTES')) {
+                return false;
+            }
+            if (preg_match('/password/i', $arguments)) {
+                return true;
+            }
+            // The property under the attributes, past the other attributes and the comments.
+            foreach (\array_slice(explode("\n", substr($searched, $end)), 1, 8) as $line) {
+                $line = ltrim($line);
+                if ('' === $line || preg_match('~^(?:#\[|//|/?\*|[)\]])~', $line)) {
+                    continue;
+                }
+                if (preg_match('/\$(\w+)/', $line, $property)) {
+                    return (bool) preg_match('/password/i', $property[1]);
+                }
+                break;
+            }
+            // The form field that holds it: the last `->add('…'` before the constraint.
+            if (preg_match_all('/->add\(\s*[\'"](\w+)[\'"]/', substr($searched, 0, $end), $fields)) {
+                return (bool) preg_match('/password/i', end($fields[1]));
+            }
+
+            return false;
+        },
+    );
+}
+
+/**
  * A colour written as a value instead of a token. Everywhere: a Tailwind arbitrary value
  * (`bg-[#68C85D]`) and a colour function with literal numbers (`hsl(142 76% 36%)`,
  * `oklch(0.7 0.1 140)`). In a template, a colour attribute (`stroke="#e5e7eb"`) and a
@@ -1331,8 +1429,9 @@ function rules(): array
         ],
         'couleur-litterale' => [
             'message' => 'couleur écrite en dur (hexadécimal, `hsl()`, `oklch()`…) dans une classe, un attribut ou un littéral : un jeton du design system (`bg-success`, `text-link`, `fill-border`), `var(--color-…)` dans un style ; une carte ou un graphique qui ne lit pas la feuille porte son exception',
-            'ext' => ['ts', 'tsx', 'twig'],
-            'paths' => $ui,
+            // A PHP enum or extension that hands a colour to a template, too.
+            'ext' => ['ts', 'tsx', 'twig', 'php'],
+            'paths' => '#^(assets|templates|src/(?:Domain|Twig))/#',
             // A mail and a PDF are rendered outside the browser, without the application's
             // stylesheet: their inline styles carry their colours.
             'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^templates/(?:.*/)?(?:emails?|pdf)/#',
@@ -1549,6 +1648,48 @@ function rules(): array
             'paths' => '#^src/#',
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => matches('/#\[MapQuery(?:String|Parameter)(?!.*(?:validationFailedStatusCode|FILTER_NULL_ON_FAILURE))/', $c, withoutComments($c, $p)),
+        ],
+        'relance-a-la-main' => [
+            'message' => '`new RetryableHttpClient` dans le code : la relance se règle une fois, sur le client nommé (`scoped_clients` et `retry_failed` de `framework.http_client`) ; la règle ne voit pas une boucle de relance écrite autour de `->request()`, refusée aussi',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => matches('/\bnew\s+(?:[\w\\\\]*\\\\)?RetryableHttpClient\(/', $c, withoutComments($c, $p)),
+        ],
+        'image-sans-mime' => [
+            'message' => '`Image` sans `mimeTypes` : elle accepte tout `image/*`, SVG compris, qui porte du script ; la liste des types admis (`mimeTypes: [\'image/jpeg\', \'image/png\', \'image/webp\']`, ou la constante du projet)',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => refusedCalls(
+                '/(?:\bnew\s+|#\[\s*|[\[,(]\s*)(?:Assert\\\\)?Image\(/',
+                $c,
+                withoutComments($c, $p),
+                static fn (string $arguments): bool => !str_contains($arguments, 'mimeTypes'),
+            ),
+        ],
+        'mot-de-passe-en-caracteres' => [
+            'message' => 'mot de passe borné par `Length(max:)` en caractères : le hacheur compte en octets, et un mot de passe accentué passerait la validation pour lever au hachage ; `countUnit: Assert\\Length::COUNT_BYTES`',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => passwordLengthInCharacters($c),
+        ],
+        'succes-sans-contenu' => [
+            'message' => 'succès répondu par un 200 `{ok: true}` (ou `success`, `status: ok`) : un succès sans contenu répond 204, `new Response(null, Response::HTTP_NO_CONTENT)` ; un tiers qui exige un 200 porte son exception',
+            'ext' => ['php'],
+            'paths' => '#^src/(?:Controller|Webhook)/#',
+            'kind' => 'fichier',
+            'find' => static fn (string $c, string $p): array => matches('/[\'"](?:ok|success)[\'"]\s*=>\s*true\b|[\'"]status[\'"]\s*=>\s*[\'"]ok[\'"]/', $c, withoutComments($c, $p)),
+        ],
+        'requete-a-la-main' => [
+            'message' => 'paramètre de requête ou fichier lu à la main (`$request->query->get()`, `$request->files->get()`) : un DTO et `#[MapQueryString]`, `#[MapQueryParameter]`, `#[MapUploadedFile]` ou un `UploadedFile` du `#[MapRequestPayload]` ; un CRUD d\'EasyAdmin passe',
+            'ext' => ['php'],
+            'paths' => '#^src/Controller/#',
+            'except' => '#^src/Controller/Admin/(?:.*/)?\w*CrudController\.php$#',
+            'kind' => 'ajout',
+            // The reads only: `remove()` takes a parameter out before a redirect.
+            'find' => static fn (string $c, string $p): array => matches('/\$request->(?:query|files)->(?:get|getString|getInt|getBoolean|getEnum|all|has)\(/', $c, withoutComments($c, $p)),
         ],
         'ancre-sans-d' => [
             'message' => 'motif `/^…$/` (ou `#^…$#`, `~^…$~`) sans le modificateur `D` (ni `m`, où `D` ne joue pas) : `$` y accepte un saut de ligne final, et « 12.50\\n » passe la validation ; `/^…$/D`, ou `\\z`',
