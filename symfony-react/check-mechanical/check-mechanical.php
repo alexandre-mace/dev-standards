@@ -1469,6 +1469,23 @@ function rules(): array
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => matches('/(?<![\w-])(?:[a-z0-9-]+:)*(?:min-|max-)?h-\[(?:calc\()?\d+vh\b/', $c, withoutComments($c, $p)),
         ],
+        'taille-maison' => [
+            'message' => 'taille de texte maison au-dessus de 12 px (`text-[1.75rem]`, `lg:text-[3.25rem]`) : un pas de l\'échelle (`text-2xl`, `lg:text-5xl`) ; seule une étiquette de 12 px ou moins sort de l\'échelle, qui s\'arrête à `text-xs`',
+            'ext' => ['ts', 'tsx', 'twig'],
+            'paths' => $ui,
+            'except' => '#(^|/)(tests|e2e|__tests__)/|\.(test|spec)\.[cm]?[jt]sx?$|^assets/components/ui/#',
+            'kind' => 'ajout',
+            'find' => static function (string $c, string $p): array {
+                $searched = withoutComments($c, $p);
+                preg_match_all('/(?<![\w-])(?:[\w-]+:)*text-\[(\d+(?:\.\d+)?)(px|rem)\]/', $searched, $sizes, \PREG_SET_ORDER);
+                $above = array_unique(array_map(
+                    static fn (array $size): string => $size[1].$size[2],
+                    array_filter($sizes, static fn (array $size): bool => (float) $size[1] * ('rem' === $size[2] ? 16 : 1) > 12),
+                ));
+
+                return [] === $above ? [] : matches('/(?<![\w-])(?:[\w-]+:)*text-\[(?:'.implode('|', array_map(static fn (string $size): string => preg_quote($size, '/'), $above)).')\]/', $c, $searched);
+            },
+        ],
         'chart-gabarit' => [
             'message' => 'jeton `chart-*` dans un gabarit : il colore les séries des graphiques et changera le jour où un graphique en demandera d\'autres ; le jeton d\'interface qui porte le sens',
             'ext' => ['twig'],
