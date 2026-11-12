@@ -2114,7 +2114,8 @@ above give the details. `/gap-code` checks this list.
 - [ ] **No Makefile**, or one under a month old that only aliases the commands above and
   prints them.
 - [ ] **The same pnpm in `packageManager`** as the other projects of the stack, `.nvmrc` on
-  the Node major of CleverCloud and read by every workflow, the CI's PostgreSQL image on
+  the Node major of CleverCloud and read by every workflow, `CC_NODE_VERSION` on every
+  CleverCloud app, the CI's PostgreSQL image on
   the production add-on's major.
 - [ ] **`docs/tests-et-ci.md`** for the hook, the local CI and the tests, and a
   « Commands » section in `AGENTS.md` that names them.
@@ -2195,6 +2196,9 @@ script.
   `pnpm-workspace.yaml`, which pnpm 11 reads instead of `package.json` and `.npmrc`.
 - **Node**: `.nvmrc` holds the major CleverCloud runs (`CC_NODE_VERSION`, 22 today), every
   workflow reads it (`node-version-file: .nvmrc`), and `engines.node` gives the floor.
+  `CC_NODE_VERSION` is set on every CleverCloud app, production and preprod: CleverCloud
+  deletes `.nvmrc` at deploy, and without the variable the build takes its default Node,
+  which no longer ships corepack (Node 25 and later), so `corepack enable` fails.
 - **PHP**: the `CC_PHP_VERSION` of the production app (« PHP 8.5 » above). A project whose
   production still runs an older minor keeps a CI job that holds the code to it, until
   production moves.
