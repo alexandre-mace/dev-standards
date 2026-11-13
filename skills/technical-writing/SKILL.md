@@ -63,8 +63,9 @@ the text has to sound typed, not drafted.
 
 - No greeting and no sign-off: the first sentence is already the subject. "Hello, pour
   l'export :" becomes "L'export :".
-- Write the way the thread is written: the colleague's own shortcuts are fair game
-  ("10j", "auto", "+", "genre"), and so is spoken French ("ça touche à aucun montant").
+- Write the way the thread is written, and use the usual French chat shortcuts freely,
+  as a colleague would type them ("pb", "qqch", "10j", "+"), and spoken French too ("ça
+  touche à aucun montant").
 - An arrow for a consequence: "match corrigé -> lettré dans la minute".
 - Short paragraphs, one idea each. No heading, no bold. A list only when the messaging
   tool renders it, never numbers or markers it would print as raw text.
