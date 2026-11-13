@@ -4,8 +4,8 @@ Behaviour, true on every project whatever the stack. `writing.md` governs how
 anything gets written, files included. `writing-things-down.md` governs where it
 goes. `long-running-checks.md` governs a slow check run in a loop (a full CI, an E2E
 suite). `committing.md` governs when a change is committed and pushed
-without asking. `output-styles/` governs the shape of a reply, and modifies the system prompt
-rather than being read as context.
+without asking. The shape of a reply comes from Anthropic's built-in « Concise » output
+style, chosen in the settings; `output-styles/` would hold a custom one.
 
 `install.sh` links both into `~/.claude/`. A new rule or style is a new file plus
 a re-run.

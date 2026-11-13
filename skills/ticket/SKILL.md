@@ -70,14 +70,12 @@ definition applies, gates included. Unsure counts as not minor.
 Short, written for a developer who did not type this code but owns it. The diff is in
 git and the plan is in `.claude/plan.md`; neither tells you what it was like to build.
 
-```
-Debrief : <feature>
-- Shape:     what moved, structurally. Not a file list, git has that.
-- Decisions: the two or three that were not obvious, each with its why in one line.
-- Fragile:   where I would look first if this breaks in three months.
-- Dropped:   a reasonable alternative I considered and did not take, and why.
-- You own:   a new dependency, a new pattern, a config that will need attention later.
-```
+It answers three questions, each only when there is something to say, never under
+copied headings:
+
+- what to test in UAT;
+- what was decided in the user's place, with the reason;
+- where to look first if it breaks in three months.
 
 - **Name what you are unsure about.** A place where you guessed, or where the tests are
   thinner than you would like, is the single most useful line in the whole debrief.

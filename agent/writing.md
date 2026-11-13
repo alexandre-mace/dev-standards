@@ -47,10 +47,13 @@ already does.
   codebase to see whether the pattern is already in use. Answering "the framework has no
   such thing" from memory has already been wrong about a feature that was both shipped
   and used everywhere in the code.
-- Give the number or the cause, not the impression. "Considerably faster" says nothing,
-  "ten times faster" says something.
-- Explain a term the first time it appears, or do not use it. The explanation keeps the
-  exact name beside it (a status code, a field, a class), never a paraphrase in its place.
+- Where an impression would stand, give the number or the cause; a number that replaces
+  no impression stays out. "Considerably faster" says nothing, "ten times faster" says
+  something.
+- Explain a term the reader cannot know, such as a name coined during the work; a common
+  technical term or acronym stays as it is. The explanation keeps the exact name beside it
+  (a status code, a field, a class), never a paraphrase in its place.
+- Keep a technical detail when it changes a decision or shortens the explanation.
 - A report for a reader outside the code (a manager, a partner) gives the current state:
   no PR number, no date of the work. It keeps the technical reason behind each choice,
   which is what that reader weighs.
@@ -59,7 +62,10 @@ already does.
 
 - A sentence that lines up several items, each with its own detail, becomes a short
   lead-in followed by a bulleted list.
+- Every sentence has a verb and says one whole thing.
+- Sections only when the content has several distinct parts.
 
 ## Say it once
 
-- Cut a sentence that restates the one before it in negative or in stronger form.
+- Cut a sentence that restates something the text already said, whether in negative, in
+  stronger form or as a summary.
