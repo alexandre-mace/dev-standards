@@ -108,7 +108,8 @@ Keep raised and blocking separate:
 
 - **Raised**: a real finding that needs no answer to move on (a reference table too
   thin, an earlier decision this ticket reverses, a scope that is growing). Say it,
-  carry on.
+  carry on. Only what lies outside the ticket's scope: a hole in the rule the ticket
+  adds is part of the work.
 - **Blocking**: ideally zero, often one. More than two or three means going back to
   step 3.
 
