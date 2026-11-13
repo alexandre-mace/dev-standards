@@ -900,9 +900,10 @@ External APIs with authentication. URLs and credentials in `.env`, injected thro
 
 ### Retry configured at the DI level, not in the service
 
-`retry_failed` lives once in `default_options`, and each scoped client inherits it. A
-client that sets its own `retry_failed` replaces the whole block: the keys it leaves out
-take Symfony's defaults, not those of `default_options`.
+`retry_failed` lives once in `default_options`, and each scoped client inherits it: a
+client's own `retry_failed` is completed key by key from it. FrameworkBundle does that
+merge inside one file only, so a scoped client declared in another config file inherits
+nothing: declare every scoped client beside `default_options`.
 
 ```yaml
 default_options:
