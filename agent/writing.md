@@ -64,6 +64,8 @@ already does.
   lead-in followed by a bulleted list.
 - Every sentence has a verb and says one whole thing.
 - Sections only when the content has several distinct parts.
+- A skill's report grid stays where the skill stores it (`.claude/plan.md`); the reply
+  gives the user what it changes for them, written for them.
 
 ## Say it once
 

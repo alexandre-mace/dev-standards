@@ -24,33 +24,17 @@ to the `feve-editorial:relecture` plugin skill, which checks spelling, grammar, 
 internal consistency and the tics of generated text; asked for both, run that one. When the arguments start with `--chat`, the text is a message between colleagues:
 apply the rules below, then the **Chat register** section on top of them.
 
-## Formatting
+## The shared rules
 
-- No dash as a separator, whatever its length. Use a colon, a comma, parentheses, or a
-  new sentence.
-- No middle dot as a separator.
-- Bold only what should catch a scanning eye, never to punctuate a paragraph.
-- No heading over two sentences, and no emoji in a heading.
+`agent/writing.md` applies in full: typography, substance, structure, say it once. The
+rules below add to it.
 
 ## Sentences
 
-- Short and simple. An advanced construction blurs the reading.
-- One idea per sentence.
 - Bullets whenever the content is a list. Prose only when it carries an argument.
-- Explain a term the first time it appears, or do not use it. The explanation keeps the
-  exact name (a status code, a field, a class), glossed in a few words beside it. A
-  paraphrase in its place drops the word a technical reader searches for, and runs longer:
-  "redirige en 301 (redirection permanente)" beats three sentences on a page that "a
-  déménagé définitivement".
-- Give the number or the cause, not the impression. "Considerably faster" says nothing,
-  "ten times faster" says something.
 - A fact the reader has to act on gets its own clause, with a verb. Tacked onto the
   previous sentence as an apposition, it reads as a spec line: "the calculation becomes
   amount x index, one cell to update in July every year."
-
-## Say it once
-
-- Cut a sentence that restates the one before it in negative or in stronger form.
 - Cut a list of three when one example carries it.
 
 ## Order
@@ -58,10 +42,8 @@ apply the rules below, then the **Chat register** section on top of them.
 - The point first, the condition after.
 - Lead with the result, not with the approach that produced it.
 
-## Nothing invented
+## No filler
 
-- Cut what you cannot source: a number, a frequency, a limit that nobody stated and
-  nothing supports.
 - Cut a phrase that adds no information: a slogan like "pragmatic, not dogmatic", a
   filler like "it is important to note that".
 
