@@ -56,15 +56,14 @@ Delete `.claude/plan.md` first: a stale plan would be read as the current one by
 `/review-diff`.
 
 ```bash
-deploy                                   # push HEAD to main, follow the production deployment
-deploy --preprod                         # then realign preprod on main, if it holds nothing else
-deploy --preprod --remove-worktree       # and remove this worktree and its branch, local and remote
+deploy --remove-worktree                 # push HEAD to main, follow the deployment, remove the worktree
+deploy --preprod --remove-worktree       # and realign preprod on main, if it holds nothing else
 ```
 
 - **`--preprod`** whenever the project has a `preprod` branch: the next UAT then starts from
   production. The script leaves preprod alone when it holds commits `main` lacks, lists them
   and exits 4: report them, someone may be testing them. Never align by force.
-- **`--remove-worktree`** when the session works in the worktree of this feature. It goes only
+- **`--remove-worktree`** always: from the main checkout it does nothing. The worktree goes only
   if clean and in `origin/main`, with its branch, local and on `origin`; the session continues
   from the main checkout. A remote branch that carries a commit `main` lacks is kept and the
   script exits 4: report it, never delete it by hand.
