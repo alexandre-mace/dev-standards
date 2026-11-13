@@ -59,7 +59,7 @@ keeps an old occurrence passes. In a merge, a file the other branch renamed is n
 | Kind | Rules |
 |---|---|
 | fichier | `tiret-long`, `point-median`, `faute`, `trait-union`, `entite-html`, `diacritique-invisible`, `identifiant-constat`, `classe-inexistante`, `libelle-anglais`, `label-natif`, `case-native`, `main-ilot`, `boite-native`, `balise-en-chaine`, `pourcentage-colle`, `target-blank`, `hote-tiers`, `cdn-webflow`, `emoji-gabarit`, `emoji-stimulus`, `url-feve`, `contact-feve`, `chemin-relatif`, `choice-litteral`, `id-sans-borne`, `docblock-double`, `methode-depot`, `sommeil-test`, `gitignore-src`, `relance-a-la-main`, `image-sans-mime`, `mot-de-passe-en-caracteres`, `succes-sans-contenu`, `guillemets-anglais`, `guillemets-droits`, `capitale-sans-accent`, `ponctuation-detachee`, `icone-racine`, `main-gabarit`, `script-en-ligne`, `classe-en-morceaux`, `map-query-statut`, `ancre-sans-d`, `find-all`, `accord-parenthese`, `guillemets-message` |
-| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `anglicisme`, `points-suspension`, `label-orphelin`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `taille-maison`, `chart-gabarit`, `style-en-ligne`, `non-applicable`, `balise-console`, `document-introuvable`, `guillemets-espace`, `milliers-espace`, `pourcentage-espace`, `requete-a-la-main` |
+| ajout | `identifiant-audit`, `faute-recente`, `couleur-brute`, `blanc-noir`, `rgba`, `formulaire-twig`, `strict-types`, `classe-finale`, `commentaire-anglais`, `anglicisme`, `points-suspension`, `label-orphelin`, `contour-sans-anneau`, `couleur-litterale`, `contenu-attenue`, `hauteur-vh`, `taille-maison`, `chart-gabarit`, `style-en-ligne`, `non-applicable`, `balise-console`, `document-introuvable`, `guillemets-espace`, `milliers-espace`, `pourcentage-espace`, `ponctuation-espace`, `requete-a-la-main` |
 
 A **fichier** rule can read only the added lines of some paths, where the projects still
 hold old occurrences (`addedOnly`, shown by `--rules`): `target-blank` and `trait-union` in
@@ -91,6 +91,9 @@ where a line must not break: inside « », as the thousands separator of `number
 before « % ». They are **ajout**, one project holding 109, 30 and 8 of them. The first two
 leave `src/Command/` out like `guillemets-message`: a console cuts at its width, whatever
 the space.
+`ponctuation-espace` does the same before a « ? » or « ! » that ends a text, and leaves
+`src/Command/` out too. It is **ajout**, with 469 on one project: a question in the middle
+of a text escapes it, since only a syntax tree tells it from a ternary.
 `pourcentage-espace` stays apart from `pourcentage-colle`, which is **fichier** and clean
 everywhere.
 

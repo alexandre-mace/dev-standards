@@ -57,6 +57,16 @@ const HYPHEN_AS_DASH = '[\p{L}\d][\p{L}\d.,)»%€]* - [\p{L}\d«(]';
 const PERCENT_AFTER_SPACE = '/(?:(?<![\w$.])\d+(?:[.,]\d+)?|\}\}?|[\'"`]) %(?![}\w])/u';
 
 /*
+ * Une espace ordinaire avant « ? » ou « ! » qui finit un texte : après une lettre, un
+ * chiffre, « » » ou une parenthèse, et devant ce qui le ferme (guillemet, accent grave,
+ * balise, accolade, fin de ligne). Un ternaire (`isOpen ? 'a' : 'b'`) a une espace après
+ * son « ? », `!==` et ` !important` une lettre ou un signe : la règle ne les voit pas. Une
+ * question au milieu d'un texte (« Prêt ? Commencez ») lui échappe aussi, faute de la
+ * distinguer d'un ternaire sans arbre syntaxique.
+ */
+const PUNCTUATION_AFTER_SPACE = '/(?<=[\p{L}\d»)]) +[?!]+(?=["\'`<{]|[ \t]*$)/um';
+
+/*
  * An emoji, as the rules about emojis read it. Not the marks of a legal text (©, ®, ™),
  * nor the ballot boxes ☐ ☑ ☒ that a PDF form draws as its checkboxes: those are symbols.
  * The ballot boxes are excluded by name because the PCRE versions disagree on them: the
@@ -1568,6 +1578,15 @@ function rules(): array
             'except' => $tests,
             'kind' => 'ajout',
             'find' => static fn (string $c, string $p): array => inVisibleText(PERCENT_AFTER_SPACE, $c, $p),
+        ],
+        'ponctuation-espace' => [
+            'message' => '« ? » ou « ! » séparé du mot par une espace ordinaire : la ligne peut se couper avant le signe, qui reste seul en début de ligne ; l\'espace insécable (`"Prêt\\u{a0}?"` en PHP, `\'Prêt\\u00a0?\'` en TypeScript, `Prêt&nbsp;?` en JSX et dans un gabarit)',
+            'ext' => ['twig', 'ts', 'tsx', 'js', 'mjs', 'php'],
+            'paths' => '#^(assets|templates|src)/#',
+            // La sortie d'une commande se lit en console, qui coupe à sa largeur.
+            'except' => substr($tests, 0, -1).'|^src/Command/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => inVisibleText(PUNCTUATION_AFTER_SPACE, $c, $p),
         ],
 
         // What the page loads and opens.
