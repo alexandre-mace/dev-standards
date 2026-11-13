@@ -541,6 +541,43 @@ function tag(string $content, int $offset): ?string
     return substr($content, $start);
 }
 
+/**
+ * `outline-none` or `outline-hidden` whose element shows no focus ring. The element is the
+ * opening tag holding the class, read whole: its ring often sits on another line of the
+ * same `cn()`. An element in `tabIndex={-1}` (or a condition that yields -1), focused only
+ * by a script, passes. Outside a tag, the object that holds the class is read (props
+ * spread on the element, `tabIndex: ref ? -1 : undefined`), else the line.
+ *
+ * @return list<array{int, string}>
+ */
+function outlineWithoutRing(string $content, string $searched): array
+{
+    if (!preg_match_all('/(?<![\w-])outline-(?:none|hidden)(?![\w-])/', $searched, $all, \PREG_OFFSET_CAPTURE)) {
+        return [];
+    }
+    $lines = explode("\n", $content);
+    $out = [];
+    $seen = [];
+    foreach ($all[0] as [, $offset]) {
+        $line = substr_count($searched, "\n", 0, $offset) + 1;
+        $start = $offset;
+        while ($start > 0 && !('<' === $searched[$start] && ctype_alpha($searched[$start + 1] ?? ''))) {
+            --$start;
+        }
+        $scope = tag($searched, $offset);
+        if (null === $scope || $start + \strlen($scope) <= $offset) {
+            $scope = enclosing($searched, $offset, '{', '}') ?? ($lines[$line - 1] ?? '');
+        }
+        if (isset($seen[$line]) || preg_match('/ring|\btabIndex(?:=\{|:)[^},]*-1\b|\btabindex=["\']-1["\']/i', $scope)) {
+            continue;
+        }
+        $seen[$line] = true;
+        $out[] = [$line, $lines[$line - 1] ?? ''];
+    }
+
+    return $out;
+}
+
 /** The delimited block holding the offset. */
 function enclosing(string $content, int $offset, string $open, string $close): ?string
 {
@@ -1420,12 +1457,12 @@ function rules(): array
             ),
         ],
         'contour-sans-anneau' => [
-            'message' => '`outline-none` ou `outline-hidden` sans anneau de focus sur la ligne : `focus-visible:ring-2 focus-visible:ring-ring` (WCAG 2.4.7), sinon le clavier s\'arrête sur un élément qu\'on ne voit pas',
+            'message' => '`outline-none` ou `outline-hidden` sans anneau de focus sur l\'élément : `focus-visible:ring-2 focus-visible:ring-ring` (WCAG 2.4.7), sinon le clavier s\'arrête sur un élément qu\'on ne voit pas ; un élément en `tabIndex={-1}`, que seul un script focalise, passe',
             'ext' => ['ts', 'tsx', 'twig'],
             'paths' => $ui,
             'except' => $tests,
             'kind' => 'ajout',
-            'find' => static fn (string $c, string $p): array => matchesUnless('/(?<![\w-])outline-(?:none|hidden)(?![\w-])/', '/ring/', $c, withoutComments($c, $p)),
+            'find' => static fn (string $c, string $p): array => outlineWithoutRing($c, withoutComments($c, $p)),
         ],
         'couleur-litterale' => [
             'message' => 'couleur écrite en dur (hexadécimal, `hsl()`, `oklch()`…) dans une classe, un attribut ou un littéral : un jeton du design system (`bg-success`, `text-link`, `fill-border`), `var(--color-…)` dans un style ; une carte ou un graphique qui ne lit pas la feuille porte son exception',
