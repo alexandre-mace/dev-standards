@@ -1000,16 +1000,16 @@ A case we hit (since fixed): a service wrapped `RetryableHttpClient` in its own 
 
 Also worth knowing: HttpClient has an **anti-SSRF allow-list** (SF 8.1, to enable when a called URL depends on user input) and an **RFC 9111-compliant HTTP cache** (SF 7.4, relevant for cacheable upstream responses such as geodata or reference data).
 
-**Exception: a response you intend to stream must not come from a retrying client.**
-`RetryableHttpClient` returns an `AsyncResponse`, and `stream()` only accepts a response
-its own client produced. A controller streaming an upstream SSE response through
-`$this->httpClient->stream($upstream)` therefore dies on
-`Argument #2 must be Traversable|array, AsyncResponse given`, a 500 on the endpoint. A
-service that both streams and does ordinary calls carries two clients: the scoped one
-with the retry for everything else, the plain `@http_client` for the streamed call, with
-an absolute URL since it has no `base_uri`. The trap is that hardening the security
-config is what introduces it, and no test catches it unless a functional test covers the
-streamed route.
+**A streamed response is read by the client that made it.** `RetryableHttpClient` returns
+an `AsyncResponse`, which only a client that decorates asynchronously accepts in
+`stream()`: a controller that makes the request through a service's client and reads it
+through another one dies on `Argument #2 must be Traversable|array, AsyncResponse given`,
+a 500 on the endpoint. Every client inherits `retry_failed` from `default_options`,
+`@http_client` included, so no client here is free of retries: the service exposes the
+client it made the streamed request with, and the controller streams through that one.
+The retry replays only a request that failed before its first byte; once chunks have
+flowed, a failure reaches the reader. Only a functional test of the streamed route
+catches a mismatch.
 
 ### Rate Limiter on public endpoints: `#[RateLimit]`
 
