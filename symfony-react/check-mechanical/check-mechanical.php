@@ -59,8 +59,7 @@ const PERCENT_AFTER_SPACE = '/(?:(?<![\w$.])\d+(?:[.,]\d+)?|\}\}?|[\'"`]) %(?![}
 /*
  * Une espace ordinaire avant « ? » ou « ! » qui finit un texte : après une lettre, un
  * chiffre, « » », une parenthèse ou une valeur interpolée (`${annee} ?`, `{date} ?`), et
- * devant ce qui le ferme (guillemet, accent grave,
- * balise, accolade, fin de ligne). Un ternaire (`isOpen ? 'a' : 'b'`) a une espace après
+ * devant ce qui le ferme (guillemet, accent grave, balise, accolade, fin de ligne). Un ternaire (`isOpen ? 'a' : 'b'`) a une espace après
  * son « ? », `!==` et ` !important` une lettre ou un signe : la règle ne les voit pas. Une
  * question au milieu d'un texte (« Prêt ? Commencez ») lui échappe aussi, faute de la
  * distinguer d'un ternaire sans arbre syntaxique. Ni `??` en fin de ligne, l'opérateur
