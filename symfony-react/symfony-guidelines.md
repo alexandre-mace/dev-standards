@@ -2172,10 +2172,10 @@ above give the details. `/gap-code` checks this list.
 - [ ] **`permissions: contents: read`** at the top of the workflow, since no job pushes,
   comments or publishes.
 - [ ] **Dependabot on `github-actions` only**, grouped, weekly: it moves each SHA and its
-  tag comment together. Not on `composer` nor `npm`: a PHPStan bump moves the baseline,
+  tag comment together. Not on `composer` nor `npm`: a PHPStan bump finds new errors,
   which no automatic PR fixes (six opened on one project in ten days, all red, none
   merged), and the night audits already catch a published vulnerability. Version bumps
-  are done by hand, the baseline with them.
+  are done by hand, their new errors with them.
 
 #### Entry points
 
@@ -2293,7 +2293,7 @@ together, with `tabWidth` written in `.prettierrc`, in a commit of its own that 
 the files it moves.
 
 ### PHPStan: static analysis
-PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
+PHPStan (v2.x) with the `phpstan-symfony`, `phpstan-doctrine` and `phpstan-deprecation-rules` extensions. Target: **level 9 minimum, level 10 (`max`) recommended**, climbing with a baseline rather than staying stuck on the excuse of legacy code. The baseline is a step, not a resting place: emptied, it is deleted, and a test refuses its return (measured on one project: 808 errors fixed, nine of them real defects). `phpstan-strict-rules` + `bleedingEdge.neon` as the state-of-the-art option.
 
 ```bash
 composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/phpstan-deprecation-rules
