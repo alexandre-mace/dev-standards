@@ -56,4 +56,12 @@ same 33 files read at Opus `high` and `medium` gave 10 and 7 findings, only 3 in
 in all. The delicate zones are worth two readings at different efforts rather than one at a
 higher effort.
 
+A leaner zone reading does not pay. Measured on one project, 2026-11-16, five zones at Opus
+`high`: a brief handing the agent its files bundled with line numbers and a checklist
+distilled from the guidelines, other files opened only to confirm a finding, spent 24 % fewer
+tokens (1.15 M against 1.52 M, plus 274 K once for the checklists) but found 2 of the
+full pass's 18 findings, neither of its two Haute. Both Haute came from following a value
+out of the zone (a DTO field to the query of a KPI, a `ref` to the button it must reach):
+the exploration the lite brief cut is what the cost buys.
+
 Re-read these figures when a new model ships.
