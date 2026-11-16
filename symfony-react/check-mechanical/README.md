@@ -84,7 +84,7 @@ and are **fichier**: `boite-native`, `balise-en-chaine`, `pourcentage-colle`,
 and held by another, up to 196 occurrences of `couleur-litterale` on one of them: they judge
 the new lines, and become **fichier** once the stocks are gone. `label-orphelin` reads the
 templates as well. What needs the syntax tree (a call's structure, a scope, a type) stays in
-the project's ESLint or PHPStan rules.
+the project's oxlint or PHPStan rules.
 
 `guillemets-espace`, `milliers-espace` and `pourcentage-espace` refuse an ordinary space
 where a line must not break: inside « », as the thousands separator of `number_format()`,

@@ -39,7 +39,7 @@ you read first. A visible text keeps the words its team wrote: you fix its form 
   lines. A deliberate deviation is reported as accepted, with its reason.
 - **Fix the family, not the line**: search the whole repository for the same defect. Half
   of what a pass finds is the sibling of something the previous lot repaired in one place.
-- **Close the family in the gate** when it reduces to a pattern: a PHPStan rule, an ESLint
+- **Close the family in the gate** when it reduces to a pattern: a PHPStan rule, an oxlint
   rule, a guard test or `bin/check-mechanical`, run by the hook and the local CI, with a
   test that makes it fail on the refused variant; the project's list of guards updated.
   Every exception list is strict, one entry per file with its reason. A fix without the

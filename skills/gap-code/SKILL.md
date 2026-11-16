@@ -71,7 +71,7 @@ without `#[IsGranted]`, an em dash in visible text) is one
 search over the whole repository, listed exhaustively before any agent starts. An agent
 reading for it finds most of the hits; the search finds all of them. A rule that reduces to a pattern and is not yet refused by the
 gate is a finding of its own, Moyenne, against the gate: name the rule that will close it
-(`bin/check-mechanical`, an ESLint rule, a PHPStan rule) and where it runs (the hook and
+(`bin/check-mechanical`, an oxlint rule, a PHPStan rule) and where it runs (the hook and
 `bin/ci-local`). A family that comes back from a previous pass is that finding by
 definition.
 
@@ -122,8 +122,8 @@ config silently lags. Real case: PHPStan stuck at `level: 8` against a guideline
   (`.github/workflows/*.yml`) each run every mandated check? Name any missing from
   either. A mandated test suite that does not exist is a gap, not a skip.
 - TS and lint config: `tsconfig.json` strict flags, and the linter the stack prescribes
-  (Biome plus oxlint for the React Compiler rules on Next and TanStack, ESLint plus
-  `eslint-plugin-react-hooks` >= 7 on Symfony: `react/react-guidelines.md` §2).
+  (Biome plus oxlint for the React Compiler rules on Next and TanStack, oxlint with its
+  typed rules and `noUncheckedIndexedAccess` on Symfony: `symfony-react/reactony.md` §8).
 - Dependency versions against the guideline's reference list, in its "Last watch"
   header. **A security floor that is not met is Haute priority** whatever else is going on.
 - Mandated config present: rate limiter, `http_client` retry, Sentry level, the asset

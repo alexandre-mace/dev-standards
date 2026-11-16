@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, eslint-plugin-react-hooks 7.1, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, oxlint 1.93 (exact pin) with oxlint-tsgolint 7.0, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -661,7 +661,7 @@ assets/
 │   └── queryClient.ts        # Shared QueryClient instance
 ```
 
-- **`react/controllers/`** = page components mounted from Twig (entry points), and nothing else: the glob makes every file there an island. A test fails on a file no `react_component()` names, and an ESLint rule on a value an island exports next to its component (types stay allowed): imported elsewhere, it drags the island's whole graph along
+- **`react/controllers/`** = page components mounted from Twig (entry points), and nothing else: the glob makes every file there an island. A test fails on a file no `react_component()` names, and an oxlint rule on a value an island exports next to its component (types stay allowed): imported elsewhere, it drags the island's whole graph along
 - **`components/`** = reusable components (UI primitives, domain components)
 - **`lib/`** = utilities, API client, helpers
 - **`lib/api/`** = everything hey-api generates (types, Zod v4, SDK, queryOptions, mutationOptions)
@@ -948,17 +948,25 @@ plugins: [react(), babel({ presets: [reactCompilerPreset()] })]
 
 ## 8. Quality Assurance: frontend
 
-### ESLint
+### oxlint
 
 ```bash
-pnpm lint          # check
-pnpm lint:fix      # auto-fix
+pnpm lint          # oxlint
+pnpm lint:fix      # oxlint --fix
 ```
 
-Flat config (`eslint.config.js`) with:
-- `@eslint/js` + `typescript-eslint`: TS rules
-- `eslint-plugin-react-hooks` ≥ 7 through `configs.flat.recommended`: hook rules and React Compiler rules (see `react/react-guidelines.md` §2). `set-state-in-effect` is an **error** from 7.1's recommended (inert in 7.0, so violations surface at that bump): fix them as derivations or event-scoped code rather than disabling
-- `eslint-config-prettier`: disables the rules that conflict with Prettier
+`oxlint.config.ts` (`defineConfig` from `oxlint`), every category off and each rule listed:
+- **The native ports** of `eslint:recommended`, typescript-eslint `recommended` and `eslint-plugin-react-hooks` 7, the React Compiler rules included as `react/*` (see `react/react-guidelines.md` §2). `set-state-in-effect` is an **error**: fix it as a derivation or event-scoped code rather than disabling it.
+- **The typed rules**, through `oxlint-tsgolint` (`options.typeAware`): `no-floating-promises`, `no-misused-promises` (`checksVoidReturn.attributes: false`, since `form.handleSubmit` returns one into a JSX attribute), `switch-exhaustiveness-check`, `await-thenable`, `no-unnecessary-type-assertion`, `restrict-template-expressions`, `no-base-to-string`, `no-unnecessary-condition`. The last one needs `noUncheckedIndexedAccess` in `tsconfig.json`: without it an index access reads as always defined, and the rule flags the guards that protect it.
+- **The project's guards**, `guards/*`, a JS plugin on the ESLint API (`jsPlugins: ['./lint/guards.js']`). oxlint loads no ESLint core rule, so the plugin carries its own copies of `no-restricted-syntax` and `no-restricted-globals`, one named copy per guard.
+- `options: { reportUnusedDisableDirectives: 'error', denyWarnings: true }`. No Prettier-conflict config: the style rules stay off.
+
+**Pinned at its exact version**: the JS plugins are alpha, outside semver, and an upgrade goes in only with the guards' own test green. No cache: measured on one project, 1 454 files in 4.7 s with the typed rules, where ESLint took 33 s cold.
+
+Three traps:
+- In `no-restricted-imports`, `*` stops at `/`, where ESLint's patterns were gitignore-style: each pattern takes its `/**` as well.
+- `no-unused-vars` counts a `React` import as used in any JSX file: a guard refuses the import instead.
+- `oxlint --fix` removes a type assertion that `tsc` sometimes needs to widen a type: run `tsc` after it.
 
 ### Prettier
 
@@ -975,13 +983,13 @@ Config (`.prettierrc`) with `prettier-plugin-tailwindcss` (≥ 0.8, which requir
 pnpm type-check   # tsc --noEmit on every tsconfig of the project (symfony-guidelines §14, « Commands »)
 ```
 
-**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1, in beta since 20 October 2026; typescript-eslint (≥ 8.67) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, eslint and hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
+**TypeScript 7 has been GA since July 2026**: the native Go port, published under the standard `typescript` npm package, `tsc` binary unchanged, checks 7 to 12 times faster, language server moved to LSP. Migrate from `^5.9` in two steps: **5.9 → 6.0** (adopt the new defaults and purge the deprecated flags, which 7.0 turns into hard errors) **→ 7.0**. Caveat: no programmatic API before TS 7.1, in beta since 20 October 2026; a tool that imports `typescript` (hey-api, typescript-eslint where it still runs) goes through the `@typescript/typescript6` shim, which doesn't block pure React/TSX. The concrete setup, run for real: `"typescript": "npm:@typescript/typescript6@^6"` (what every `import 'typescript'` resolves, hey-api included) plus `"@typescript/native": "npm:typescript@^7"` (which owns the `tsc` binary); remove the alias at TS 7.1. What the 6.0 step surfaces in practice: `baseUrl` is deprecated (anchor `paths` on `./`), and side-effect imports get type-checked (TS2882), so an extensionless CSS subpath import needs its own `.d.ts`.
 
 > All of these are bundled in the global `/quality` skill, which auto-detects the project type. For the backend quality tools (PHPStan, PHP-CS-Fixer, Doctrine, Psalm), see `docs/symfony-guidelines.md` section 14.
 
 ### Pre-commit: husky + lint-staged
 
-The universal frontend guardrail: ESLint + Prettier run automatically on staged `*.{ts,tsx}` files before every commit. `tsc --noEmit` and drift detection on `openapi.yaml` / `assets/lib/api/` run on top, at project level. The setup is shared with the backend (PHP-CS-Fixer, PHPStan, `lint:container`, `schema:validate`) in a single config. Details and timings in `docs/symfony-guidelines.md`, Quality Assurance section.
+The universal frontend guardrail: oxlint + Prettier run automatically on staged `*.{ts,tsx}` files before every commit. `tsc --noEmit` and drift detection on `openapi.yaml` / `assets/lib/api/` run on top, at project level. The setup is shared with the backend (PHP-CS-Fixer, PHPStan, `lint:container`, `schema:validate`) in a single config. Details and timings in `docs/symfony-guidelines.md`, Quality Assurance section.
 
 In an AI-assisted dev session, run `/quality` before calling a task done whenever code changed: the pre-commit hook is the final net, not the first resort.
 

@@ -84,7 +84,7 @@ pnpm test              # skip: no test script
 ```
 
 Name the tool the project actually runs behind those scripts, Biome plus oxlint (the React
-Compiler rules) on Next and TanStack, ESLint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
+Compiler rules) on Next and TanStack, oxlint and Prettier on the Symfony stack. A report saying ESLint when Biome ran is a
 report nobody can act on.
 
 `pnpm test` is Vitest, mandated on all three stacks. Use whatever flag the project needs
@@ -110,7 +110,7 @@ PHPUnit:              PASS / FAIL / SKIPPED (no suite)   (N files, or full)
 Contract drift:       PASS / FAIL / n/a
 Build:                PASS / FAIL
 TypeScript:           PASS / FAIL / SKIPPED (no tsconfig)
-Lint (Biome|ESLint):  PASS / FAIL / SKIPPED (no script)
+Lint (Biome|oxlint):  PASS / FAIL / SKIPPED (no script)
 Format (Biome|Prettier): PASS / FAIL / SKIPPED (no script)
 Vitest:               PASS / FAIL / SKIPPED (no script)  (related, or full)
 Not run here:         Playwright (/live-test), Psalm (CI), full suites (CI) when only related tests ran

@@ -93,7 +93,7 @@ Details and setup: section 13.
 
 ### 7. Quality gate
 
-`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, ESLint, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
+`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, oxlint, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
 
 **`bin/ci-local` must be green before merge** (CI section below): it replays every CI job,
 the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
@@ -1944,10 +1944,8 @@ or two projects, make unrelated tests miss their timeouts. Its core is shared
   second project: 2 131 locks for one recreation, against about 6 400 slots on a local
   PostgreSQL, and `out of shared memory` once ParaTest and the E2E ran together. The
   recreation is rolled back anyway: build the schema once, outside the transaction.
-- **Prettier keeps its cache** (`--cache`, in `var/`), and PHPStan its own. ESLint keeps
-  `--cache` only while no rule is typed: its cache is per file, and a typed rule reads the
-  types of other files, which the cache does not track (typescript-eslint's FAQ, « Can I
-  use ESLint's `--cache` with typescript-eslint? », recommends against it). Not Psalm's:
+- **Prettier keeps its cache** (`--cache`, in `var/`), and PHPStan its own. oxlint has none
+  and needs none (reactony §8). Not Psalm's:
   measured, a warm run after merging main took 674 s instead of about 30.
 - **A dev server already running in the folder stops the run before the E2E** with a clear
   message: Symfony accepts one server per folder, and the E2E step failed without saying
@@ -1965,7 +1963,7 @@ jobs:
   backend:
     # PHPStan, CS-Fixer, lint:container, doctrine:schema:validate, PHPUnit
   frontend:
-    # types target + drift check, tsc, ESLint, Prettier
+    # types target + drift check, tsc, oxlint, Prettier
   vitest:
     # pnpm test, alone: it is the slowest front step
   e2e:
@@ -1982,7 +1980,7 @@ minutes there, and the cost is usually setup (installing, booting jsdom, compili
 the number of tests. Read the step timings before cutting any test.
 
 - **Cache results, not only dependencies**: the PHPStan result cache (its `tmpDir`), the
-  PHP-CS-Fixer cache file, ESLint's (`--cache --cache-strategy content`). Key them on the
+  PHP-CS-Fixer cache file. Key them on the
   lockfile and the tool's config, with `restore-keys` so a near miss still helps.
 - **Every job that runs `pnpm install` installs Composer first** when `package.json`
   points into `vendor/` (`file:vendor/symfony/stimulus-bundle/assets`): without it the
@@ -2032,7 +2030,7 @@ above give the details. `/gap-code` checks this list.
 - [ ] **Four groups in parallel after a common preparation** (dependencies, environments,
   databases): PHP, Front, Vitest, E2E, each stopping at its first failure, PHP and Front at
   `nice 10`. The Vite build waits for `pnpm types`, PHPUnit for the build.
-- [ ] **Vitest alone**, after the analyses and the build, before PHPUnit, ESLint and the
+- [ ] **Vitest alone**, after the analyses and the build, before PHPUnit, oxlint and the
   E2E server, through `vitest_step`. Next to them it missed its timeouts (see « Vitest runs
   alone » above).
 - [ ] **A fixed E2E port refused when taken, or a free port derived from the worktree's
@@ -2130,7 +2128,7 @@ above give the details. `/gap-code` checks this list.
 - [ ] **Random order, seed printed**: `sequence: {shuffle: true}`, replayed with
   `pnpm vitest run --sequence.seed=<seed>`. A form test whose request left before an email
   check answered only failed in another order.
-- [ ] **ESLint guards on the test files**: an assignment, a `delete` or an
+- [ ] **Lint guards on the test files**: an assignment, a `delete` or an
   `Object.defineProperty`/`Reflect.defineProperty` on a global, an inline
   `vi.useFakeTimers`, and a real wait (`setTimeout` in a `new Promise`, MSW's `delay`
   except `'infinite'`) are refused at commit. The doctrine of
@@ -2141,8 +2139,7 @@ above give the details. `/gap-code` checks this list.
 - [ ] **Prettier** with `--cache --cache-strategy content`, its file in `var/`.
 - [ ] **PHPStan's `tmpDir` in `var/cache/phpstan`**, which the local CI does not empty, and
   the PHP-CS-Fixer cache, both kept between hosted runs.
-- [ ] **ESLint's `--cache` only without typed rules**; with `recommendedTypeChecked`, no
-  cache, with its reason in `ci.yml`.
+- [ ] **No lint cache**: oxlint has none, and its version is pinned exactly (reactony §8).
 - [ ] **No Psalm cache.**
 
 #### Pre-commit hook
@@ -2250,7 +2247,7 @@ deletes it.
 | Vitest | `pnpm test` | `pnpm test:watch` |
 | Playwright, interactive | `pnpm test:e2e:ui` | |
 | TypeScript | `pnpm type-check` | every `tsconfig` the project has, `tsc --noEmit` each |
-| ESLint | `pnpm lint` | `pnpm lint:fix` writes |
+| oxlint | `pnpm lint` | `pnpm lint:fix` writes |
 | Prettier | `pnpm format:check` | `pnpm format` writes |
 | Every check at once | `/quality` | the skill, which reads this table |
 | Dev server | `symfony server:start`, `pnpm dev` | `pnpm build` for production |
@@ -2462,7 +2459,7 @@ Both cost an hour every time they recur, and neither leaves a useful error messa
   `lint:container` fails reading it until `var/cache/dev` is rebuilt with 1 GB
   (`worktree-setup/README.md`).
 
-> Frontend quality tools (ESLint, Prettier, `tsc`): `docs/reactony.md` §8.
+> Frontend quality tools (oxlint, Prettier, `tsc`): `docs/reactony.md` §8.
 
 ### Pre-commit: husky + lint-staged
 
@@ -2484,7 +2481,7 @@ pnpm lint-staged
         "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --path-mode=intersection --"
     ],
     "*.{ts,tsx}": [
-        "eslint --fix",
+        "oxlint --fix --no-error-on-unmatched-pattern",
         "prettier --write"
     ]
 }
@@ -2559,7 +2556,7 @@ Not tolerable on a project where you commit ten times an hour, but at a normal f
 
 Every forbidden anti-pattern that reduces to a pattern in the text is refused by the gate, not left for `/gap-code` to find pass after pass: a raw palette colour, `target="_blank"` without `rel`, island props read by hand in a test, an em dash in visible text, a finding's identifier cited in the code. A rule that only an audit enforces comes back with the next feature.
 
-- **The tool that owns the language first.** An ESLint rule for TS and TSX (the `guards/*` rules of reactony), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `check-mechanical`.
+- **The tool that owns the language first.** An oxlint rule for TS and TSX (the `guards/*` plugin of reactony §8), a PHPStan rule when the check needs types. What neither reaches, text in Twig, a rule across file kinds, a comment, goes into `check-mechanical`.
 - **One script for every project of the stack**, in `dev-standards` (`symfony-react/check-mechanical/`, its README says how a project calls it), with its rules and their tests. A project's `bin/check-mechanical` only calls it, through the same relative path as the `docs/` symlinks. No project keeps its own copy, rule list or config file: copies diverge (two of them had, at 499 and 669 lines), and a rule worth having in one project of the stack is worth having in all of them. A rule that holds for one project only does not belong in the script.
 - **Two kinds of rule.** A file rule reads every line of the files it sees. An addition rule reads only the lines added since the merge base. A new rule starts as an addition rule, so it refuses new occurrences without turning every project red on its old stock, and becomes a file rule once each project has cleaned that stock.
 - **An exception lives in the code, with its reason**, never in a list: `check-mechanical-ignore <rule>: <reason>` on the line above, or in the first three lines of a file for the whole file (the prompts sent to a language model, whose punctuation changes the answers). It goes away with the code it covers; one without a reason, naming an unknown rule or covering nothing any more is refused like an occurrence.

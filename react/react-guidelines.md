@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, eslint-plugin-react-hooks 7.1, oxlint 1.90 (its React Compiler rules), Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, oxlint 1.93 (its React Compiler rules), Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
@@ -53,7 +53,7 @@ What follows is the part that does not.
   touch the file, not as a campaign.
 - **The compiler's lint rules run on every stack**, since they are what reports a bail.
   The standalone `eslint-plugin-react-compiler` package is frozen: do not install it.
-  - **On ESLint (Symfony)**: `eslint-plugin-react-hooks` ≥ 7, `configs.flat.recommended`.
+  - **On oxlint (Symfony)**: its native `react/*` ports, listed in `oxlint.config.ts` (`symfony-react/reactony.md` §8).
   - **On Biome (Next, TanStack)**: Biome only ports `rules-of-hooks` and `exhaustive-deps`
     (`useHookAtTopLevel`, `useExhaustiveDependencies`), none of the compiler rules. oxlint
     runs them next to it, natively, with no TypeScript dependency. Not ESLint: typescript-eslint
@@ -333,7 +333,7 @@ caller's fallback.
 with `vitest run --sequence.seed=<seed>`): a test that passes only after another shows up
 instead of sleeping. It is also the proof owed before sharing one jsdom between files.
 
-**These rules are checks, not advice.** ESLint refuses in the test files an assignment, a
+**These rules are checks, not advice.** The lint refuses in the test files an assignment, a
 `delete` or a `defineProperty` on a global, an inline `vi.useFakeTimers`, and a real wait (a
 `setTimeout` in a `new Promise`, MSW's `delay` except `'infinite'`), through
 `no-restricted-syntax` selectors registered as named rules of a local plugin: under
