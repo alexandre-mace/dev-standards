@@ -56,12 +56,19 @@ same 33 files read at Opus `high` and `medium` gave 10 and 7 findings, only 3 in
 in all. The delicate zones are worth two readings at different efforts rather than one at a
 higher effort.
 
-A leaner zone reading does not pay. Measured on one project, 2026-11-16, five zones at Opus
-`high`: a brief handing the agent its files bundled with line numbers and a checklist
-distilled from the guidelines, other files opened only to confirm a finding, spent 24 % fewer
-tokens (1.15 M against 1.52 M, plus 274 K once for the checklists) but found 2 of the
-full pass's 18 findings, neither of its two Haute. Both Haute came from following a value
-out of the zone (a DTO field to the query of a KPI, a `ref` to the button it must reach):
-the exploration the lite brief cut is what the cost buys.
+A zone reading costs its turns times its context: every turn re-reads the whole context from
+the cache, 60 % of a pass's price, and agents made one tool call per turn. Measured on one
+project, 2026-11-16, five zones at Opus `high`, API prices, against the full pass (32.20 USD,
+508 turns, 18 findings, two Haute):
+
+| Variant | Cost | Turns | Full pass's findings found |
+|---|---|---|---|
+| Files bundled with line numbers, distilled checklist, other files opened only to confirm | 14.00 USD | 173 | 2, no Haute |
+| The full brief, plus independent calls batched, read-only tools only, the `LSP` tool | 17.70 USD | 225 | 4, no Haute, and 8 new |
+
+Both Haute came from following a value out of the zone (a DTO field to the query of a KPI, a
+`ref` to the button it must reach), and one reading per variant cannot tell the method from
+the draw. Batching calls costs no exploration: the next pass tries two batched readings of the
+delicate zones for the price of one, and counts whether their union finds the Haute.
 
 Re-read these figures when a new model ships.
