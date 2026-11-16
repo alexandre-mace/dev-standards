@@ -31,6 +31,17 @@ comment or docblock the code contradicts, twins (a PHP and a TS rule, a copied l
 diverge, a test that cannot fail, a hardcoded URL that belongs in the environment.
 **Read the code before calling it a deviation**, and once `git log -L` on the lines.
 
+## How to read
+
+- **Independent calls go in one turn**: several files of your list at once, the searches you
+  already know you need together. Every turn re-reads your whole context; batching halved the
+  turns and cut 45 % of the price without losing any exploration (`<skill>/benchmarks.md`).
+- **Follow a value out of your files** when its meaning is decided elsewhere (a field to the
+  query that counts it, a `ref` to the element it must reach): the Haute come from there.
+- **What the gate already refuses is not yours to hunt**: `bin/check-mechanical --rules`, the
+  lint's `guards/*`, the type-aware lint rules and the PHPStan `rules:` of the project hold
+  their families on every commit. Read for what no tool sees.
+
 ## Your files
 
 <the file list, or the theme and what it reads for>
