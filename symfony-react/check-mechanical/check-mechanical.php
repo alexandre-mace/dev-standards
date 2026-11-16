@@ -1773,6 +1773,13 @@ function rules(): array
             'kind' => 'fichier',
             'find' => static fn (string $c): array => matches('/\'([\/#~])\^[^\']*\$\1(?![a-zA-Z]*[Dm])[a-zA-Z]*\'/', $c),
         ],
+        'assert-php' => [
+            'message' => '`assert()` dans le code : `zend.assertions = -1`, la valeur de php.ini-production, le retire à la compilation, et la vérification disparaît en production sans un mot ; un garde qui lève (`if (!$x instanceof Foo) { throw new \\LogicException(...); }`)',
+            'ext' => ['php'],
+            'paths' => '#^src/#',
+            'kind' => 'ajout',
+            'find' => static fn (string $c, string $p): array => matches('/(?<![\w>:$])\\\\?assert\(/', $c, withoutComments($c, $p)),
+        ],
         'find-all' => [
             'message' => '`->findAll()` dans un contrôleur ou un service : sans `ORDER BY`, l\'ordre des lignes change après une simple mise à jour ; `findBy([], [...])` avec un ordre, ou une méthode de dépôt qui porte le sien (symfony-guidelines, « A query without ORDER BY has no order »)',
             'ext' => ['php'],
