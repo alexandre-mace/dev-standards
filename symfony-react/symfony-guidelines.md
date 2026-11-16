@@ -2397,9 +2397,11 @@ php -d memory_limit=256M bin/console lint:container
 Psalm detects security vulnerabilities (SQL injection, XSS, command injection) by statically analysing data flow, a capability PHPStan doesn't have. Recommended in CI for projects handling user input.
 
 ```bash
-composer require --dev vimeo/psalm
+composer require --dev vimeo/psalm psalm/plugin-symfony
 vendor/bin/psalm --taint-analysis
 ```
+
+**A silent taint run proves nothing until a witness speaks.** Measured on Psalm 7.8 with `psalm/plugin-symfony` 5.11: `$request->query->getString()` was no source, and DBAL (`executeQuery`, `fetchAssociative`…) and `EntityManager::createQuery` were no SQL sink, so a request value concatenated into a query passed without a word. A project stub marks them (`@psalm-taint-source input`, `@psalm-taint-sink sql`), and a witness class, request values sent to HTML and to SQL unescaped, must be reported at each of its sinks: the script that runs Psalm fails when the witness goes quiet. Psalm 7 also checks types in the same run: `errorLevel="8"` and scoped `issueHandlers` keep it on taint, PHPStan owning the types.
 
 ### Composer audit: vulnerabilities
 
