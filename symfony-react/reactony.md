@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, oxlint 1.93 (exact pin) with oxlint-tsgolint 7.0, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
+> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, oxlint 1.93 (exact pin) with oxlint-tsgolint 7.0, Knip 6.45, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -967,6 +967,14 @@ Three traps:
 - In `no-restricted-imports`, `*` stops at `/`, where ESLint's patterns were gitignore-style: each pattern takes its `/**` as well.
 - `no-unused-vars` counts a `React` import as used in any JSX file: a guard refuses the import instead.
 - `oxlint --fix` removes a type assertion that `tsc` sometimes needs to widen a type: run `tsc` after it.
+
+### Knip
+
+```bash
+pnpm knip          # unused files, exports and dependencies
+```
+
+`knip.config.ts`, run by `bin/ci-local` and the CI. Its entries name what it cannot follow: `assets/app.ts`, which the Symfony plugin declares outside `build.rollupOptions`, and the islands and data loaded by `import.meta.glob`. An export that only a PHP parity test reads takes `@public` in its JSDoc, an intended alias `@alias`; any other unused export loses its `export`. Measured on one project: the whole front in 1.9 s.
 
 ### Prettier
 

@@ -93,7 +93,7 @@ Details and setup: section 13.
 
 ### 7. Quality gate
 
-`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, oxlint, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
+`/quality` (or the equivalent) must be green before merge: PHPStan (level 9+), PHP-CS-Fixer, `doctrine:schema:validate --skip-sync`, `lint:container`, oxlint, Knip, Prettier, `tsc --noEmit`, `bin/check-mechanical` (section 14).
 
 **`bin/ci-local` must be green before merge** (CI section below): it replays every CI job,
 the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
@@ -2248,6 +2248,7 @@ deletes it.
 | Playwright, interactive | `pnpm test:e2e:ui` | |
 | TypeScript | `pnpm type-check` | every `tsconfig` the project has, `tsc --noEmit` each |
 | oxlint | `pnpm lint` | `pnpm lint:fix` writes |
+| Knip | `pnpm knip` | unused files, exports and dependencies |
 | Prettier | `pnpm format:check` | `pnpm format` writes |
 | Every check at once | `/quality` | the skill, which reads this table |
 | Dev server | `symfony server:start`, `pnpm dev` | `pnpm build` for production |
