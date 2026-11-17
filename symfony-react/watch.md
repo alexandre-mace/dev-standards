@@ -23,6 +23,7 @@ with no date to go stale; this file keeps the why and the when.
 | | CVE-2026-17543 (8.5.9) | a SQL injection in ext-pgsql through `pg_insert()`/`pg_update()`/`pg_select()`/`pg_delete()` |
 | Symfony ≥ 8.1.9 | GHSA-7rpj-w9pf-39rr, CVE-2026-109449 (8.1.9, 14 October 2026) | a deeply nested expression crashes the process, and `#[Assert\ExpressionSyntax]` hands that parser to user input; the first fix, in 8.1.6, was incomplete |
 | | 8.1.6, 8.1.7 | a Yaml inline lexer recursion reachable through `#[MapRequestPayload]` when the Yaml component is installed, and a ReDoS on `Cache-Control` |
+| EasyAdmin ≥ 5.10.2 | twelve advisories of 17 November 2026 (GHSA-4374-hggj-v34v and following, listed in the v5.10.2 release notes) | CRUD routes ignoring the dashboard's `routeOptions` and bypassing `access_control`, stored XSS from an SVG in `ImageField`, an upload stored outside its directory |
 | EasyAdmin ≥ 5.5.1 | GHSA-g2fm-8hr4-j82h (August 2026, CVSS 8.1) | the `routeName` of custom actions substituted after the firewall was evaluated, bypassing URL-pattern `access_control` |
 | Twig ≥ 3.27 | CVE-2026-48805 to CVE-2026-48808 | |
 | PHPUnit ≥ 13.4.4 | GHSA-9vw2-f4vp-x7gf | PHPT tests run with coverage in a fixed-name `/tmp/phpunit-phpt` directory another local user can plant code in |
