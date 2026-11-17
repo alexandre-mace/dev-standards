@@ -104,7 +104,8 @@ issue if the fix does not hold.
 ## Gotchas worth knowing
 
 - **An empty-message exception in Sentry** usually means a resolver's default branch.
-  Read the event's Local Variables at the failing frame to see the input that caused it.
+  Read the event's `payload` context, the shape of the request body, to see which field
+  caused it: frame variables are not sent (`symfony-guidelines.md`, "What an event carries").
   The oversize-upload case is documented in `reactony.md` §3.
 - **A Messenger worker exiting in a loop every few seconds**: `--keepalive` against the
   Doctrine connection's `idle_connection_ttl`. Drop `--keepalive`.

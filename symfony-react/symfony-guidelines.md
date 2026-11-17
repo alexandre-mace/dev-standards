@@ -1107,7 +1107,47 @@ already written to the logs is exposed and has to be rotated with whoever issued
 
 Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context before the router and the firewall, which stops logs and breadcrumbs leaking between requests on persistent workers (FrankenPHP, RoadRunner). No effect under classic PHP-FPM, but the floor is free and prepares that mode.
 
-**sentry-symfony 5.14 adds `data_collection`**, which states per category what the SDK may attach to events: user info, HTTP headers through an allow-list, bodies, query data. Prefer it to the all-or-nothing `send_default_pii`: allow the headers a triage needs (`x-request-id`), leave the bodies out.
+### What an event carries
+
+Every project sends the same thing, so that a case is found the same way everywhere. What
+leaves: the environment and the deployed commit, the account's numeric id, the ids the log
+context names, the shape of the request body, `x-request-id`. What never leaves: an email,
+an IP, a cookie, a body's values, a frame's variables, a query's parameters. A body or a
+frame carries the IBAN, the name, the birth date of a form, and no pattern recognises them.
+
+```yaml
+# sentry.yaml, when@prod (data_collection: sentry-symfony ≥ 5.14)
+options:
+    environment: '%env(SENTRY_ENVIRONMENT)%'          # else APP_ENV: preprod reads as prod
+    release: '%env(SENTRY_ENVIRONMENT)%@%env(COMMIT_ID)%'
+    before_send: App\Sentry\SentryBeforeSend         # redaction, then the payload shape
+    data_collection:
+        user_info: false                              # else the login email as user.id, and the IP
+        cookies: { mode: off }
+        http_headers: { mode: allowList, terms: ['x-request-id'] }
+        http_bodies: []
+        stack_frame_variables: false
+        database_query_data: false
+services:
+    Sentry\Monolog\Handler:
+        arguments:
+            $hub: '@Sentry\State\HubInterface'
+            $level: !php/enum Monolog\Level::Error
+            $fillExtraContext: true                   # else the log context is dropped
+```
+
+- **The account by its id.** A `kernel.request` listener (priority 0, after the firewall)
+  sets `UserDataBag::createFromUserIdentifier((string) $user->getId())` on the scope, an
+  admin account prefixed `admin:` since its id lives in another table, the impersonating
+  account's id in the metadata. Sentry then counts the people an issue reaches, and
+  `user.id:1234` lists everything one person met. The SDK keeps an id already set.
+- **The record by its id** in the log context (`'investment_id' => $id`), never by an email
+  or a name.
+- **The body by its shape.** `before_send` reads the main request's payload and attaches it
+  as a `payload` context: each key with its type, its length and whether it is empty
+  (`iban: string(0)`, `birthDate: null`), the value only for the keys the project lists as
+  harmless (an amount, a step, an enum code). It shows which field broke a request without
+  carrying what the field held.
 
 ### A log level describes the fault, not the retry around it
 
