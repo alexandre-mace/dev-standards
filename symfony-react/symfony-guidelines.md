@@ -1111,7 +1111,8 @@ Version constraint: **sentry-symfony ≥ 5.12** starts the runtime context befor
 
 Every project sends the same thing, so that a case is found the same way everywhere. What
 leaves: the environment and the deployed commit, the account's numeric id, the ids the log
-context names, the shape of the request body, `x-request-id`. What never leaves: an email,
+context names, the shape of the request body, `x-request-id` and the user agent, which names the browser of a
+bug that only one has. What never leaves: an email,
 an IP, a cookie, a body's values, a frame's variables, a query's parameters. A body or a
 frame carries the IBAN, the name, the birth date of a form, and no pattern recognises them.
 
@@ -1124,7 +1125,7 @@ options:
     data_collection:
         user_info: false                              # else the login email as user.id, and the IP
         cookies: { mode: off }
-        http_headers: { mode: allowList, terms: ['x-request-id'] }
+        http_headers: { mode: allowList, terms: ['x-request-id', 'user-agent'] }
         http_bodies: []
         stack_frame_variables: false
         database_query_data: false
