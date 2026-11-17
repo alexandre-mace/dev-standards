@@ -1456,7 +1456,7 @@ the same day: `@testing-library/react` 16.3, `@testing-library/user-event` 14.6,
 | E2E | **Playwright** + **`@axe-core/playwright`** | multi-page user journeys, a11y | slow |
 | Contract drift | the types target, then `git diff --exit-code openapi.yaml assets/lib/api/`, in CI | rejects a PR that drifts the front/back contract | instant |
 
-Every layer runs on **every PR**. No mutation testing: Eris (property-based) already covers the critical money math, and adding Infection on top isn't worth its cost at this project size.
+Every layer runs on **every PR**. Mutation testing does not: Infection runs on demand on one `src/` folder, the one a change or an audit points at, its coverage from pcov switched on for that run only. Measured on one project, 211 mutants in 30 s, and outside a declarative payload sent as is to an API (excluded by `global-ignore`) its survivors were real gaps: a `continue` turned into `break`, an untested bound.
 
 ### When not to test
 
@@ -2312,6 +2312,9 @@ parameters:
         - src
     symfony:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+    # #[\Override] on every method that redefines a parent's or an interface's: a renamed
+    # parent method then fails at load time. `phpstan analyse --fix` adds the missing ones.
+    checkMissingOverrideMethodAttribute: true
 ```
 
 ```bash
