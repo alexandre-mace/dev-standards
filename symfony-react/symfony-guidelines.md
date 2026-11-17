@@ -907,7 +907,7 @@ nothing: declare every scoped client beside `default_options`.
 
 ```yaml
 default_options:
-    max_duration: 30          # per attempt: each retry is a new attempt
+    max_duration: 30          # the whole request, its retries included
     retry_failed:
         max_retries: 3
         delay: 1000
@@ -974,10 +974,15 @@ foreach ($container->getDefinitions() as $id => $definition) {
 }
 ```
 
+**`max_duration` bounds the whole request, not each attempt**: `AsyncContext::replaceRequest`
+counts it from the first attempt and throws instead of starting a retry that finds it spent,
+so a GET that answered slowly is never replayed. `timeout` (inactivity) is what applies per
+attempt.
+
 **A lock around a call lasts its worst case**, computed from the client's options and held
-by a test that reads the config: per request, `(max_retries + 1) × max_duration +
-max_retries × max_delay`. A client whose worst case makes the lock too long lowers its own
-`max_duration` or `max_retries`, never the retry itself.
+by a test that reads the config: per request, `max_duration + max_retries × max_delay`, the
+waits counted outside by caution. A client whose worst case makes the lock too long lowers
+its own `max_duration` or `max_retries`, never the retry itself.
 
 **Do not re-implement** a retry loop on top: not with `RetryableHttpClient` inside the service, not with a hand-rolled `while`. Services inject the scoped client directly and let the DI layer own the retries:
 
