@@ -1147,8 +1147,10 @@ services:
 - **The body by its shape.** `before_send` reads the main request's payload and attaches it
   as a `payload` context: each key with its type, its length and whether it is empty
   (`iban: string(0)`, `birthDate: null`), the value only for the keys the project lists as
-  harmless (an amount, a step, an enum code). It shows which field broke a request without
-  carrying what the field held.
+  harmless (an amount, a step, an enum code), and only in a JSON body, whose keys are the
+  DTOs' own: a form posts the same names for other things (`amount` on a payslip is a
+  salary). A secret (`password`, `_token`) leaves without its length. It shows which field
+  broke a request without carrying what the field held.
 
 ### A log level describes the fault, not the retry around it
 
