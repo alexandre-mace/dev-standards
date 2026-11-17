@@ -1784,6 +1784,9 @@ test. One project helper runs it, strict:
   instant, and a page mid-fade passed or failed depending on the run.
 - **A soft mode** for a journey that chains checks, and a rule disabled at the call carries
   its reason in a comment (a bundle's markup, such as EasyAdmin's layout).
+- **No `color-contrast` in the back office** (the `admin` firewall, EasyAdmin and its third-party
+  components): their colours move with every bump of a tool only the team uses, while every
+  other rule still runs there and contrast still runs on the public pages.
 
 ```ts
 const {violations, incomplete} = await new AxeBuilder({page})
