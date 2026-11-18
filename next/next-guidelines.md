@@ -84,7 +84,9 @@ Do not add `--turbopack`: it is the default bundler since Next 16. Passing any f
 
 **Commit the auto-managed block in `AGENTS.md`** without editing it: `next dev` maintains it and it points at the docs for the installed version.
 
-**List the real hosts in `images.remotePatterns`**, never `hostname: "**"`: a wildcard lets anyone route their images through the site's optimizer.
+**List the real hosts in `images.remotePatterns`**, never `hostname: "**"`: a wildcard lets anyone route their images through the site's optimizer. A host serving more than the site's own images (an emoji CDN, a shared CMS bucket) gets the tightest `pathname`, or its images go `unoptimized` when they are small.
+
+**Bound `images.imageSizes` and `images.deviceSizes` to the widths the site's `sizes` ask for at 2x**, and set `minimumCacheTTL` to 31 days: Vercel bills each distinct width as a transformation, and 254 images × the 15 default widths burned 2,980 of Hobby's 5,000 monthly in one day of crawling.
 
 ## 2. Components
 
