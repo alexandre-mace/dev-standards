@@ -21,8 +21,10 @@ hand over the preview URL.
 - **The feature request is the go.** When `/ticket` (or the user) asked for the feature and
   `/review-diff` passed, merge without asking: the user does not want to be asked to approve
   UAT for work they requested. Ask first only when preprod may be holding someone else's
-  test in progress (`git log --no-merges origin/main..origin/preprod`, which the script also
-  lists), or when the branch is not the one the user asked for.
+  test in progress, which only the script's « preprod porte aussi, absent de main » list
+  says: a raw `git log origin/main..origin/preprod` also lists the commits rebased onto
+  main under another hash, already in production. Or when the branch is not the one the
+  user asked for.
 - **Never delete the feature branch.** It stays for the UAT fixes and the eventual
   `/deploy`.
 - Stop and ask when changes are uncommitted. Offer `/commit`, never stash or commit
