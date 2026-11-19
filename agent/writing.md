@@ -37,6 +37,8 @@ already does.
   the site in a title (« Annonces – Le site »), and in a range (« 10–20 ha »).
 - No middle dot (`·`) as a separator.
 - Bold only what should catch a scanning eye, never to punctuate a paragraph.
+- No bold label ending in a full stop at the head of a paragraph (« **Proposition.** Here is… »):
+  the paragraph opens on its own sentence, and a part that needs a name gets a real heading.
 
 ## Substance
 
