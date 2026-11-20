@@ -135,9 +135,10 @@ a rule is added or renamed. It also links the shared scripts run by name from an
 `deploy`, `machine-lock`, `performance-cores` and `sync-main-checkout`, into `~/.local/bin`, which it creates
 when missing and which has to be on the `PATH`.
 
-It also links `local/skills/`, which is gitignored. This repository is public, so a
-procedure whose publication is itself the problem lives there instead: it is installed
-like any other skill, and it does not leave the machine.
+It also links `local/skills/` and `local/agent/`, gitignored here. This repository is
+public, so a procedure or a rule whose publication is itself the problem lives there
+instead, in a private repository of its own, cloned into `local/` before `install.sh`
+runs. Without it, `install.sh` says so and links the public half only.
 
 ### In a project
 

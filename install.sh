@@ -145,6 +145,7 @@ prune_links "$BIN_DIR"
 git -C "$ROOT_DIR" config core.hooksPath .githooks
 
 echo
+[ -d "$ROOT_DIR/local/.git" ] || echo "NOTE     local/ is missing: clone the private half there and re-run, or only the public skills and rules are linked."
 echo "Done. Skills available:"
 ls -1 "$TARGET_DIR" | grep -vE '^\.' | sed 's/^/  - /'
 if [ -d "$RULES_DIR" ]; then
