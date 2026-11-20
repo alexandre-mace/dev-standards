@@ -45,10 +45,9 @@ reason. A check skipped in silence is a check nobody ran.
   unless it raised something blocking. Twenty lines of plan cost nothing to read, a five
   hundred line diff built on a wrong premise costs the whole implementation.
 - **The UAT.** Hand over the URL and stop.
-- **Shipping.** `/deploy` runs only on the user's explicit go, and always through the
-  skill, never with hand-typed git commands: the skill is where the checks live. The user
-  saying `ship`, now or up front, is that go given in advance: the `ship` skill takes over
-  and skips the UAT when its gate passes.
+- **Shipping.** `/deploy` runs only on the user's explicit go, given before the work or
+  after it, and always through the skill, never with hand-typed git commands: the skill is
+  where the checks live.
 
 After the UAT, the fixes meet the same definition of done, `/review-diff` runs on the
 delta, then `/deploy` on the go.
@@ -57,9 +56,8 @@ delta, then `/deploy` on the go.
 
 A wording fix, a colour, a label, a one-line correction with no logic behind it: the full
 definition of done costs more than the change. `/quality`, look at the result, `/commit`,
-then ship it by whatever the repository's own flow is, in its `AGENTS.md`. No plan, no
-gate, and **no question before shipping**. Asking "shall I deploy?" on a two-line change
-is friction, not safety, and it trains the habit of not reading the ones that matter.
+then ship it by whatever the repository's own flow is, in its `AGENTS.md`, on the go
+`/deploy` waits for. No plan, no gate.
 
 It stops being minor the moment it touches money, permissions or personal data, changes a
 schema, adds a dependency, alters a shared component, or leaves you unsure. Then the full
@@ -75,6 +73,9 @@ copied headings:
 
 - what to test in UAT;
 - what was decided in the user's place, with the reason.
+
+It ends with the message for whoever asked, ready to paste where the request came from (a
+Slack thread, a Notion comment), in the `technical-writing --chat` register.
 
 - **Name what you are unsure about.** A place where you guessed, or where the tests are
   thinner than you would like, is the single most useful line in the whole debrief.
@@ -103,7 +104,7 @@ copied headings:
   cd .claude/worktrees/<lot> && bin/worktree-setup   # where the project has it
   ```
 
-  `<scope>` in kebab-case, two to four words, French or English following the repo;
+  `<scope>` in kebab-case, two to four words, in English;
   `<lot>` the same words, or the lot's name when a plan splits the work. Then every command
   and every file of the ticket in that worktree. `origin/main`, never local `main`
   (`/deploy` §1). The plan moves with the work: `/live-test` and `/review-diff` read it

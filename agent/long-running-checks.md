@@ -12,6 +12,9 @@ benchmark, a deploy to watch. Whoever runs it, the main session or a delegated a
   pass followed by a red one, without ever reporting.
 - **Iterate on the part that changed.** A full pass is the proof at the end, not the
   feedback loop: rerun the one group, file or spec touched.
+- **Announce how long it takes.** A run longer than a few minutes is announced with its
+  expected duration, taken from the last measured run, and "where is it?" is answered
+  with the current step and the time left.
 
 ## Stop on instability, do not retry it away
 

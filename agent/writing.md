@@ -6,21 +6,25 @@ as in English.
 
 ## Which language
 
-Two decisions, not one.
+Three decisions, not one.
 
-- **The content is in the project's language**, chosen at the start and held everywhere:
-  interface labels, validation and error messages, the text a visitor reads, and the
-  declarations that announce it (`<html lang>`, `openGraph.locale`).
+- **The replies to Alexandre are in French**, whatever language the rules, the skills,
+  the code or a sub-agent's report are written in, after a compaction as before it.
+- **What the product's user reads is in the project's language**, chosen at the start
+  and held everywhere: interface labels, validation and error messages, the text a
+  visitor reads, and the declarations that announce it (`<html lang>`, `openGraph.locale`).
 - **The code is in English**, always, whatever the project's language: classes,
   functions, variables, properties, file names, routes, serialization groups, URL
-  parameters, database columns.
+  parameters, database columns, and commit messages.
 - **A domain term naming a French legal, administrative or agricultural reality stays in
   French**, unchanged. A `Fonciere`, the `Aides`, the `statuts` of a company: translating
   them loses what they name, since `RealEstateCompany` drops the legal vehicle and
-  `Subsidies` drops the specific scheme. Keep the French word whole, never half of it.
+  `Subsidies` drops the specific scheme. Keep the French word whole, never half of it. An acronym
+  follows the word it stands for: `TVA` becomes `Vat`, while `SIRET` or `PAC` stay.
 - **Never French word order in English words.** `$datePayment` is the real defect, worse
   than a French name would be: it reads as English and is not. It is `$paymentDate`.
-- **The comments are in French** on a French project. A comment carries nothing but
+- **The comments are in the language of the team that maintains the code**: French on a
+  French team's project. A comment carries nothing but
   nuance, and the nuance is better in the language it was thought in; the identifiers
   around it already carry the English.
 
@@ -66,6 +70,8 @@ already does.
   lead-in followed by a bulleted list.
 - Every sentence has a verb and says one whole thing.
 - Sections only when the content has several distinct parts.
+- A reply that closes a piece of work ends with what is left and what waits on
+  Alexandre; when nothing is left, it says so.
 - A skill's report grid stays where the skill stores it (`.claude/plan.md`); the reply
   gives the user what it changes for them, written for them.
 

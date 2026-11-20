@@ -6,8 +6,9 @@ description: >-
   messages, code comments, a technical note to a colleague. Use when such a text is about to
   be committed or sent, or when asked to réécrire or clean one up. Not for French prose meant
   for publication (a site page, a newsletter, a public post) nor for product or marketing
-  copy: that is the relecture skill of the feve-editorial plugin. `--chat` switches to the
-  register of a message between colleagues.
+  copy: that goes to a proofreading skill for publication. `--chat` drafts or rewrites a
+  message to a colleague (Slack, WhatsApp, a ticket comment), and is the mode to use
+  whenever Alexandre asks for a message for someone, typed or not.
 argument-hint: "[--chat] <text>"
 ---
 
@@ -20,8 +21,9 @@ alike.
 
 **Scope**: technical writing and the text next to code, the ones listed in the description.
 French prose for publication (a site page, a newsletter, an article, a public post) goes
-to the `feve-editorial:relecture` plugin skill, which checks spelling, grammar, the tu or vous register,
-internal consistency and the tics of generated text; asked for both, run that one. When the arguments start with `--chat`, the text is a message between colleagues:
+to a proofreading skill for publication when one is installed, which checks spelling,
+grammar, the tu or vous register, internal consistency and the tics of generated text;
+asked for both, run that one. When the arguments start with `--chat`, the text is a message between colleagues:
 apply the rules below, then the **Chat register** section on top of them.
 
 ## The shared rules
@@ -67,12 +69,27 @@ the text has to sound typed, not drafted.
   as a colleague would type them ("pb", "qqch", "10j", "+"), and spoken French too ("ça
   touche à aucun montant").
 - An arrow for a consequence: "match corrigé -> lettré dans la minute".
-- Short paragraphs, one idea each. No heading, no bold. A list only when the messaging
-  tool renders it, never numbers or markers it would print as raw text.
+- Short paragraphs, one idea each. No heading, no bold.
+- Shaped for where it is pasted. Slack and a Notion page render pasted markdown, lists
+  and quotes included. A Notion comment keeps bold and inline code but never a pasted
+  list: one short line per point there. Never a table.
 - First person singular when the author did the work.
 - At most one emoji, at the end, and only when the tone of the thread allows it.
 - The substance rules still hold in full: a casual tone never licenses an invented
   number or a "rarely" nobody measured.
+
+### Drafting from the work
+
+- Every fact is checked against its source (git, the production data, the ticket) before
+  it goes in.
+- A decision taken without the reader is told with its reason, even an obvious one: they
+  may not have thought of it.
+- Left out: a fix made along the way that the request did not cover, an internal detail,
+  what the reader already wrote.
+- Neither `tu`, `vous` nor `on`, which lumps the author and Claude together: `il` ("il
+  faut valider…", "il reste à brancher…") or a turn without a pronoun ("à tester sur la
+  fiche ferme").
+- The reader is described by role under « Interlocuteurs » in the project's `AGENTS.md`.
 
 ## Two tests before returning the text
 

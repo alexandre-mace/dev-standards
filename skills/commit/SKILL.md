@@ -18,9 +18,10 @@ files in the output.
 
 `type(scope): short description`, Conventional Commits, with the house rules:
 
-- **Scope from the repository's own vocabulary**: `git log --oneline -20` shows the
-  scopes already in use. Consistency matters more than the choice itself.
-- Lower case, no full stop. French or English, following the recent commits.
+- **Scope in English, from the code's own vocabulary** (`parcels`, `backups`), a kept
+  French domain term staying whole. `git log --oneline -20` shows the scopes already in
+  use; a French one takes its English name.
+- Lower case, no full stop, in English whatever the recent commits are in.
 - Use the main domain when the change spans several, or a scope that covers them.
 - Never a `Co-Authored-By` line.
 - Never amend a commit.

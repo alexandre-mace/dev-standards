@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install (or refresh) the symlinks Claude Code reads:
 #   ~/.claude/skills/<name>  ->  dev-standards/skills/<name>
-#   ~/.claude/rules/<file>   ->  dev-standards/agent/<file>
+#   ~/.claude/rules/<file>   ->  dev-standards/agent/<file>, and local/agent/<file>
 #   ~/.claude/output-styles/  ->  dev-standards/agent/output-styles/<file>
 #   ~/.local/bin/<name>      ->  dev-standards/symfony-react/<name>/<name> (shared scripts)
 # Idempotent: safe to re-run.
@@ -39,13 +39,13 @@ for skill_dir in "$SKILLS_DIR"/*/ "$ROOT_DIR"/local/skills/*/; do
   echo "LINKED   $skill_name"
 done
 
-# Behavioural rules: agent/*.md -> ~/.claude/rules/
+# Behavioural rules: agent/*.md and local/agent/*.md -> ~/.claude/rules/
 RULES_SRC="$ROOT_DIR/agent"
 RULES_DIR="$HOME/.claude/rules"
 
 if [ -d "$RULES_SRC" ]; then
   mkdir -p "$RULES_DIR"
-  for rule in "$RULES_SRC"/*.md; do
+  for rule in "$RULES_SRC"/*.md "$ROOT_DIR"/local/agent/*.md; do
     [ -e "$rule" ] || continue
     rule_name="$(basename "$rule")"
     [ "$rule_name" = "README.md" ] && continue

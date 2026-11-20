@@ -10,7 +10,7 @@ the habit of not reading the questions that matter.
   out, and the report says it is there.
 - **Through the gate.** The pre-commit hook and `/commit`'s message rules. A failing hook is
   fixed, never bypassed with `--no-verify`.
-- **Not covered.** Deploying (`/deploy` waits for the user's go or the word `ship`), merging
+- **Not covered.** Deploying (`/deploy` waits for the user's go), merging
   into a project's `main`, force-pushing, pushing a branch that is not this work's, or
   rewriting a commit already pushed.
 
