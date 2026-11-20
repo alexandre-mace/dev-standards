@@ -74,9 +74,6 @@ copied headings:
 - what to test in UAT;
 - what was decided in the user's place, with the reason.
 
-It ends with the message for whoever asked, ready to paste where the request came from (a
-Slack thread, a Notion comment), in the `technical-writing --chat` register.
-
 - **Name what you are unsure about.** A place where you guessed, or where the tests are
   thinner than you would like, is the single most useful line in the whole debrief.
 - "Nothing non-obvious happened" is a valid debrief. Manufacturing interest is worse than
