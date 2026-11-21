@@ -74,6 +74,8 @@ copied headings:
 - what to test in UAT;
 - what was decided in the user's place, with the reason.
 
+Then whatever a rule loaded for the session adds to the debrief.
+
 - **Name what you are unsure about.** A place where you guessed, or where the tests are
   thinner than you would like, is the single most useful line in the whole debrief.
 - "Nothing non-obvious happened" is a valid debrief. Manufacturing interest is worse than
