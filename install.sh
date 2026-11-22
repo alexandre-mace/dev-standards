@@ -141,6 +141,21 @@ prune_links "$RULES_DIR"
 prune_links "$STYLES_DIR"
 prune_links "$BIN_DIR"
 
+# Code intelligence: the official LSP plugins, so that Claude gets the type errors of
+# PHP and TypeScript right after an edit, and finds a definition without a grep.
+if command -v claude >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+  for server in intelephense typescript-language-server; do
+    command -v "$server" >/dev/null 2>&1 || { npm install -g "$server" typescript >/dev/null 2>&1 && echo "INSTALLED $server"; }
+  done
+  installed="$(claude plugin list 2>/dev/null)"
+  for plugin in php-lsp typescript-lsp; do
+    case "$installed" in
+      *"$plugin@claude-plugins-official"*) echo "OK       plugin $plugin" ;;
+      *) claude plugin install "$plugin@claude-plugins-official" >/dev/null 2>&1 && echo "INSTALLED plugin $plugin" ;;
+    esac
+  done
+fi
+
 # The repository's own consistency check runs before every commit made here.
 git -C "$ROOT_DIR" config core.hooksPath .githooks
 
