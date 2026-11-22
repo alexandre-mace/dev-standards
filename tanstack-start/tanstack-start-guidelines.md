@@ -2,22 +2,22 @@
 
 > Dashboards, internal tools, simulators, products.
 >
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 22 November 2026** (`/gap-sota`), start from this date on the next run.
 
 | Tool | Version | Notes |
 |---|---|---|
 | TanStack Start | 1.169 | Stable since 1.169.0 (12/10/2026), and the docs say so; Convex's still call it a Release Candidate. Pin exact versions and read the changelog before bumping. Moving from 1.168 goes through the official migration guide from the RC. **Floor 1.168.60** on the 1.168 line: before it, an unauthenticated attacker could make a server-function response run script on the app's domain (GHSA-qx66-fv34-fjm8, CVSS 9.3). 1.168.51 had already hardened URL handling against open redirects (protocol allowlist on links and redirects, `isAbsoluteUrl` removed, configured `origin` values without a path or trailing slash) |
 | TanStack Router | 1.170 | The framework's real core. Floor 1.170.34, the same URL hardening as Start |
-| TanStack Query | 5.105 | |
+| TanStack Query | 5.108 | |
 | TanStack Form | 1.33 | |
-| Convex | 1.48 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query`. 1.46 puts `.optional()` on every validator, which changes type compatibility between Convex versions: one `convex` version across the workspace |
-| Clerk | `@clerk/tanstack-react-start` 1.7 | Optional. First-class support when the app has accounts. 1.7 requires a `src/start.ts`, which switches off Start's default CSRF protection: see §3 bis. 1.6 drops keyless mode: without `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` the dev server throws, so a new project runs `npx clerk@latest init` first |
-| Zod | 4.6 | Floor 4.6: 4.5 runs out of memory on some recursive schemas |
-| Vite | 8.3 | **Floor 8.3.3** (dev-server advisories of 06/10/2026, see `symfony-react/reactony.md` §6). With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
+| Convex | 1.51 | Optional. The backend when the app needs one, bridged to Query by `@convex-dev/react-query`. Node 22 or later since 1.49. 1.46 puts `.optional()` on every validator, which changes type compatibility between Convex versions: one `convex` version across the workspace |
+| Clerk | `@clerk/tanstack-react-start` 1.7 | Optional. First-class support when the app has accounts. **Floor 1.7.12**, which requires `@clerk/backend` 3.28: below it, an instance that issues OIDC ID tokens accepts one as a session token (GHSA-wpqf-h9rq-rg73). 1.7 requires a `src/start.ts`, which switches off Start's default CSRF protection: see §3 bis. 1.6 drops keyless mode: without `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` the dev server throws, so a new project runs `npx clerk@latest init` first |
+| Zod | 4.6 | **Floor 4.6.6**: before it, a large array against an array schema with no length limit runs the validating process out of memory (GHSA-mrhx-c7xc-m3w5, high); 4.5 already ran out of memory on some recursive schemas |
+| Vite | 8.3 | **Floor 8.3.7** (a remote code execution on a dev server exposed to the network, 10/11/2026, see `symfony-react/reactony.md` §6). With `@vitejs/plugin-react` 6.1+ for the native React Compiler path |
 | Tailwind | 4.3 | PostCSS, no `tailwind.config` |
 | Biome | 2.6 | Lint and format |
-| oxlint | 1.90 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
-| Vitest / Playwright | 5.0 / 1.64 | Vitest floor 5.0.5, and the migration notes, in `symfony-react/reactony.md` §9 |
+| oxlint | 1.94 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
+| Vitest / Playwright | 5.1 / 1.65 | Vitest floor 5.0.5, and the migration notes, in `symfony-react/reactony.md` §9 |
 | Hosting | Vercel | Build output is portable, it can move elsewhere unchanged |
 
 ## What this file covers

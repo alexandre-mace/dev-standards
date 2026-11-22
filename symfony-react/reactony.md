@@ -2,7 +2,7 @@
 
 > One source of truth, no duplication, one pattern.
 >
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.1.2 / Vite 8.3 (Rolldown; **≥ 8.3.3**, security), Symfony Reprise 1.3 (see §6), symfony/ux 3.6, TanStack Query 5.105, RHF 7.91 (v8 still in beta), Zod 4.6, @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.0 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.64, oxlint 1.93 (exact pin) with oxlint-tsgolint 7.0, Knip 6.45, TypeScript 7.0 (native, GA; 7.1 in beta, see §8).
+> **Last watch: 22 November 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0 (native plugin-react 6.1 path, see §7), @vitejs/plugin-react 6.3 / Vite 8.3 (Rolldown; **≥ 8.3.7**, security), Symfony Reprise 1.4 (see §6), symfony/ux 3.8, TanStack Query 5.108, RHF 7.92 (v8 still in beta), Zod 4.6 (**≥ 4.6.6**, security), @hey-api/openapi-ts 0.99 (exact pin), Tailwind 4.3, shadcn (`Field` family; CLI 4.23, `cn` package), Vitest 5.1 (**≥ 5.0.5**, security, see §9), MSW 3.0 (see §9), Playwright 1.65, oxlint 1.94 (exact pin) with oxlint-tsgolint 7.0, Knip 6.48, TypeScript 7.0 (native, GA; 7.1 still in beta, see §8).
 
 **React itself is documented once**, in `react/react-guidelines.md`: React 19, the
 compiler, shadcn and Base UI, the test doctrine. This file carries the Symfony seam.
@@ -623,7 +623,7 @@ export default defineConfig({
 });
 ```
 
-When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating) for every version crossed. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. Use `z.codec()` (typed bidirectional transforms, e.g. ISO string ↔ `Date`) and `z.invertCodec()` for hand-written API ↔ domain conversions. Put `z.compile(schema)` (same API, parses 3 to 9 times faster) on the generated schemas you validate at runtime (SDK responses, large form objects). **Floor `^4.6`**: 4.5 runs out of memory on some recursive schemas, and 4.6 fixes it. `schema.validate(value)` is a boolean guard up to 35 times faster than `.safeParse().success` on a compiled schema: use it when only the verdict matters, not the errors.
+When bumping (the exact pin forces you to), read the [Migrating page](https://heyapi.dev/openapi-ts/migrating) for every version crossed. Zod 4.4 is deliberately stricter, so re-run the Vitest suite when bumping. **Zod floor: 4.6.6**: before it, a large array posted against an array schema with no length limit exhausts the memory of whoever validates it (the advisory: `watch.md`). Use `z.codec()` (typed bidirectional transforms, e.g. ISO string ↔ `Date`) and `z.invertCodec()` for hand-written API ↔ domain conversions. Put `z.compile(schema)` (same API, parses 3 to 9 times faster) on the generated schemas you validate at runtime (SDK responses, large form objects). **Floor `^4.6`**: 4.5 runs out of memory on some recursive schemas, and 4.6 fixes it. `schema.validate(value)` is a boolean guard up to 35 times faster than `.safeParse().success` on a compiled schema: use it when only the verdict matters, not the errors.
 
 ### Generation
 
@@ -643,7 +643,7 @@ In CI: the project's types target, then `git diff --exit-code openapi.yaml asset
 
 React is mounted in Twig through **Symfony UX React** + **Symfony Reprise**. Link the JS package as `file:vendor/symfony/ux-react/assets` (the default wiring) so it follows the composer version. The npm `latest` dist-tag of `@symfony/ux-react` has pointed at 3.x since 3.6.0 (October 2026), but a registry install can still drift from the PHP bundle composer resolved, and the two must move together.
 
-**Vite floor: 8.3.3** (6 October 2026). Three advisories on what the dev server serves: files outside `server.fs.allow`, the first bytes of any file through `?vite-wasm-instance`, and cross-origin script execution through a custom middleware. The production build is not exposed, but the dev server listens on every developer's machine.
+**Vite floor: 8.3.7**: below it, a dev server reachable from the network (`--host`, `server.host`, a container publishing its port) runs code an attacker sends, and older patches leak files the dev server should not serve (the advisories: `watch.md`). The production build is not exposed, but the dev server listens on every developer's machine.
 
 ### Layout
 

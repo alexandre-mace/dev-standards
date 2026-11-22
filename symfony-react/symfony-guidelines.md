@@ -1,6 +1,6 @@
 # Symfony Guidelines
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run; the dated material of the watch (the next-version radar, the advisories behind each security floor, when a decision was last re-validated) is in `watch.md`. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.12, Clever's default since October 2026; floor 8.5; **security ≥ 8.5.12**), Symfony 8.1.9 (**security ≥ 8.1.9**; 8.2 expected Nov. 2026, see `watch.md`), Doctrine ORM 3.7.5 / doctrine-bundle 3.3.3 / DBAL 4.5.0, PHPUnit 13.4 (≥ 13.4.4, security; ParaTest ≥ 7.26 requires it: see §13), PHPStan 2.3.3 (Turbo), PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias), Foundry 2.15 (**≥ 2.10.3**), dama 8.7 (PHPUnit 13 supported), Eris 1.3, EasyAdmin 5.10 (**≥ 5.10.2 required**, security; ≥ 5.6 with ORM 3.7), Twig 3.30 (≥ 3.27), sentry-symfony 5.14, nelmio/api-doc-bundle 5.13, zenstruck/messenger-monitor-bundle 0.6, PostgreSQL 18 (18.6 on CleverCloud, floor 17), Symfony Reprise 1.3 (Vite integration, see reactony §6), VichUploader 3.0.
+> **Last watch: 22 November 2026** (`/gap-sota`), start from this date on the next run; the dated material of the watch (the next-version radar, the advisories behind each security floor, when a decision was last re-validated) is in `watch.md`. Reference versions verified: PHP: the newest minor CleverCloud publishes (at this watch 8.5.13, Clever's default since October 2026; floor 8.5; **security ≥ 8.5.13**; 8.6 not on Clever yet), Symfony 8.1.11 (**security ≥ 8.1.11**; 8.2 in beta, see `watch.md`), Doctrine ORM 3.8 / doctrine-bundle 3.4 / DBAL 4.6 (**≥ 4.5.1**, see §8), PHPUnit 13.4 (≥ 13.4.4, security; ParaTest ≥ 7.26 requires it: see §13), PHPStan 2.3.7 (Turbo), PHP-CS-Fixer 3.95 (`@Symfony` ruleset; `@PHP8x5Migration`, `@PHP85Migration` being its deprecated alias), Foundry 2.17 (**≥ 2.10.3**), dama 8.8 (PHPUnit 13 supported), Eris 1.3, EasyAdmin 5.10 (**≥ 5.10.2 required**, security; ≥ 5.6 with ORM 3.7), Twig 3.30 (≥ 3.27), sentry-symfony 5.17, nelmio/api-doc-bundle 5.14, zenstruck/messenger-monitor-bundle 0.7, PostgreSQL 18 (18.7 on CleverCloud, floor 17), Symfony Reprise 1.4 (Vite integration, see reactony §6), VichUploader 3.0.
 
 ## Routing: what to read for which task
 
@@ -34,7 +34,7 @@ Written down so it isn't re-litigated every session (in an AI-first codebase, th
 
 - **No API Platform.** The app is **hybrid** (an API plus many server-rendered Twig pages and EasyAdmin), the endpoints are *action-shaped* rather than CRUD-resource, and the OpenAPI→TS pipeline (the project's types target) already exists. API Platform would add a second paradigm plus state processors for any bespoke logic, so **more** concepts, not fewer. Our `#[MapRequestPayload]` + ObjectMapper + `#[Serialize]` controllers get about 80% of its concision without the cost.
 - **No RSC / React Server Components** (see `reactony.md`): Symfony + Twig **is** the server layer already; the React islands are the intentional client leaves. Bolting RSC on means running a Node rendering server next to PHP, for a role PHP already fills.
-- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks: FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. The advisory record of worker mode is part of that price (`watch.md`). The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.4; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
+- **PHP-FPM, not FrankenPHP (for now).** Checked against serious benchmarks: FrankenPHP's classic mode is at parity with FPM, and worker mode only buys back the bootstrap on a SQL-dominated app (1.2x to 1.5x in practice, not the 3x to 4x of hello-world benchmarks), at the price of a whole class of persistent-state bugs (memory leaks, stateful services) and higher RAM. At moderate traffic, FPM costs nothing measurable. The advisory record of worker mode is part of that price (`watch.md`). The upgrade path, the day a trigger appears (CPU spikes, a Mercure or realtime need, shrinking an instance): **classic** mode first (GA CleverCloud runtime, which keeps only the 1.13 line, floor 1.13.5; HTTP/3 + Early Hints, low risk), then worker mode under conditions (sentry-symfony ≥ 5.12, an audit of stateful services and `ResetInterface`, `max_requests` around 1000, a RAM alert, the least critical platform first). Re-assess at every watch.
 - **No Rector.** `phpstan-deprecation-rules` already reports every deprecated symbol still called, and the agent fixes them one by one with the tests behind it; Rector would be a second configuration to maintain for a job done a few times a year. Re-assess at a major that rewrites many call sites (Doctrine ORM 4, Symfony 9).
 - **PHPStan and PHP-CS-Fixer, not Mago.** Mago (linter, formatter and analyzer in one Rust binary) documents no counterpart of `phpstan-symfony` and `phpstan-doctrine`, which read the container and the mappings, and adopting its formatter means reformatting the whole codebase. PHPStan Turbo already answers the speed argument. Re-assess at every watch.
 
@@ -124,9 +124,9 @@ The `composer.json` floor is `>= 8.5`, with `config.platform.php` pinned to `8.5
 
 **PHP 8.5 features to use**: the pipe operator (`$slug = $titre |> trim(...) |> strtolower(...)`), `clone($obj, ['prop' => $val])` for readonly withers, `#[\NoDiscard]` on methods whose return value must not be ignored, `array_first()`/`array_last()`. To avoid (deprecated in 8.5): non-canonical casts (`(integer)`, `(boolean)`, `(double)`) and `__sleep()`/`__wakeup()` (soft-deprecated in favour of `__serialize()`/`__unserialize()`).
 
-**Security floor: runtime ≥ 8.5.12**, which closes unauthenticated remote code executions on any PHP serving web requests (the advisories behind this floor and the patches before it: `watch.md`). An instance whose `php -v` says less has not been redeployed since.
+**Security floor: runtime ≥ 8.5.13**, which closes remote code executions on any PHP serving web requests, two of them in 8.5 only (the advisories behind this floor and the patches before it: `watch.md`). An instance whose `php -v` says less has not been redeployed since.
 
-**Symfony security floor: 8.1.9**: it completes the fix of a crash on a deeply nested expression, a parser that `#[Assert\ExpressionSyntax]` hands to user input, which 8.1.6 had left incomplete (the advisories behind this floor: `watch.md`).
+**Symfony security floor: 8.1.11**: it closes, among others, a `DataUriNormalizer` that reads any file on the server and a Serializer that builds `UploadedFile` objects from request data (the advisories behind this floor and the ones before it: `watch.md`).
 
 ## Next Symfony version: see `watch.md`
 
@@ -1284,7 +1284,7 @@ DAMA transaction makes the profiler accumulate the fixtures' queries too), then 
 
 ## 8. Entity/
 
-- **`Timestampable` trait** on every business entity: `DateTimeImmutable` throughout (no mutable `DateTime`)
+- **`Timestampable` trait** on every business entity: `DateTimeImmutable` throughout (no mutable `DateTime`, whose DBAL types are deprecated since 4.6)
 - **TypedFieldMapper** (Doctrine ORM 3.x): the column type is inferred from the PHP type. No explicit `type:` needed when the property is typed:
 
 ```php
@@ -1313,9 +1313,9 @@ private string $description;
 
 ### PostgreSQL version and `server_version`
 
-Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.6 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 reaches end of life on 12 November 2026. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. Three issues need extra steps after the update to 18.6 / 17.11 (parallel GIN index builds, `btree_gist`, `ltree`: read the release notes).
+Target PostgreSQL version: **18** (CleverCloud's default for new add-ons since 15 September 2026, 18.7 available, with io_uring and UUIDv7), floor **17**. Clever never upgrades an existing add-on on its own, and PG 14 is past its end of life. An add-on still on 15 or 16 is a gap for `/gap-code` to raise, the upgrade on Clever being cheap. **Before migrating an add-on to 18**, drop or `ALTER CONSTRAINT ... INHERIT` every `NOT NULL NO INHERIT` constraint on a partitioned table: Clever's migration fails and rolls back on one. An in-place update to 18.7 / 17.12 asks for reindexing the suspect GIN indexes, the GiST ones on `gist_trgm_ops` and the B-tree ones on a `bpchar` without length (read the release notes); a Clever migration recreates the indexes, so it needs none of that.
 
-**On 18, a delete refused by `ON DELETE RESTRICT` raises SQLSTATE 23001**, `restrict_violation`, no longer 23503. The change is an upstream commit the 18 release notes do not mention. `NO ACTION`, Doctrine's default when `onDelete` is left out, and an insert or update on the child row still raise 23503: only a foreign key declared `onDelete: 'RESTRICT'` changes. DBAL 4.5.0 maps 23503 alone to `ForeignKeyConstraintViolationException`, so the refusal reaches the code as a bare `DriverException`, and a `catch` written for the foreign key misses it: the user gets a 500 where the controller meant to answer « still in use ». Until the fix ships (doctrine/dbal#7530, followed in `watch.md`), a DBAL driver middleware converts 23001 into `ForeignKeyConstraintViolationException`, with a functional test that deletes a referenced row. Drop the middleware at the DBAL release that maps it.
+**On 18, a delete refused by `ON DELETE RESTRICT` raises SQLSTATE 23001**, `restrict_violation`, no longer 23503. The change is an upstream commit the 18 release notes do not mention. `NO ACTION`, Doctrine's default when `onDelete` is left out, and an insert or update on the child row still raise 23503: only a foreign key declared `onDelete: 'RESTRICT'` changes. Below 4.5.1, DBAL maps 23503 alone to `ForeignKeyConstraintViolationException`, so the refusal reaches the code as a bare `DriverException`, and a `catch` written for the foreign key misses it: the user gets a 500 where the controller meant to answer « still in use ». **DBAL floor: 4.5.1**, which maps 23001 too. A project still carrying the driver middleware that converted it drops it, and keeps the functional test that deletes a referenced row.
 
 **`server_version` in doctrine.yaml declares the server's REAL version, never an aspiration.** Doctrine picks platform features from it, so declaring higher than the server makes it emit SQL the server does not know. The config is a claim: the audit verifies with `SELECT version()` on the instance (read-only `psql`, §19 « SQL in production »), which is also how a prod quietly running an EOL major gets caught. Seen: a config claiming 16.0 over a 14.9 server, and 13.0 over a 15.7.
 
@@ -1488,12 +1488,12 @@ For a plain `new Entity()` with a few setters, no Factory needed.
 
 The standard stack, shared by every Symfony + React project. No "light" for some and "heavy" for others: the same thing everywhere. A solo developer on critical platforms (money, PII, government audit) needs the net at its maximum and uniform.
 
-Reference versions, from the watch of 28 October 2026 (the header of this file and of
-`react/react-guidelines.md`): PHPUnit 13.4 (≥ 13.4.4), ParaTest ≥ 7.26 (7.27.4 published),
-dama/doctrine-test-bundle 8.7, Foundry 2.15 (≥ 2.10.3), Eris 1.3, Playwright 1.64,
-`@axe-core/playwright` 4.14, Vitest 5.0 (≥ 5.0.5), MSW 3.0. Testing Library, read on npm
+Reference versions, from the watch of 22 November 2026 (the header of this file and of
+`react/react-guidelines.md`): PHPUnit 13.4 (≥ 13.4.4), ParaTest ≥ 7.26 (7.29 published,
+which requires PHPUnit `^13.4.7`), dama/doctrine-test-bundle 8.8, Foundry 2.17 (≥ 2.10.3),
+Eris 1.3, Playwright 1.65, `@axe-core/playwright` 4.14, Vitest 5.1 (≥ 5.0.5), MSW 3.0. Testing Library, read on npm
 the same day: `@testing-library/react` 16.3, `@testing-library/user-event` 14.6,
-`@testing-library/jest-dom` 7.0, `@testing-library/dom` 10.4.
+`@testing-library/jest-dom` 8.0 (Vitest 5 only), `@testing-library/dom` 10.4.
 ### The pyramid
 
 | Layer | Tool | Role | Speed |
@@ -2331,7 +2331,7 @@ script.
   `clever env`), in `server_version`, every `serverVersion=` of the `.env` files, the CI
   service image and the compose file. A CI on 15 against a production on 18 tests another
   server: PostgreSQL 18 changed the SQLSTATE of a refused `ON DELETE RESTRICT` (23001),
-  which DBAL 4.5 no longer maps to `ForeignKeyConstraintViolationException`.
+  which DBAL maps to `ForeignKeyConstraintViolationException` only from 4.5.1 (§8).
 
 **The same documents in the same places**: `AGENTS.md` names these commands in a
 « Commands » section and lists only what the project adds; `docs/tests-et-ci.md` describes
@@ -2765,7 +2765,8 @@ composer require zenstruck/messenger-monitor-bundle
     ```
 
 2. `zenstruck_messenger_monitor.storage.orm.entity_class: App\Entity\ProcessedMessage`, then
-   a migration.
+   a migration. Each bump of the bundle can change the table (0.7 turns `description` into
+   `text`): read its `UPGRADE.md`, and migrate before restarting the workers.
 3. **Purge daily**, or the table grows with every message. The commands belong to the
    bundle, so they cannot carry `#[AsCronTask]` (§17): schedule them as `RunCommandMessage`
    in the app's schedule.

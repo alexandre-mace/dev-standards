@@ -1,12 +1,12 @@
 # Next Guidelines: static-first personal sites
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run.
+> **Last watch: 22 November 2026** (`/gap-sota`), start from this date on the next run.
 >
-> Radar: a security release is pre-announced for 3 November 2026 (seven medium-severity fixes): it raises the floor that day. Cache Components becomes the default in Next 17.
+> Radar: Cache Components becomes the default in Next 17, which has no version on npm yet (16.5 is in canary).
 
 | Tool | Version | Notes |
 |---|---|---|
-| Next.js | 16.4 | App Router, Active LTS, and only the latest minor gets the security patches. **Floor 16.4.1** (14/10/2026: two critical remote code executions, through a `use cache` function returning typed arrays and through the image optimizer on SVG, plus a Server Actions denial of service); no 16.3 is safe. Security releases are usually pre-announced on nextjs.org/blog: patch within the week. A critical one can ship the same day it is announced (16.3.6, 22/09/2026, remote code execution through `ImageResponse`): patch that day. `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts`; strict route matching on by default, a route tree that cannot resolve fails the build (escape hatch `deprecated.looseRouteMatching`) |
+| Next.js | 16.4 | App Router, Active LTS, and only the latest minor gets the security patches. **Floor 16.4.5** (03/11/2026: seven advisories, five of them in `use cache` and Cache Components, plus an SVG bypass of the image optimizer and an HttpOnly cookie leaking on Edge routes); 16.4.1 (14/10/2026) had closed two critical remote code executions, so no 16.3 is safe. Security releases are usually pre-announced on nextjs.org/blog: patch within the week. A critical one can ship the same day it is announced (16.3.6, 22/09/2026, remote code execution through `ImageResponse`): patch that day. `catchError`/`retry()` stable for error boundaries; `middleware.ts` deprecated in favour of `proxy.ts`; strict route matching on by default, a route tree that cannot resolve fails the build (escape hatch `deprecated.looseRouteMatching`) |
 | React | 19.3 | `<ViewTransition>` stable: `transitionTypes` on `<Link>` needs no flag any more. The server packages need 19.3.1 (remote code execution, GHSA-xqc2-xf4c-x3h3), which Next 16.4.1 brings |
 | `next/image` | 16 | Defaults: `qualities` down to `[75]`, cache TTL to 4 h, and a local src with a query string requires `images.localPatterns` |
 | TypeScript | 7.0 | The native Go port, published as `typescript`; `next build` type-checks with it since 16.3. A project still on 5.9 migrates through 6.0 first (see `symfony-react/reactony.md` §8) |
@@ -14,11 +14,11 @@
 | shadcn | Base UI base, Vega style | The ecosystem default since July 2026. `cn` from the `cn` package (see `react/react-guidelines.md` §3) |
 | React Compiler | 1.0 | Enabled with `reactCompiler: true`, out of `experimental` since Next 16 |
 | Biome | 2.6 | Lint and format. `create-next-app --biome` still installs 2.4: bump it after scaffolding. The oxc line (oxlint + oxfmt) is the other way out of ESLint+Prettier, but oxfmt is in beta: revisit when it goes stable |
-| oxlint | 1.90 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
+| oxlint | 1.94 | The React Compiler rules only, which Biome does not port: `react/react-guidelines.md` §2 |
 | Kit | `@alexandremace` | ui.alexandremace.fr |
 | lucide-react | 1.x | No more brand icons |
 | Geist | npm package | |
-| Hosting | Vercel Hobby | Keeps only the 3 latest production deployments since September 2026: an instant rollback reaches no further back |
+| Hosting | Vercel Hobby | Deployments are kept 30 days, and the 3 latest Ready production ones are never deleted: past 30 days, an instant rollback reaches no further back than those 3 |
 
 ## What this file covers
 

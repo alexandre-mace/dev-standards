@@ -1,6 +1,6 @@
 # React Guidelines: what is true on every stack
 
-> **Last watch: 28 October 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, oxlint 1.93 (its React Compiler rules), Vitest 5.0 (≥ 5.0.5), MSW 3.0, Playwright 1.64, axe-core 4.14.
+> **Last watch: 22 November 2026** (`/gap-sota`), start from this date on the next run. Reference versions verified: React 19.3.1, React Compiler 1.0, shadcn CLI 4.23 (Base UI 1.9 base, Vega style, `cn` package), lucide-react 1.x, oxlint 1.94 (its React Compiler rules), Vitest 5.1 (≥ 5.0.5), MSW 3.0, Playwright 1.65, axe-core 4.14.
 
 React runs on all three stacks, so what follows is written once here. Each stack's own
 file carries what genuinely differs: how the compiler is enabled, which form library, how
