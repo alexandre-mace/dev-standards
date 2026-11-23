@@ -61,8 +61,9 @@ before, Sentry after) are in that skill. The script only does what a script can 
 - **`--uat`**, what `/preprod` runs: the branch pushed, then merged into `origin/preprod` by
   `git merge-tree`, without a checkout, and pushed as a fast-forward; the application
   followed is the one whose alias starts with `preprod`, with the same verdict and relaunch.
-  A branch behind `main` is not refused, a conflict is (exit 2, the files named), and the
-  commits preprod holds besides `main` are listed: someone else's test may be in progress.
+  A branch behind `main` is not refused, a conflict is (exit 2, the files named). When preprod
+  holds commits besides `main`, they are listed and nothing is merged (exit 4): someone else's
+  test may be in progress, and `--uat --alongside` merges once the user agreed.
 - **The main checkout follows**: once production is OK, `sync-main-checkout --no-fetch`
   fast-forwards the `main` of the checkout the worktrees hang from, which the push never
   moves (`../sync-main-checkout/README.md`). It only informs: whatever it finds, the exit
@@ -82,7 +83,7 @@ next UAT starts from what is in production rather than from older tests.
   rebased after its UAT leaves preprod with both hashes of the same patch, and the UAT one
   read as absent. If one is absent, preprod stays as it is, the
   commits are printed with their author, and the exit code is 4: deploying them or dropping
-  them is a decision, and someone may be testing them. `--uat` lists the same commits.
+  them is a decision, and someone may be testing them. `--uat` lists the same commits and stops on them.
 - **Never forced.** When preprod is an ancestor of main, a fast-forward. Otherwise (the
   merges `/preprod` leaves behind), a merge commit whose tree is main's, made with
   `git commit-tree` on top of preprod, so the push is still a fast-forward and preprod's
@@ -136,6 +137,6 @@ other `FAIL` gives 1 without relaunch; a relaunch for not starting leaves none f
 429 that follows; the prod alias is found
 whatever its case, `--app` picks another one, from a subfolder; preprod holding only a merge
 is aligned to main's tree without losing its history, preprod holding its own commit is left
-alone with exit 4, a branch rebased after its UAT and then edited on the same lines is not
+alone with exit 4, `--uat` stops on it with exit 4 and merges with `--alongside`, a branch rebased after its UAT and then edited on the same lines is not
 listed by `--uat` and lets the next deploy align preprod; the worktree and its branch go once deployed, ignored files included,
 and nothing happens from the main checkout.

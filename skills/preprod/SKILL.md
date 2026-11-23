@@ -20,11 +20,11 @@ hand over the preview URL.
 
 - **The feature request is the go.** When `/ticket` (or the user) asked for the feature and
   `/review-diff` passed, merge without asking: the user does not want to be asked to approve
-  UAT for work they requested. Ask first only when preprod may be holding someone else's
-  test in progress, which only the script's « preprod porte aussi, absent de main » list
-  says: a raw `git log origin/main..origin/preprod` also lists the commits rebased onto
-  main under another hash, already in production. Or when the branch is not the one the
-  user asked for.
+  UAT for work they requested. Ask first only when the branch is not the one the user asked
+  for, or when `deploy --uat` stops on « preprod porte aussi, absent de main » (exit 4,
+  nothing merged): name those commits, and run `deploy --uat --alongside` on the user's word.
+  Never work that list out by hand: `git log` and `git cherry` call absent a commit rebased
+  onto main under another hash, already in production.
 - **Never delete the feature branch.** It stays for the UAT fixes and the eventual
   `/deploy`.
 - Stop and ask when changes are uncommitted. Offer `/commit`, never stash or commit

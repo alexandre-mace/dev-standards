@@ -10,22 +10,25 @@
 #   deploy --timeout <s>       how long to wait for the verdict (default 1800)
 #   deploy --start-timeout <s> how long before relaunching a deployment that never started (default 180)
 #   deploy --uat               instead: merge the branch into preprod, follow the preprod deployment, main untouched
+#   deploy --uat --alongside   the same when preprod also holds commits main lacks, once the user agreed
 #
 # Exit codes: 0 deployed, 1 deployment failed, 2 refused before pushing (or usage),
-# 3 no verdict within the timeout, 4 deployed but preprod, the worktree or its branch left as they were.
+# 3 no verdict within the timeout, 4 deployed but preprod, the worktree or its branch left as they were,
+# or --uat stopped because preprod holds commits main lacks.
 # One relaunch at most per run: a deployment that never started, or one that failed on a
 # download (HTTP 429 or 5xx, connection reset or timed out).
 
 set -o pipefail
 
 usage() {
-    sed -n '6,12p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '6,13p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
 PREPROD=0
 REMOVE_WORKTREE=0
 UAT=0
+ALONGSIDE=0
 APP=
 TIMEOUT=1800
 START_TIMEOUT=180
@@ -35,6 +38,7 @@ while [ $# -gt 0 ]; do
         --preprod) PREPROD=1 ;;
         --remove-worktree) REMOVE_WORKTREE=1 ;;
         --uat) UAT=1 ;;
+        --alongside) ALONGSIDE=1 ;;
         --app) APP=${2:-}; [ -n "$APP" ] || usage 2 >&2; shift ;;
         --timeout)
             TIMEOUT=${2:-}
@@ -51,6 +55,10 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+if [ "$ALONGSIDE" -eq 1 ] && [ "$UAT" -eq 0 ]; then
+    echo "--alongside ne sert qu'avec --uat." >&2
+    usage 2 >&2
+fi
 if [ "$UAT" -eq 1 ] && [ $((PREPROD + REMOVE_WORKTREE)) -gt 0 ]; then
     echo "--uat ne va pas en production : ni --preprod ni --remove-worktree." >&2
     usage 2 >&2
@@ -311,11 +319,16 @@ uat() {
         follow "$APP_ID" "$SHA" 0 preprod
         return
     fi
-    # What preprod holds besides main: another test may be in progress there.
+    # What preprod holds besides main: another test may be in progress there. Only this list
+    # tells, never git log or git cherry by hand (absent_from); merging over it is the user's call.
     others=$(absent_from origin/main origin/main..origin/preprod --not HEAD)
     if [ -n "$others" ]; then
         say "preprod porte aussi, absent de main :"
         for c in $others; do git log -1 --format='  %h %an, %ar : %s' "$c"; done
+        if [ "$ALONGSIDE" -eq 0 ]; then
+            say "Pas fusionnée : quelqu'un teste peut-être ces commits. Relancer avec --alongside une fois d'accord."
+            exit 4
+        fi
     fi
     if ! tree=$(git merge-tree --write-tree --name-only origin/preprod HEAD); then
         say "$tree" | sed -n '2,/^$/p' | sed '/^$/d; s/^/  /' >&2

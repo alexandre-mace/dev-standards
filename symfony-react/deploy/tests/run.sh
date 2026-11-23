@@ -278,7 +278,12 @@ git clone -q -b preprod "$FAKE/origin.git" "$FAKE/pp" 2> /dev/null
 old_preprod=$(git -C "$FAKE/origin.git" rev-parse preprod)
 before=$(origin_main)
 out=$("$DEPLOY" --uat --timeout 10 2>&1); code=$?
-check '--uat : fusionnée dans preprod et déployée, code 0' $code 0
+check '--uat : preprod porte un commit absent de main, arrêté sans fusionner, code 4' $code 4
+contains '  le commit est nommé' "$out" "recette d'un autre"
+check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "$old_preprod"
+check "  aucun déploiement n'est suivi" "$(cat "$FAKE/calls" 2> /dev/null)" ''
+out=$("$DEPLOY" --uat --alongside --timeout 10 2>&1); code=$?
+check '--uat --alongside : fusionnée dans preprod et déployée, code 0' $code 0
 git -C "$FAKE/origin.git" merge-base --is-ancestor "$(git rev-parse HEAD)" preprod
 check '  preprod porte la branche' $? 0
 git -C "$FAKE/origin.git" merge-base --is-ancestor "$old_preprod" preprod
@@ -299,7 +304,7 @@ fresh
 git clone -q -b preprod "$FAKE/origin.git" "$FAKE/pp" 2> /dev/null
 (cd "$FAKE/pp" && echo autre > change.txt && git add change.txt && git commit -qm conflit && git push -q origin preprod 2> /dev/null)
 old_preprod=$(git -C "$FAKE/origin.git" rev-parse preprod)
-out=$("$DEPLOY" --uat --timeout 10 2>&1); code=$?
+out=$("$DEPLOY" --uat --alongside --timeout 10 2>&1); code=$?
 check '--uat : conflit avec preprod, refusé, code 2' $code 2
 contains '  le fichier en conflit est nommé' "$out" 'change.txt'
 check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "$old_preprod"
@@ -307,6 +312,8 @@ check '  preprod est intacte' "$(git -C "$FAKE/origin.git" rev-parse preprod)" "
 fresh
 "$DEPLOY" --uat --preprod --timeout 10 > /dev/null 2>&1
 check '--uat avec --preprod, refusé, code 2' $? 2
+"$DEPLOY" --alongside --timeout 10 > /dev/null 2>&1
+check '--alongside sans --uat, refusé, code 2' $? 2
 
 # --- The main checkout brought up to the deployed main ---------------------------------
 
