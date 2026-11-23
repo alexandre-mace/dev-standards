@@ -156,6 +156,19 @@ if command -v claude >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
   done
 fi
 
+# The Claude Code config kept in local/claude/ by its backup.sh: copied back where it is
+# missing, on a new machine, never over a file already there (Claude Code rewrites them).
+if [ -d "$ROOT_DIR/local/claude" ]; then
+  for item in settings.json statusline-robbyrussell.sh hooks scheduled-tasks; do
+    [ -e "$ROOT_DIR/local/claude/$item" ] || continue
+    if [ -e "$HOME/.claude/$item" ]; then
+      echo "OK       claude/$item"
+    else
+      cp -R "$ROOT_DIR/local/claude/$item" "$HOME/.claude/$item" && echo "RESTORED claude/$item"
+    fi
+  done
+fi
+
 # The repository's own consistency check runs before every commit made here.
 git -C "$ROOT_DIR" config core.hooksPath .githooks
 

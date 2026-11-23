@@ -135,7 +135,8 @@ a rule is added or renamed. It also links the shared scripts run by name from an
 `deploy`, `machine-lock`, `performance-cores` and `sync-main-checkout`, into `~/.local/bin`, which it creates
 when missing and which has to be on the `PATH`. Last, it installs the official PHP and
 TypeScript LSP plugins of Claude Code and their language servers, so that a type error
-reaches Claude right after the edit.
+reaches Claude right after the edit. On a new machine, it also copies back the Claude Code
+config the private half keeps (settings, hooks, scheduled tasks), where none is there yet.
 
 It also links `local/skills/` and `local/agent/`, gitignored here. This repository is
 public, so a procedure or a rule whose publication is itself the problem lives there
