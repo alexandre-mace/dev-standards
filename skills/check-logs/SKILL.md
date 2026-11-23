@@ -112,6 +112,10 @@ issue if the fix does not hold.
 
 ## Report
 
+Only what is wrong. Nothing on what is green, and no noise that calls for no decision: an
+app with nothing wrong is its name and « rien ». Each finding is a few lines: what,
+since when and how many, the cause read in the code, the proposed action.
+
 Group by return on investment, not by volume: mass pollution first, then real bugs,
 then what can be resolved (upstream flake, already fixed, stale). Every line carries its
 event count and a decision.
