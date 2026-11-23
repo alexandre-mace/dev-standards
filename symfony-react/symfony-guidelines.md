@@ -98,6 +98,10 @@ Details and setup: section 13.
 **`bin/ci-local` must be green before merge** (CI section below): it replays every CI job,
 the PHPUnit, Vitest and Playwright suites included, on the branch merged with main.
 
+**TwigStan runs after PHPStan in `bin/ci-local` and CI**, not in the hook (about 30 s): PHPStan on
+the templates, with the context the controllers pass them. A baseline freezes the errors found when
+it arrives, so only new ones fail, and its loader boots the kernel in `test`, where `twig` is reachable.
+
 ### Definition of Done
 
 A feature is only "done" when **every** one of these is green:
