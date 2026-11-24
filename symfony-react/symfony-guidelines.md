@@ -1076,6 +1076,8 @@ The Sentry Monolog handler is configured at the `ERROR` level (see `config/packa
 | `$logger->error()` | Clever logs + **Sentry** | Anything worth a human looking at |
 | `$logger->critical()` | Clever logs + **Sentry** | Blocking error / data corruption |
 
+The `fingers_crossed` handler that mails a CRITICAL excludes the `mailer` channel (`channels: [ "!mailer" ]`): once triggered it passes everything through, so the SMTP transport's DEBUG shutdown lines, logged right after the alert is sent, went out in a second mail with no error in it.
+
 ### A secret in a query string ends up in the logs
 
 HttpClient logs every call at INFO with the full URL, query string included
