@@ -2172,6 +2172,8 @@ above give the details. `/gap-code` checks this list.
   unmounts only what `render()` mounted: a test writing `document.body.innerHTML` left
   its `<details>` to the next file of its worker in the shared project, whose first Tab
   landed on that `<summary>`, red or green with the split of files between workers.
+  `localStorage.clear()` and `sessionStorage.clear()` in the same hook: a filter a
+  component saved there hid, to the shuffled next test, the row it meant to click.
 - [ ] **MSW fails on any request no handler serves**: `server.listen({onUnhandledFrame:
   'error'})` in MSW 3 (`onUnhandledRequest` in MSW 2). A request that falls through
   otherwise reaches the network or waits for its timeout, and the test passes on the
