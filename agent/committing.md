@@ -4,8 +4,9 @@ A change the user asked for is committed and pushed once it is done, without ask
 again: the request is the go. "Shall I commit?" after the work is friction, and it trains
 the habit of not reading the questions that matter.
 
-- **Where.** In `dev-standards`, on `main`. In a project, on the work's own branch, never on
-  `main`: there a commit is a deploy waiting for the next push.
+- **Where.** In `dev-standards`, or in a documentation repository where nothing deploys on
+  push, on `main`. In a project, on the work's own branch, never on `main`: there a commit
+  is a deploy waiting for the next push.
 - **What.** The files of the requested change only. Someone else's uncommitted change stays
   out, and the report says it is there.
 - **Through the gate.** The pre-commit hook and `/commit`'s message rules. A failing hook is
