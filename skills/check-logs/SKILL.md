@@ -61,6 +61,10 @@ FROM messenger_messages GROUP BY 1;
 
 The missing bundle is itself a finding for `/gap-code`.
 
+A cron with no success within its period is a finding even with no failure row: a fatal
+error (memory) kills the worker before the monitor writes anything. Compare each scheduled
+task with its last successful run (`MAX(finished_at) WHERE failure_type IS NULL`).
+
 Sentry issues come from its MCP.
 
 ### Vercel and Convex
